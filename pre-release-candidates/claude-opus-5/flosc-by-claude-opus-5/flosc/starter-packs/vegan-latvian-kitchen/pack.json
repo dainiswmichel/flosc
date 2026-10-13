@@ -16,7 +16,7 @@
     "install_as": "vlkit_ivr.md"
   },
   "catalog": {
-    "file": "catalog.tsv",
+    "file": "catalog.txt",
     "key": "vegan_latvian_kitchen",
     "label": "Vegan Latvian Kitchen"
   },
@@ -32,7 +32,7 @@
   ],
   "needs_configuration": "The $10 offer ships priced but unpaid-for: add your payment credentials under Payments, and connect the cookbook PDF now in your Media Library to post-purchase delivery.",
   "ships": [
-    "catalog.tsv",
+    "catalog.txt",
     "content.json",
     "flow_ivr.md",
     "pack.json",

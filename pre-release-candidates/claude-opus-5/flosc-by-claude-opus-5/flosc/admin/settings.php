@@ -440,7 +440,9 @@ if ( ! in_array( $flosc_identity_view, array( 'single', 'all' ), true ) ) {
 // Do not redirect here — headers are already sent during page render (white content pane).
 
 // Trajectory quick-toggle: flip a trajectory post between LIVE (private) and OFF (draft).
-if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_toggle_trajectory_nonce'] ?? '' ), 'flosc_toggle_trajectory_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) ) {
+	check_admin_referer( 'flosc_toggle_trajectory_post', 'flosc_toggle_trajectory_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to toggle trajectory posts.', 'flosc' ) );
 	}
@@ -491,7 +493,9 @@ if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sa
 }
 
 // Concierge quick-create: create a private concierge post and sync it to the flow.
-if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_concierge_create_nonce'] ?? '' ), 'flosc_create_concierge_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_create_concierge_post'] ) ) {
+	check_admin_referer( 'flosc_create_concierge_post', 'flosc_concierge_create_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to create concierge posts.', 'flosc' ) );
 	}
@@ -600,7 +604,9 @@ if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( san
 }
 
 // Trajectory quick-create: create a private trajectory post and sync trajectory guidance into flow DB.
-if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_trajectory_create_nonce'] ?? '' ), 'flosc_create_trajectory_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_create_trajectory_post'] ) ) {
+	check_admin_referer( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to create trajectory posts.', 'flosc' ) );
 	}
@@ -701,7 +707,9 @@ if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sa
 }
 
 // Handle save.
-if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_save'] ) ) {
+	check_admin_referer( 'flosc_save_settings' );
 	if ( ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 		wp_die( esc_html__( 'You do not have permission to save this FLOSC flow.', 'flosc' ) );
 	}
@@ -801,7 +809,26 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
 				$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
 			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
-				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( is_string( $flosc_value ) ? $flosc_value : '' );
+				if ( ! is_string( $flosc_value ) || ( function_exists( 'flosc_personality_text_is_valid_utf8' ) && ! flosc_personality_text_is_valid_utf8( $flosc_value ) ) ) {
+					set_transient(
+						'flosc_settings_notice_' . get_current_user_id(),
+						__( 'The personality profile was not saved because it is not valid UTF-8 text. The previous profile is unchanged.', 'flosc' ),
+						60
+					);
+					wp_safe_redirect(
+						add_query_arg(
+							array(
+								'page' => 'flosc-settings',
+								'ivr'  => $flosc_selected_ivr,
+								'tab'  => $flosc_active_tab,
+								'view' => $flosc_identity_view,
+							),
+							admin_url( 'admin.php' )
+						)
+					);
+					exit;
+				}
+				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( $flosc_value );
 			} elseif ( $flosc_is_textarea ) {
 				$flosc_new_settings[ $flosc_setting_key ] = sanitize_textarea_field( $flosc_value );
 			} elseif ( 'buddyboss_index' === $flosc_setting_key && is_array( $flosc_value ) ) {
@@ -1600,7 +1627,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			}
 
 			foreach ( $chunks as $chunk ) {
-				$chunk = trim( (string) $chunk );
+				$chunk = sanitize_text_field( trim( (string) $chunk ) );
 				if ( '' === $chunk ) {
 					continue;
 				}
@@ -2242,6 +2269,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	</h1>
 
 	<?php
+	$flosc_settings_notice = get_transient( 'flosc_settings_notice_' . get_current_user_id() );
+	if ( is_string( $flosc_settings_notice ) && '' !== $flosc_settings_notice ) {
+		delete_transient( 'flosc_settings_notice_' . get_current_user_id() );
+		add_settings_error( 'flosc_settings', 'personality_profile_invalid', $flosc_settings_notice, 'error' );
+	}
 	// Portability upload, import, delete, etc. use add_settings_error( 'flosc_settings', … ).
 	settings_errors( 'flosc_settings' );
 	?>

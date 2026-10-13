@@ -1278,11 +1278,18 @@ trait FLOSC_Admin_Trait {
 
 		$flosc_nonce = flosc_nav_param( '_wpnonce', array(), '', 'sanitize_text_field' );
 
-		$flosc_nonce_action = 'set_status' === $flosc_action
-			? 'flosc_set_status'
-			: ( 'toggle_status' === $flosc_action ? 'flosc_toggle_status' : 'flosc_delete_offer_' . $flosc_target );
+		/*
+		 * The requested status is read before the nonce because it is part of
+		 * the action the nonce has to match. flosc_nav_param() constrains it to
+		 * the three literals below, so nothing unvalidated reaches the action.
+		 */
+		$flosc_requested_status = 'set_status' === $flosc_action
+			? flosc_nav_param( 'status', array( 'draft', 'inactive', 'active' ), '' )
+			: '';
 
-		if ( ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
+		$flosc_nonce_action = flosc_offer_action_nonce_action( $flosc_action, $flosc_target, $flosc_requested_status );
+
+		if ( '' === $flosc_nonce_action || ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
 			wp_die( esc_html__( 'Nonce verification failed.', 'flosc' ), esc_html__( 'Invalid token', 'flosc' ), array( 'response' => 403 ) );
 		}
 
@@ -1966,7 +1973,7 @@ trait FLOSC_Admin_Trait {
 
 		$headers = array(
 			'Content-Type: text/plain; charset=UTF-8',
-			'Reply-To: ' . $first_name . ' ' . $last_name . ' <' . $email . '>',
+			'Reply-To: ' . $email,
 		);
 
 		$sent = wp_mail( $recipient, $subject, $body, $headers );
@@ -2532,7 +2539,7 @@ trait FLOSC_Admin_Trait {
 		}
 		$post     = wp_unslash( $_POST );
 		$save_ivr = sanitize_file_name( (string) ( $post['flosc_save_flow'] ?? '' ) );
-		$return   = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$return   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		$row      = $this->flosc_identity_flow_row( $save_ivr );
 		if ( '' === $save_ivr || ! in_array( $save_ivr, $this->flosc_admin_ivr_filenames(), true ) ) {
 			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'That flow could not be saved.', 'error' );
@@ -2553,7 +2560,7 @@ trait FLOSC_Admin_Trait {
 			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 		$post   = wp_unslash( $_POST );
-		$return = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$return = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		foreach ( $this->flosc_admin_ivr_filenames() as $ivr_file ) {
 			$row      = $this->flosc_identity_flow_row( $ivr_file );
 			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $ivr_file ) . '_' );
@@ -2595,7 +2602,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post      = wp_unslash( $_POST );
 		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_feedback'] ?? '' ) );
@@ -2622,7 +2629,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post = wp_unslash( $_POST );
 		$item = array(
@@ -2654,7 +2661,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post      = wp_unslash( $_POST );
 		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_praise'] ?? '' ) );
@@ -2681,7 +2688,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post = wp_unslash( $_POST );
 		$item = array(
@@ -2712,11 +2719,52 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		unset( $settings['chat_style_preset'], $settings['chat_style_bubble'], $settings['chat_style_accent'], $settings['chat_style_font'], $settings['chat_style_scale'] );
 		update_option( $key, $settings );
 		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'style' ), 'Chat styling reset to defaults.' );
+	}
+
+	/**
+	 * Build only the flow fields owned by the submitted editor tab.
+	 *
+	 * An existing flow receives a key only when this form posted it. A new flow
+	 * receives the complete default structure.
+	 *
+	 * @param array $post   Unslashed request body.
+	 * @param bool  $is_new Whether a new flow is being created.
+	 * @return array Flow fields safe to pass to create_flow() or update_flow().
+	 */
+	private function flosc_flow_record_data( $post, $is_new ) {
+		$data = array();
+
+		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
+			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
+			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
+			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
+			$data['identity']      = array(
+				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
+				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
+				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
+				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
+				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
+				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
+				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
+				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
+			);
+		}
+		if ( $is_new || isset( $post['ivr_file'] ) ) {
+			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
+		}
+		if ( $is_new || isset( $post['wp_category'] ) ) {
+			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
+		}
+		if ( $is_new || isset( $post['quiz_type'] ) ) {
+			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
+		}
+
+		return $data;
 	}
 
 	/**
@@ -2767,49 +2815,7 @@ trait FLOSC_Admin_Trait {
 			update_option( 'flosc_visitor_menu_items', $menu_items );
 		}
 
-		/*
-		 * One tab writes one group.
-		 *
-		 * The flow editor has three forms that all post to this handler: Identity
-		 * (admin/flow-edit.php:78) carries slug, domain, status and the identity
-		 * fields; IVR (:354) carries ivr_file alone; Content (:399) carries
-		 * wp_category and quiz_type alone. update_flow() merges with
-		 * array_merge(), which overwrites every key present and replaces the
-		 * nested identity array whole rather than merging into it.
-		 *
-		 * So a key absent from this payload keeps its stored value, and a key
-		 * present overwrites it. Each group is therefore built only when its own
-		 * form posted it. Building them unconditionally made saving the IVR tab
-		 * blank the slug, the custom domain and every identity field and drop the
-		 * flow to draft -- the v146 regression this restores the guard against.
-		 * A new flow comes from the Identity form, so $is_new fills every group
-		 * with the same defaults that screen used.
-		 */
-		$data = array();
-		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
-			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
-			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
-			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
-			$data['identity']      = array(
-				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
-				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
-				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
-				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
-				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
-				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
-				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
-				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
-			);
-		}
-		if ( $is_new || isset( $post['ivr_file'] ) ) {
-			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
-		}
-		if ( $is_new || isset( $post['wp_category'] ) ) {
-			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
-		}
-		if ( $is_new || isset( $post['quiz_type'] ) ) {
-			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
-		}
+		$data   = $this->flosc_flow_record_data( $post, $is_new );
 		$return = add_query_arg(
 			array(
 				'page'    => 'flosc-flow-edit',
@@ -2818,6 +2824,11 @@ trait FLOSC_Admin_Trait {
 			),
 			admin_url( 'admin.php' )
 		);
+
+		if ( ! $is_new && array() === $data ) {
+			wp_safe_redirect( $return );
+			exit;
+		}
 
 		if ( $is_new ) {
 			$data['id'] = '' !== $data['slug'] ? sanitize_key( $data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );

@@ -1,48 +1,79 @@
 {
-  "schema_version": 8,
+  "schema_version": 9,
   "candidate": "claude-opus-5",
-  "candidate_label": "FLOSC 8.0.0 candidate v149",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v156",
   "owner": "ClaudeCode",
   "parent": {
-    "candidate": "V146",
-    "commit": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55"
+    "candidate": "Codex v154",
+    "commit": "4333777ef34591f05ce742bdf0d2e11550a14bb6",
+    "note": "This lane was on v150, which did not carry review Issues 10 and 11. It was replaced with v154 rather than forward-porting that work a second time."
   },
+  "code_lineage": "Codex v154, plus the v150 fixes v154 lacked, plus Issue 09 nonce binding, the Issue 10 annotation removal, the Issue 03 catalog rename and the readme heading revert",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v149",
-  "github_hashid_at_pack": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
+  "internal_iteration": "v156",
+  "github_hashid_at_pack": "c06e389bddec2a95a394521a900065ba03b8f9ca",
+  "candidate_source_artifact_commit": "c06e389bddec2a95a394521a900065ba03b8f9ca",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "baseline": "origin/main at b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
+  "baseline": "origin/main at ad57cca (Record v154 candidate identity)",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
-  "v149_delta_from_v146": [
-    "flosc.php",
-    "admin/autoprompts.php",
-    "admin/content.php",
-    "admin/knowledge-base.php",
-    "admin/member-levels.php",
-    "admin/settings-helper.php",
-    "includes/ai/flosc-model-catalog.php",
-    "includes/ai/flosc-provider-keys.php",
-    "includes/class-flosc-framework.php",
-    "includes/class-flosc-site-content-index.php",
-    "includes/flosc-admin.php",
-    "includes/flosc-knowledge-bases.php",
-    "includes/flosc-personality-library.php",
-    "includes/flosc-request.php",
-    "includes/full-page-mode/class-flosc-full-page-mode.php",
-    "includes/magic-link/class-flosc-magic-link-trait.php",
-    "tests/check_tab_scope_and_nonce_binding.php"
-  ],
+  "v156_delta_from_v154": {
+    "modified": [
+      "flosc.php",
+      "readme.txt",
+      "phpcs.xml.dist",
+      "admin/offers.php",
+      "admin/settings.php",
+      "includes/class-flosc-framework.php",
+      "includes/flosc-admin.php",
+      "includes/flosc-personality-library.php",
+      "includes/flosc-request.php",
+      "includes/full-page-mode/class-flosc-full-page-mode.php",
+      "starter-packs/da1-catalog-sales/pack.json",
+      "starter-packs/vegan-latvian-kitchen/pack.json"
+    ],
+    "renamed": [
+      "starter-packs/da1-catalog-sales/catalog.tsv -> catalog.txt",
+      "starter-packs/vegan-latvian-kitchen/catalog.tsv -> catalog.txt"
+    ],
+    "added": [
+      "tests/check_tab_scope_and_nonce_binding.php"
+    ],
+    "removed": []
+  },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2828509,
-    "sha256": "f37c14d37ae1fb67bacef4200659ee6953a88c056243e724ab0dcafd28c803f2",
-    "runtime_manifest_sha256": "955d46fa697f16485d0317ca22e404205e9b22b1a41de565b5ab10b738877fe2",
+    "bytes": 2829163,
+    "sha256": "8595fd580558ed60e358e664084753e5ad6a8b82ff64d9866716ec374baf1745",
+    "runtime_manifest_sha256": "f80c30299db65073a2e20faa4c6f1ba5ee8d9728d36f7619811a00ad57778b7d",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
-    "tests_entries": 0
+    "runtime_manifest_method_validated_against": "v150 (zip fd35ce2d..., recorded 503700b3...) reproduces exactly with this method",
+    "tests_entries": 0,
+    "built_with": "./build-dist-zip.sh"
+  },
+  "review_items": {
+    "issue_03_not_permitted_files": "Both cited catalogs renamed to .txt. The runtime filename is flosc_da1_catalog_{key}.tsv, built from the explicit catalog key in each pack.json, so nothing about DA1 changes. The zip carries no .tsv.",
+    "issue_05_external_services": "readme.txt heading reverted from '== External Services ==' to '= External Services ='. The promotion in v152 routed 130 lines through Description and past its 2500-word trim, truncating the published disclosure. tests/check_provider_identity.php fails on pristine v154 for this and passes here.",
+    "issue_09_nonces_and_permissions": "flosc_set_status and flosc_toggle_status now name the offer, and set_status also the requested status, through flosc_offer_action_nonce_action() which both the eight links and the handler call. Submission detection split from nonce verification at four handlers in admin/settings.php and the save handler in admin/offers.php.",
+    "issue_10_sanitize_escape_validate": "All five phpcs:ignore comments for WordPress.Security.ValidatedSanitizedInput removed. The ruleset's declared list is now the only place a project sanitizer is credited, and there are no EscapeOutput annotations either, so disabling every annotation for both review sniffs changes nothing they report.",
+    "issue_11_escape_when_echoed": "Unchanged from v154: zero EscapeOutput annotations, zero findings with the sniff live."
+  },
+  "verification": {
+    "php_lint": "passed: 155 shipping files",
+    "regression_tests": "passed: 53/53 PHP, 6/6 JS",
+    "phpcs_project_ruleset": "0 errors, 50 warnings (25 statement alignment, 25 NonceVerification.Recommended on read-only nav params)",
+    "phpcs_two_review_sniffs": "0 errors, 0 warnings",
+    "phpcs_two_review_sniffs_annotations_disabled": "0 errors, 0 warnings",
+    "phpcs_bare_wordpress_two_review_sniffs": "5 errors -- the bare standard discards customSanitizingFunctions; the same five are 0 under the project ruleset",
+    "php_compatibility_7_4": "passed: 0 errors, 0 warnings",
+    "zip_integrity": "passed: unzip -t",
+    "source_to_zip_parity": "passed: 243/243 identical",
+    "official_plugin_check": "NOT RUN: no WordPress runtime in this container",
+    "clean_install_wp_debug": "NOT RUN: no WordPress runtime in this container",
+    "runtime_click_through": "NOT RUN: no repaired offer control, split settings handler or renamed catalog has been exercised in a browser"
   }
 }

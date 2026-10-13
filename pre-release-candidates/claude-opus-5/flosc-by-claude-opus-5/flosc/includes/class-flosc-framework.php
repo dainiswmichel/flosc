@@ -3384,7 +3384,9 @@ The Team',
 		}
 		$post = wp_unslash( $_POST );
 
-		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
+		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+			? sanitize_file_name( $post['flosc_return_ivr'] )
+			: '';
 		$kb_id = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
 		if ( '' === $kb_id || ! function_exists( 'flosc_knowledge_base_dir' ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'No knowledge base selected.' ) );
@@ -3516,25 +3518,25 @@ The Team',
 	 *
 	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
 	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals.
+	 * first, then capability, as two separate refusals. A second nonce binds
+	 * the verified request to the exact knowledge base file being deleted.
 	 */
 	public function handle_kb_delete() {
 		check_admin_referer( 'flosc_kb_delete' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$get   = wp_unslash( $_GET );
-		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
-		$file  = sanitize_file_name( $get['kb_file'] ?? '' );
-		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] ?? '' );
-
-		// The generic action above proved the request came from this site. This
-		// proves the link was minted for THIS base and THIS file, which the
-		// generic action cannot: both travel in the query string, so one link
-		// would otherwise verify against any other file.
-		if ( ! wp_verify_nonce( sanitize_text_field( (string) ( $get['flosc_kb_target'] ?? '' ) ), flosc_kb_target_nonce_action( 'flosc_kb_delete', $kb_id, $file ) ) ) {
-			wp_die( esc_html__( 'That link is not valid for this knowledge base file.', 'flosc' ) );
+		$get = wp_unslash( $_GET );
+		if ( ( isset( $get['return_ivr'] ) && ! is_string( $get['return_ivr'] ) ) || ! isset( $get['kb_file'], $get['kb_id'] ) || ! is_string( $get['kb_file'] ) || ! is_string( $get['kb_id'] ) ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
+		$ivr   = sanitize_file_name( (string) ( $get['return_ivr'] ?? '' ) );
+		$file  = sanitize_file_name( $get['kb_file'] );
+		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] );
+		if ( '' === $file || '' === $kb_id ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
+		check_admin_referer( 'flosc_kb_delete_' . $kb_id . '_' . $file, 'flosc_kb_delete_target_nonce' );
 
 		$kb_dir = function_exists( 'flosc_knowledge_base_dir' ) ? flosc_knowledge_base_dir( $kb_id ) : '';
 		if ( '' === $kb_dir ) {
@@ -3554,26 +3556,26 @@ The Team',
 	 *
 	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
 	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The file stays on disk;
-	 * only whether the AI is given it changes.
+	 * first, then capability, as two separate refusals. A second nonce binds
+	 * the verified request to the exact knowledge base file being changed. The
+	 * file stays on disk; only whether the AI is given it changes.
 	 */
 	public function handle_kb_toggle() {
 		check_admin_referer( 'flosc_kb_toggle' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$get   = wp_unslash( $_GET );
-		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
-		$file  = sanitize_file_name( $get['kb_file'] ?? '' );
-		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] ?? '' );
-
-		// The generic action above proved the request came from this site. This
-		// proves the link was minted for THIS base and THIS file, which the
-		// generic action cannot: both travel in the query string, so one link
-		// would otherwise verify against any other file.
-		if ( ! wp_verify_nonce( sanitize_text_field( (string) ( $get['flosc_kb_target'] ?? '' ) ), flosc_kb_target_nonce_action( 'flosc_kb_toggle', $kb_id, $file ) ) ) {
-			wp_die( esc_html__( 'That link is not valid for this knowledge base file.', 'flosc' ) );
+		$get = wp_unslash( $_GET );
+		if ( ( isset( $get['return_ivr'] ) && ! is_string( $get['return_ivr'] ) ) || ! isset( $get['kb_file'], $get['kb_id'] ) || ! is_string( $get['kb_file'] ) || ! is_string( $get['kb_id'] ) ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
+		$ivr   = sanitize_file_name( (string) ( $get['return_ivr'] ?? '' ) );
+		$file  = sanitize_file_name( $get['kb_file'] );
+		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] );
+		if ( '' === $file || '' === $kb_id ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
+		check_admin_referer( 'flosc_kb_toggle_' . $kb_id . '_' . $file, 'flosc_kb_toggle_target_nonce' );
 
 		$current = function_exists( 'flosc_knowledge_base_file_access' )
 			? flosc_knowledge_base_file_access( $kb_id, $file )
@@ -3604,10 +3606,22 @@ The Team',
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
 		$post = wp_unslash( $_POST );
+		$ivr  = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+			? sanitize_file_name( $post['flosc_return_ivr'] )
+			: '';
+		if (
+			( isset( $post['flosc_return_ivr'] ) && ! is_string( $post['flosc_return_ivr'] ) )
+			|| ! isset( $post['editing_file'], $post['kb_id'], $post['file_content'] )
+			|| ! is_string( $post['editing_file'] )
+			|| ! is_string( $post['kb_id'] )
+			|| ! is_string( $post['file_content'] )
+		) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Invalid request.' ) );
+			exit;
+		}
 
-		$ivr    = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
-		$file   = sanitize_file_name( $post['editing_file'] ?? '' );
-		$kb_id  = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
+		$file   = sanitize_file_name( $post['editing_file'] );
+		$kb_id  = $this->kb_request_id( $ivr, $post['kb_id'] );
 		$kb_dir = function_exists( 'flosc_knowledge_base_dir' ) ? flosc_knowledge_base_dir( $kb_id ) : '';
 		$target = $kb_dir . $file;
 
@@ -3616,7 +3630,17 @@ The Team',
 			exit;
 		}
 
-		$content = $post['file_content'] ?? '';
+		$content = $post['file_content'];
+		if ( wp_check_invalid_utf8( $content ) !== $content ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file is not valid UTF-8 text.' ) );
+			exit;
+		}
+		$content = str_replace( array( "\r\n", "\r" ), "\n", $content );
+		$content = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $content );
+		if ( ! is_string( $content ) ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file is not valid UTF-8 text.' ) );
+			exit;
+		}
 		if ( ! flosc_write_data_file( $target, $content ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file could not be written. Uploads folder permissions need attention.' ) );
 			exit;
@@ -3638,8 +3662,10 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$post = wp_unslash( $_POST );
-		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
+		$post  = wp_unslash( $_POST );
+		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+			? sanitize_file_name( $post['flosc_return_ivr'] )
+			: '';
 		$label = sanitize_text_field( (string) ( $post['kb_label'] ?? '' ) );
 		if ( '' === $label ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
@@ -4250,14 +4276,14 @@ The Team',
 					<label for="flosc_vgm"><?php echo esc_html__( 'Who', 'flosc' ); ?></label><br>
 					<select name="flosc_vgm" id="flosc_vgm" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php flosc_vgm_options_render( flosc_vgm_tier_labels(), $flosc_vgm_tier ); ?>
+						<?php echo wp_kses( flosc_vgm_options_markup( flosc_vgm_tier_labels(), $flosc_vgm_tier ), flosc_vgm_option_allowed_html() ); ?>
 					</select>
 				</p>
 				<p>
 					<label for="flosc_depth"><?php echo esc_html__( 'Available', 'flosc' ); ?></label><br>
 					<select name="flosc_depth" id="flosc_depth" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php flosc_vgm_options_render( flosc_vgm_depth_labels(), $flosc_vgm_depth ); ?>
+						<?php echo wp_kses( flosc_vgm_options_markup( flosc_vgm_depth_labels(), $flosc_vgm_depth ), flosc_vgm_option_allowed_html() ); ?>
 					</select>
 				</p>
 				<p class="option-desc">
@@ -12052,15 +12078,13 @@ Example good response:
 	 * @return void
 	 */
 	public function ajax_fetch_ai_models() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( $post['ivr'] ) : '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 
 		// Same flow context the connection test establishes. admin-ajax has no
 		// URL to detect the flow from, so without this the per-flow key is
@@ -12076,7 +12100,10 @@ Example good response:
 		// operator to save a whole settings page before FLOSC will read a key
 		// sitting directly above the button is a loop with no purpose: paste,
 		// fetch, "no key saved".
-		$typed = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+		$typed = '';
+		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
+			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+		}
 
 		if ( '' !== $typed && ( strlen( $typed ) > 4096 || preg_match( '/[\x00-\x1F\x7F]/', $typed ) ) ) {
 			wp_send_json_error( array( 'message' => __( 'That API key contains characters an API key cannot contain.', 'flosc' ) ) );
@@ -12155,16 +12182,17 @@ Example good response:
 	 * the button is.
 	 */
 	public function ajax_save_ai_provider_key() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$api_key  = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$api_key  = '';
+		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
+			$api_key = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+		}
 
 		$stored = flosc_store_provider_api_key( $ivr, $provider, $api_key );
 
@@ -12189,16 +12217,14 @@ Example good response:
 	 * page-wide Save, is not a choice — it is a suggestion.
 	 */
 	public function ajax_save_ai_provider_model() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$model    = isset( $post['model'] ) ? trim( (string) $post['model'] ) : '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 
 		$stored = flosc_store_provider_model( $ivr, $provider, $model );
 
@@ -12223,17 +12249,18 @@ Example good response:
 	 * sampling support, for one, is not in it.
 	 */
 	public function ajax_describe_ai_model() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$model    = isset( $post['model'] ) ? trim( (string) $post['model'] ) : '';
-		$typed    = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
+		$typed    = '';
+		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
+			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+		}
 
 		if ( '' !== $ivr ) {
 			$GLOBALS['flosc_current_ivr'] = $ivr;
@@ -12268,15 +12295,13 @@ Example good response:
 	 * operator has to know which of the two they are reading.
 	 */
 	public function ajax_explain_ai_parameter() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$post  = wp_unslash( $_POST );
-		$ivr   = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$param = isset( $post['param'] ) ? trim( (string) $post['param'] ) : '';
+		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$param = isset( $_POST['param'] ) ? sanitize_text_field( wp_unslash( $_POST['param'] ) ) : '';
 
 		// A parameter name, not a prompt. Anything that is not one is refused
 		// rather than passed through to the provider as free text.
@@ -13205,7 +13230,7 @@ Example good response:
 	 * @param WP_REST_Request $request Expects the feedback id.
 	 * @return WP_REST_Response|WP_Error Confirmation.
 	 */
-	public function handle_delete_feedback( $request ) {
+	public function rest_delete_feedback( $request ) {
 		$feedback_id = sanitize_text_field( $request->get_param( 'feedback_id' ) );
 		$flow_id     = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 
@@ -13309,7 +13334,7 @@ Example good response:
 	 * @param WP_REST_Request $request Expects the praise id.
 	 * @return WP_REST_Response|WP_Error Confirmation.
 	 */
-	public function handle_delete_praise( $request ) {
+	public function rest_delete_praise( $request ) {
 		$praise_id = sanitize_text_field( $request->get_param( 'praise_id' ) );
 		$flow_id   = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 

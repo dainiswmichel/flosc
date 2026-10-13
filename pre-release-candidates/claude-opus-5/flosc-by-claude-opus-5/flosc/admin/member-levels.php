@@ -192,12 +192,12 @@ $flosc_vgm_depths = flosc_vgm_depth_labels();
 				</td>
 				<td>
 					<select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">
-						<?php flosc_vgm_options_render( $flosc_vgm_tiers, (string) ( $flosc_item['vgm'] ?? 'member' ) ); ?>
+						<?php echo wp_kses( flosc_vgm_options_markup( $flosc_vgm_tiers, (string) ( $flosc_item['vgm'] ?? 'member' ) ), flosc_vgm_option_allowed_html() ); ?>
 					</select>
 				</td>
 				<td>
 					<select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">
-						<?php flosc_vgm_options_render( $flosc_vgm_depths, (string) ( $flosc_item['depth'] ?? 'full' ) ); ?>
+						<?php echo wp_kses( flosc_vgm_options_markup( $flosc_vgm_depths, (string) ( $flosc_item['depth'] ?? 'full' ) ), flosc_vgm_option_allowed_html() ); ?>
 					</select>
 				</td>
 				<td>

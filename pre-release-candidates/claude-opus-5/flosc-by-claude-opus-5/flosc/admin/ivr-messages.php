@@ -133,6 +133,79 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_sanitize_posted_text' ) ) {
+	/**
+	 * Sanitize one posted leaf while keeping Markdown newlines.
+	 *
+	 * @param mixed $value Posted leaf.
+	 * @return string
+	 */
+	function flosc_sanitize_posted_text( $value ) {
+		if ( ! is_string( $value ) && ! is_numeric( $value ) ) {
+			return '';
+		}
+		$text = (string) $value;
+		if ( wp_check_invalid_utf8( $text ) !== $text ) {
+			$text = function_exists( 'mb_convert_encoding' )
+				? mb_convert_encoding( $text, 'UTF-8', 'UTF-8' )
+				: wp_check_invalid_utf8( $text, true );
+		}
+		$text = str_replace( array( "\r\n", "\r" ), "\n", $text );
+		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text );
+		if ( ! is_string( $text ) ) {
+			return '';
+		}
+
+		return str_ireplace( array( '<?php', '<?=', '<?' ), '', $text );
+	}
+}
+
+if ( ! function_exists( 'flosc_ivr_messages_posted_body' ) ) {
+	/**
+	 * Read the IVR form body after the submitted action nonce verifies.
+	 *
+	 * Navigation stays on the query string. This runs only for a POST that names
+	 * one IVR action. The nonce check comes before the body is unslashed, and
+	 * the capability check is its own statement.
+	 *
+	 * @return array
+	 */
+	function flosc_ivr_messages_posted_body() {
+		$flosc_request_method = isset( $_SERVER['REQUEST_METHOD'] )
+			? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+			: '';
+		if ( 'POST' !== $flosc_request_method ) {
+			return array();
+		}
+
+		$flosc_actions = array(
+			'flosc_import_selected_ivr_file' => 'flosc_import_selected_ivr_file',
+			'flosc_change_active_file'       => 'flosc_change_active_file',
+			'flosc_save_full_ivr'            => 'flosc_save_full_ivr',
+			'flosc_duplicate_ivr_file'       => 'flosc_duplicate_ivr_file',
+			'flosc_delete_ivr_file'          => 'flosc_delete_ivr_file',
+			'flosc_clear_ivr_db'             => 'flosc_clear_ivr_db',
+			'flosc_force_resync'             => 'flosc_force_resync',
+			'flosc_confirm_import'           => 'flosc_confirm_import',
+			'flosc_preview_import'           => 'flosc_preview_import',
+			'flosc_export_ivr'               => 'flosc_export_ivr',
+			'save_ivr_message'               => 'flosc_save_ivr_message',
+		);
+		foreach ( $flosc_actions as $flosc_submit_key => $flosc_nonce_action ) {
+			if ( ! isset( $_POST[ $flosc_submit_key ] ) ) {
+				continue;
+			}
+			check_admin_referer( $flosc_nonce_action );
+			if ( ! current_user_can( 'edit_others_posts' ) ) {
+				wp_die( esc_html__( 'You do not have permission to edit IVR messages.', 'flosc' ), 403 );
+			}
+			return map_deep( wp_unslash( $_POST ), 'flosc_sanitize_posted_text' );
+		}
+
+		return array();
+	}
+}
+
 /*
  * Request input for this tab.
  *
@@ -149,12 +222,9 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
  * bookmarks and the back button while protecting nothing, since they write
  * nothing.
  *
- * $_POST is now read only on an actual POST. It was unslashed on every render
- * of the tab, including plain GETs that could not possibly carry a submission.
+ * $_POST is read only inside flosc_ivr_messages_posted_body(), and only after
+ * that function has verified the nonce for the submitted action.
  */
-$flosc_request_method = isset( $_SERVER['REQUEST_METHOD'] )
-	? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
-	: '';
 
 /*
  * Display selectors, through the shared input boundary. Each is constrained to
@@ -211,38 +281,11 @@ foreach ( $flosc_nav_spec as $flosc_nav_key => $flosc_nav_rule ) {
 $flosc_get = $flosc_nav;
 
 /*
- * The POST body. Every handler below calls check_admin_referer() with its own
- * action before it writes, and this file wp_die()s at the top unless the viewer
- * holds edit_others_posts -- but neither of those was visible to a reader, or a
- * scanner, at the point the body was unslashed. The nonce for whichever action
- * was submitted is verified here, at the boundary, before the body is read.
+ * The POST body. flosc_ivr_messages_posted_body() verifies the submitted
+ * action nonce before it unslashes $_POST. Handlers below still call
+ * check_admin_referer() again before they write.
  */
-$flosc_post = array();
-if ( 'POST' === $flosc_request_method ) {
-	$flosc_actions = array(
-		'flosc_import_selected_ivr_file' => 'flosc_import_selected_ivr_file',
-		'flosc_change_active_file'       => 'flosc_change_active_file',
-		'flosc_save_full_ivr'            => 'flosc_save_full_ivr',
-		'flosc_duplicate_ivr_file'       => 'flosc_duplicate_ivr_file',
-		'flosc_delete_ivr_file'          => 'flosc_delete_ivr_file',
-		'flosc_clear_ivr_db'             => 'flosc_clear_ivr_db',
-		'flosc_force_resync'             => 'flosc_force_resync',
-		'flosc_confirm_import'           => 'flosc_confirm_import',
-		'flosc_preview_import'           => 'flosc_preview_import',
-		'flosc_export_ivr'               => 'flosc_export_ivr',
-		'save_ivr_message'               => 'flosc_save_ivr_message',
-	);
-	foreach ( $flosc_actions as $flosc_submit_key => $flosc_nonce_action ) {
-		// Presence selects the route. check_admin_referer() on the next line
-		// ends the request unless the nonce for THAT route verifies, so nothing
-		// below this loop runs on an unverified body.
-		if ( isset( $_POST[ $flosc_submit_key ] ) ) {
-			check_admin_referer( $flosc_nonce_action );
-			$flosc_post = wp_unslash( $_POST );
-			break;
-		}
-	}
-}
+$flosc_post = flosc_ivr_messages_posted_body();
 
 // v1.2.8: Resolve active IVR file from explicit request first, then context fallback.
 $flosc_requested_ivr_file     = sanitize_file_name( (string) ( $flosc_get['ivr'] ?? '' ) );

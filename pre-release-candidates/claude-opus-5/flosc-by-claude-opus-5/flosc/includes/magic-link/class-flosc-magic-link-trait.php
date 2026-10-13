@@ -1937,7 +1937,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -1969,7 +1969,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -2037,7 +2037,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -2068,7 +2068,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -2124,21 +2124,16 @@ trait FLOSC_Magic_Link_Trait {
 						</p>
 					<?php endif; ?>
 					<?php if ( 'pending' === $status && current_user_can( 'promote_users' ) ) : ?>
+						<?php
+						$activation_url = wp_nonce_url(
+							admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID ),
+							'flosc_activate_email_' . (int) $user->ID,
+							'flosc_activate_email_target_nonce'
+						);
+						$activation_url = wp_nonce_url( $activation_url, 'flosc_activate_email_account' );
+						?>
 						<p>
-							<a class="button button-primary" href="
-							<?php
-							echo esc_url(
-								wp_nonce_url(
-									add_query_arg(
-										'flosc_user_target',
-										wp_create_nonce( 'flosc_activate_email_account_' . (int) $user->ID ),
-										admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID )
-									),
-									'flosc_activate_email_account'
-								)
-							);
-							?>
-																	"><?php esc_html_e( 'Activate email account', 'flosc' ); ?></a>
+							<a class="button button-primary" href="<?php echo esc_url( $activation_url ); ?>"><?php esc_html_e( 'Activate email account', 'flosc' ); ?></a>
 						</p>
 						<p class="description"><?php esc_html_e( 'Marks the account active and sends the welcome email (with MagicLink when enabled).', 'flosc' ); ?></p>
 					<?php endif; ?>
@@ -2167,19 +2162,7 @@ trait FLOSC_Magic_Link_Trait {
 			wp_safe_redirect( admin_url( 'users.php' ) );
 			exit;
 		}
-
-		/*
-		 * The generic action above proved the request came from this site. It
-		 * cannot prove which account was meant, because user_id travels in the
-		 * query string: one button's link would activate any pending user. This
-		 * names the id, and it is checked only after filter_input() has already
-		 * established that the id is a positive integer naming a real user --
-		 * so no action name is ever built from something that is not an id.
-		 */
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) ( $_GET['flosc_user_target'] ?? '' ) ) ), 'flosc_activate_email_account_' . $user_id ) ) {
-			wp_die( esc_html__( 'That link is not valid for this account.', 'flosc' ), '', array( 'response' => 403 ) );
-		}
-
+		check_admin_referer( 'flosc_activate_email_' . $user_id, 'flosc_activate_email_target_nonce' );
 		$result = $this->flosc_activate_email_account( $user_id );
 		$redir  = get_edit_user_link( $user_id );
 		if ( ! $redir ) {

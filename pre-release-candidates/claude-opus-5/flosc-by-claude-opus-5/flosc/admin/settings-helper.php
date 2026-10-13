@@ -320,21 +320,15 @@ function flosc_vgm_options_markup( array $labels, $selected ) {
 }
 
 /**
- * Print the <option> list for a VGM tier or depth select.
+ * Allowed HTML for one late-escaped VGM option list.
  *
- * The string-building twin above is still needed where the markup becomes a
- * JavaScript value through wp_json_encode(). Everywhere the markup goes
- * straight to the page, this prints it instead, so each dynamic part is
- * escaped on the line that emits it rather than trusted from a helper two
- * files away. That is what "escape late" asks for, and it is why no call site
- * carries an EscapeOutput suppression any more.
- *
- * @param array  $labels   key => human label.
- * @param string $selected Key to mark selected.
- * @return void
+ * @return array<string, array<string, bool>>
  */
-function flosc_vgm_options_render( array $labels, $selected ) {
-	foreach ( $labels as $key => $label ) {
-		echo '<option value="' . esc_attr( $key ) . '"' . selected( $selected, $key, false ) . '>' . esc_html( $label ) . '</option>';
-	}
+function flosc_vgm_option_allowed_html() {
+	return array(
+		'option' => array(
+			'value'    => true,
+			'selected' => true,
+		),
+	);
 }

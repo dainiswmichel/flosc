@@ -58,11 +58,16 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Bust short-lived chat-log object-cache keys after writes.
 	 *
+	 * @param string $flow_id Flow whose rated-row cache changed, when known.
 	 * @return void
 	 */
-	private function flosc_bust_log_caches() {
+	private function flosc_bust_log_caches( $flow_id = '' ) {
+		$flow_id = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
+		$scopes  = array_unique( array( '', $flow_id ) );
 		foreach ( array( 25, 50, 100 ) as $flosc_lim ) {
-			wp_cache_delete( 'rated_logs_' . $flosc_lim, 'flosc_chat_logs' );
+			foreach ( $scopes as $scope ) {
+				wp_cache_delete( 'rated_logs_' . $flosc_lim . '_' . md5( $scope ), 'flosc_chat_logs' );
+			}
 		}
 		wp_cache_delete( 'log_count_all', 'flosc_chat_logs' );
 		wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
@@ -297,6 +302,18 @@ class FLOSC_Chat_Logger {
 		$is_protected = ( 0 !== $rating ) ? 1 : 0;
 
 		$this->flosc_ensure_table();
+		$flow_cache_key = 'log_flow_' . absint( $log_id );
+		$flow_id        = wp_cache_get( $flow_cache_key, 'flosc_chat_logs' );
+		if ( false === $flow_id ) {
+			$flow_id = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT flow_id FROM %i WHERE id = %d',
+					$this->table_name,
+					absint( $log_id )
+				)
+			);
+			wp_cache_set( $flow_cache_key, (string) $flow_id, 'flosc_chat_logs', 300 );
+		}
 
 		$result = $wpdb->update(
 			$this->table_name,
@@ -313,9 +330,7 @@ class FLOSC_Chat_Logger {
 		);
 
 		if ( false !== $result ) {
-			wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
-			wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
-			$this->flosc_bust_log_caches();
+			$this->flosc_bust_log_caches( (string) $flow_id );
 		}
 
 		return false !== $result;
@@ -866,8 +881,6 @@ class FLOSC_Chat_Logger {
 		);
 
 		if ( $result ) {
-			wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
-			wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
 			$this->flosc_bust_log_caches();
 			return $wpdb->insert_id;
 		}
@@ -942,15 +955,17 @@ class FLOSC_Chat_Logger {
 	 * Admin AI Feedback: rated chat log rows (admin_rating != 0).
 	 * Ensures schema via flosc_ensure_table(); caches short-lived in the object cache.
 	 *
-	 * @param int $limit Max rows (1–100).
+	 * @param int    $limit   Max rows (1–100).
+	 * @param string $flow_id Restrict results to one flow stem.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function flosc_get_rated_logs( $limit = 50 ) {
+	public function flosc_get_rated_logs( $limit = 50, $flow_id = '' ) {
 		global $wpdb;
 
 		$this->flosc_ensure_table();
 		$limit     = max( 1, min( 100, absint( $limit ) ) );
-		$cache_key = 'rated_logs_' . $limit;
+		$flow_id   = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
+		$cache_key = 'rated_logs_' . $limit . '_' . md5( $flow_id );
 		$cached    = wp_cache_get( $cache_key, 'flosc_chat_logs' );
 		if ( is_array( $cached ) ) {
 			return $cached;
@@ -959,12 +974,15 @@ class FLOSC_Chat_Logger {
 		// Custom table: no WP core list API. prepare() + object cache (satisfies NoCaching when cache is warm).
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at
+				'SELECT id, timestamp, flow_id, personality_id, personality_name, user_message, ai_response, admin_rating, admin_note, rated_at
                  FROM %i
                  WHERE admin_rating != 0
+                   AND ( %s = \'\' OR flow_id = %s )
                  ORDER BY admin_rating ASC, rated_at DESC
                  LIMIT %d',
 				$this->table_name,
+				$flow_id,
+				$flow_id,
 				$limit
 			),
 			ARRAY_A
@@ -1020,9 +1038,7 @@ class FLOSC_Chat_Logger {
 				$cutoff
 			)
 		);
-		wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
-			wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
-			$this->flosc_bust_log_caches();
+		$this->flosc_bust_log_caches();
 		return $deleted;
 	}
 
