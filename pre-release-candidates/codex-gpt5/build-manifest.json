@@ -1,38 +1,40 @@
 {
-  "schema_version": 8,
+  "schema_version": 9,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 home-run candidate v152",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v153",
   "owner": "Codex",
   "repository_parent": {
-    "candidate": "GitHub main before v152 publication",
-    "commit": "be67a108a72dee233d6b43ffc3917d2caf3b68bf"
+    "candidate": "GitHub main before v153 publication",
+    "commit": "5a499154e231ab06a34373bf75b650e4cf0544d6"
   },
-  "code_lineage": "v151 plus Issue 11 and Issue 10 remediation",
+  "code_lineage": "v152 plus the three remaining Issue 10 input-boundary corrections",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v152",
-  "github_hashid_at_pack": "be67a108a72dee233d6b43ffc3917d2caf3b68bf",
-  "candidate_source_artifact_commit": "1feae21b76fa30e4eba232417486760032f5c12e",
+  "internal_iteration": "v153",
+  "github_hashid_at_pack": "5a499154e231ab06a34373bf75b650e4cf0544d6",
+  "candidate_source_artifact_commit": "fa4a684cefc0b739e3426477f8b9e89a2bcc8c49",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2827597,
-    "sha256": "9c7f4f3d52e8549970b27b30d71d363b96e6df6e2a6b33ea63979e80132899e2",
-    "runtime_manifest_sha256": "5241307042bd5991285aa6fdb09faae2b7b784a2343d9db55bfeb6d716d959fa",
+    "bytes": 2827590,
+    "sha256": "4a4bd60c415becf3e1f2cbccb875b4eaffd9f17fa6ffd9d269a6b8e3a2a96725",
+    "runtime_manifest_sha256": "872e3783b596425a6b0c3826ea799083c9ac2a5fab5d49dc3d39276db44b3123",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   },
   "verification": {
-    "shipping_php_lint": "passed: 205 files",
-    "touched_phpcs": "0 errors, 37 warnings",
+    "changed_php_lint": "passed: 5 shipping files",
+    "regression_test": "passed: 10 assertions",
+    "touched_phpcs": "0 errors, 15 standing warnings",
     "touched_php_compatibility_7_4": "passed",
+    "candidate_source_sync": "passed: checksum-aware rsync dry-run empty",
     "zip_integrity": "passed",
     "full_release_gate": "not run",
     "official_plugin_check": "not run",
     "wordpress_runtime": "not run",
-    "live_deployment": "not performed; live remained v151"
+    "live_deployment": "not performed"
   }
 }

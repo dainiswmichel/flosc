@@ -1,83 +1,67 @@
-# FLOSC 8.0.0 — Codex home-run candidate v152
+# FLOSC 8.0.0 — Codex home-run candidate v153
 
-This directory contains the complete v152 review candidate. The complete plugin
+This directory contains the complete v153 review candidate. The complete plugin
 source is in `flosc-by-codex-gpt5/flosc/`; `flosc.zip` is the exact distributable
 artifact built from that source. The public plugin version and stable tag remain
 8.0.0.
 
 ## Baseline and scope
 
-v152 starts from the v151 candidate and contains the Issue 11 and Issue 10
-remediation increment discussed with Dainis W. Michel:
+v153 starts from the frozen v152 Codex candidate and completes the three
+remaining Issue 10 input-boundary corrections identified after v152:
 
-- corrects the `External Services` readme heading level;
-- rejects invalid personality-profile encoding instead of silently replacing a
-  previously stored profile;
-- validates and rebuilds personality workshop JSON and reports failed writes;
-- preserves complete large personality profiles and workshops, while returning
-  visible size and estimated-token warnings instead of truncating them;
-- verifies personality-library persistence by reading back the stored option;
-- makes the IVR posted-text sanitizer fail closed instead of returning its
-  original untrusted input after sanitizer failure;
-- validates knowledge-base editor field types and UTF-8 before writing;
-- sanitizes personality-library form arrays and guards malformed autoprompt
-  arrays;
-- uses the validated contact email alone in the `Reply-To` header; and
-- documents the three API-secret sanitizer suppressions with the required
-  written reasons.
+- validates API keys with `flosc_provider_key_is_plausible()` before model-list
+  or model-details requests can construct authentication headers or make an
+  HTTP request;
+- sanitizes every custom companion include/exclude chunk before storing it; and
+- rejects non-string IVR filename request values before `sanitize_file_name()`
+  in the two knowledge-base handlers, five model-settings handlers, and four
+  account-management handlers.
 
-The subsequently discussed **Blocked Input Events** feature is not implemented
-in v152 and is not claimed by this candidate.
-
-## User journeys retained
-
-- Registration, verification, account activation, magic-link delivery, and
-  login remain present.
-- Flow editing retains the tab-specific save guards from the preceding
-  candidates.
-- Knowledge-base toggle/delete and pending-account activation retain their
-  capability checks and target-bound nonces.
-- Personality profiles and valid workshop JSON remain editable and saveable;
-  large valid values are retained in full and produce warnings.
+Normal string IVR values are still sanitized and used as before. Valid API keys
+still reach the provider, and the registration/account-management functions
+were not removed or fragmented.
 
 ## Verification performed for this increment
 
-- PHP syntax passed on all 205 shipping PHP files.
-- The seven touched PHP files passed the repository PHPCS ruleset with 0
-  errors. PHPCS reported 37 warnings: 12 standing
-  `WordPress.Security.NonceVerification.Recommended` warnings and 25 alignment
-  warnings.
-- The seven touched PHP files passed PHPCompatibilityWP for PHP 7.4.
-- `unzip -t` passed on the exact artifact.
-- Candidate source and canonical local source matched by checksum-aware rsync.
-- The ZIP contains 243 files in 283 entries and contains no tests.
+- PHP syntax passed on the five changed shipping PHP files and the new
+  regression test.
+- Repository PHPCS on the five changed shipping PHP files reported 0 errors and
+  15 standing `WordPress.Security.NonceVerification.Recommended` warnings on
+  unrelated lines.
+- The five changed shipping PHP files passed PHPCompatibilityWP for PHP 7.4.
+- `tests/check-issue10-v153-boundaries.php` passed all ten assertions, including
+  refusal before HTTP for malformed keys and successful provider calls for a
+  valid key.
+- A checksum-aware dry-run confirmed the canonical local source and candidate
+  source were identical after synchronization.
+- `unzip -t` passed on the exact artifact. The ZIP contains 243 shipping files
+  in 283 entries and contains no tests.
+- The Git commit contains only the `codex-gpt5` candidate path.
 
-The full-tree PHPCS attempt exhausted its default 128 MB memory limit and was
-not rerun because the current 11-to-1 remediation process defers repeated
-untouched-code scans until the final pre-resubmission pass. The release gate,
-official Plugin Check, clean-WordPress runtime, and browser journeys were not
-run for v152. This candidate therefore does not claim final submission
-readiness. It was not deployed to live; live remained v151 at publication time.
+Per the current 11-to-1 remediation process, unchanged source was not repeatedly
+rescanned. The full release gate, official Plugin Check, WordPress runtime, and
+browser journeys were not run for this increment. Live was not changed.
 
 ## Exact artifact
 
 ```text
-9c7f4f3d52e8549970b27b30d71d363b96e6df6e2a6b33ea63979e80132899e2  flosc.zip
+4a4bd60c415becf3e1f2cbccb875b4eaffd9f17fa6ffd9d269a6b8e3a2a96725  flosc.zip
 ```
 
 Artifact inventory:
 
-- ZIP size: 2,827,597 bytes
+- ZIP size: 2,827,590 bytes
 - ZIP entries: 283
 - Shipping files: 243
 - Runtime manifest SHA-256:
-  `5241307042bd5991285aa6fdb09faae2b7b784a2343d9db55bfeb6d716d959fa`
+  `872e3783b596425a6b0c3826ea799083c9ac2a5fab5d49dc3d39276db44b3123`
 
 ## Repository identity
 
-- Internal Iteration: v152
+- Internal Iteration: v153
 - Candidate source/artifact commit:
-  `1feae21b76fa30e4eba232417486760032f5c12e`
+  `fa4a684cefc0b739e3426477f8b9e89a2bcc8c49`
 - GitHub parent at packaging:
-  `be67a108a72dee233d6b43ffc3917d2caf3b68bf`
+  `5a499154e231ab06a34373bf75b650e4cf0544d6`
 - Candidate owner: Codex
