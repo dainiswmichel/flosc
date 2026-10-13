@@ -214,6 +214,52 @@ flosc_tabscope_assert(
 	0 === $flosc_suppressed
 );
 
+echo "\nEvery request value reaching sanitize_file_name() has its shape established\n";
+
+/*
+ * sanitize_file_name() starts at remove_accents(), which calls preg_match() on
+ * its argument. An array argument is a TypeError there, so a request like
+ * ?ivr[]=x is a fatal, not an empty string -- isset() does not refuse it.
+ * Measured on PHP 8.3: "preg_match(): Argument #2 ($subject) must be of type
+ * string, array given".
+ *
+ * A shape check is is_string(), is_scalar() (an array fails both) or a
+ * (string) cast on the call itself. Three lines of lookback covers the
+ * multi-line ternaries this codebase uses.
+ */
+$flosc_unguarded = array();
+$flosc_iter      = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $flosc_root ) );
+foreach ( $flosc_iter as $flosc_file ) {
+	if ( ! $flosc_file->isFile() || 'php' !== $flosc_file->getExtension() ) {
+		continue;
+	}
+	$flosc_path = str_replace( '\\', '/', $flosc_file->getPathname() );
+	if ( false !== strpos( $flosc_path, '/tests/' ) || false !== strpos( $flosc_path, '/vendor/' ) ) {
+		continue;
+	}
+	$flosc_lines = explode( "\n", (string) file_get_contents( $flosc_path ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local source for a structural assertion.
+	foreach ( $flosc_lines as $flosc_i => $flosc_line ) {
+		if ( false === strpos( $flosc_line, 'sanitize_file_name(' ) ) {
+			continue;
+		}
+		if ( ! preg_match( '/\$_(POST|GET|REQUEST|FILES)\b/', $flosc_line ) ) {
+			continue;
+		}
+		$flosc_ctx = implode( "\n", array_slice( $flosc_lines, max( 0, $flosc_i - 3 ), 4 ) );
+		if ( false !== strpos( $flosc_ctx, 'is_string' )
+			|| false !== strpos( $flosc_ctx, 'is_scalar' )
+			|| false !== strpos( $flosc_line, '(string)' ) ) {
+			continue;
+		}
+		$flosc_unguarded[] = str_replace( $flosc_root . '/', '', $flosc_file->getPathname() ) . ':' . ( $flosc_i + 1 );
+	}
+}
+flosc_tabscope_assert(
+	'no shipping call passes a request value to sanitize_file_name() unchecked'
+		. ( $flosc_unguarded ? ' -- ' . implode( ', ', $flosc_unguarded ) : '' ),
+	array() === $flosc_unguarded
+);
+
 echo "\n";
 if ( $flosc_failures ) {
 	printf( "%d FAILURES\n", count( $flosc_failures ) );
