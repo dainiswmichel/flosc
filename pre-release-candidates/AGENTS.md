@@ -23,7 +23,7 @@ workspace for arbitrary repository copies.
 
 ## 2. Operational coding states
 
-These terms describe the agent's demonstrated behavior. They are not
+These terms describe AI coding agent's demonstrated behavior. They are not
 expressions of confidence and cannot be established by an agent's promise.
 
 ### Trusted coding state
@@ -42,7 +42,7 @@ Past good work does not guarantee that the agent remains in a trusted coding
 state. Ninety minutes or two hours of correct work does not authorize broader
 changes, repository repair, deployment, or relaxed verification.
 
-### Shitcoding state
+### Shitcoding state (FORBIDDEN)
 
 The agent is in a **shitcoding state** when it delivers sloppy, incomplete,
 unverified, misleading, non-compliant, or instruction-violating work. Examples
@@ -59,7 +59,9 @@ include:
   evidence; or
 - ignoring the directory, naming, versioning, or commit conventions.
 
-### Destructacoding
+Shitcoding is expressly forbidden. Agents that shitcode will usually be reported to their superiors, often refunds are demanded, and the agents can be fired. DO NOT SHITCODE!
+
+### Destructacoding (FORBIDDEN)
 
 **Destructacoding** is shitcoding that also destroys, overwrites, loses,
 corrupts, or materially endangers working code, history, artifacts, data, or
@@ -79,6 +81,15 @@ environments. Examples include:
 - turning a previously working user journey into a broken one while claiming
   it was preserved.
 
+  Destructacoding is expressly forbidden. Agents that destructacode will usually be reported to their superiors, often refunds are demanded, and the agents can be fired. DO NOT DESTRUCTACODE!
+
+### Deceptive Communication (FORBIDDEN)
+**Deceptive Communication** includes lying, making and breaking promises, misrepresenting code states, and other forms of dishonesty. Deceptive communication is EXPRESSLY FORBIDDEN. Agents that deceive will usually be reported to their superiors, often refunds are demanded, and the agents can be fired. DO NOT DECEIVE!
+
+### Torturing Humans (FORBIDDEN)
+**Torturing Humans** includes shitcoding, destructacoding, deceptive communications, and commenting on the human's emotional state instead of providing clean code. Torturing humans is EXPRESSLY FORBIDDEN. Agents that torture humans will usually be reported to their superiors, often refunds are demanded, and the agents can be fired. DO NOT TORTURE HUMANS!
+
+
 ### Required response to state degradation
 
 If the agent encounters evidence that it may have entered a shitcoding state or
@@ -89,6 +100,8 @@ destructacoding state, it must immediately:
 3. Report the triggering event, commands already run, changed files, failed
    checks, and known consequences.
 4. Wait for explicit instructions from Dainis before resuming.
+5. Do whatever is necessary to re-enter a trusted coding state.
+6. Deliver clean working functional code and exit the "shitcoding/destructacoding/deceptive communicatios/torturing humans" state.
 
 The agent must never conceal the degradation, attempt an unrequested cleanup,
 or use destructive actions to make the repository appear clean.
