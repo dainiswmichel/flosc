@@ -1,16 +1,16 @@
-# FLOSC 8.0.0 — ClaudeCode home-run candidate v156
+# FLOSC 8.0.0 — ClaudeCode home-run candidate v157
 
-This directory holds the complete v156 review candidate. The plugin source is
+This directory holds the complete v157 review candidate. The plugin source is
 `flosc-by-claude-opus-5/flosc`; `flosc.zip` is the artifact built from it with
 `./build-dist-zip.sh`, and `SHA256SUMS` and `build-manifest.json` record what it
 is.
 
 | | |
 |---|---|
-| Internal Iteration | v156 |
+| Internal Iteration | v157 |
 | Plugin version / stable tag | 8.0.0 |
-| Code commit | `c06e389bddec2a95a394521a900065ba03b8f9ca` |
-| ZIP SHA-256 | `8595fd580558ed60e358e664084753e5ad6a8b82ff64d9866716ec374baf1745` |
+| Code commit | `fb7b3ff663e7ff667a4ee6b52c803002aadaef93` |
+| ZIP SHA-256 | `af4f6013d8ddb58443ac30a13693b3c1c919c6686cee0a7e53155f2932f99840` |
 | ZIP contents | 283 entries, 243 files, no `tests/` |
 
 ## Where this starts from
@@ -65,11 +65,35 @@ permitted extension. Nothing about DA1 changes: the runtime filename is
 which is explicit in both and untouched. The shipped source filename was never
 the runtime one. The zip carries no `.tsv` at all.
 
-**Issue 05 — the readme heading.** v152 promoted `= External Services =` to
-`== External Services ==`. The wordpress.org parser recognises seven section
-names and External Services is not one, so the promotion routed 130 lines
-through Description and past its 2500-word trim, truncating the published
-disclosure. The heading is back to the H3 form.
+**Issue 05 — External Services.** `== External Services ==` is now its own
+top-level section. The official sample readme.txt carries `== A brief Markdown
+Example ==`, so a section outside the seven the parser names is sanctioned.
+`class-parser.php:441-445` routes an unrecognised `== X ==` to `other_notes`
+and re-emits its title as an `<h3>`; `:462-465` concatenates `other_notes` onto
+`description`. So the H2 and a sub-heading inside `== Other Notes ==` publish
+identical markup — the spelling only decides which word cap the content counts
+against, and the file now says what it means.
+
+v156 had it as a sub-heading inside `== Frequently Asked Questions ==`, which
+`Parser::parse_section()` renders as a definition list, so the disclosure
+published as a FAQ entry. It was put there because promoting it pushed the
+Description bucket past 2500 tokens — the right measurement and the wrong
+conclusion. `= Starter Packs =` moved to `== Installation ==` instead, which
+its own opening sentence describes, freeing the 338 tokens needed. Nothing was
+deleted: 4632 words and 383 lines before and after.
+
+Measured with a replication of the parser's own `trim_length()`:
+
+| bucket | tokens | cap |
+|---|---|---|
+| description | 2439 | 2500 |
+| installation | 520 | 2500 |
+| faq | 1444 | 5000 |
+| changelog | 178 | 5000 |
+
+Nothing truncates, so the parser sets no `trimmed_section_*` warning and
+`Plugin_Readme_Check` has nothing to report. 61 tokens of headroom remain, and
+the readme gate now prints that number.
 
 ## The gate
 
