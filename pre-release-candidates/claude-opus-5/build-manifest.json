@@ -1,55 +1,30 @@
 {
   "schema_version": 9,
   "candidate": "claude-opus-5",
-  "candidate_label": "FLOSC 8.0.0 home-run candidate v156",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v157",
   "owner": "ClaudeCode",
   "parent": {
-    "candidate": "Codex v154",
-    "commit": "4333777ef34591f05ce742bdf0d2e11550a14bb6",
-    "note": "This lane was on v150, which did not carry review Issues 10 and 11. It was replaced with v154 rather than forward-porting that work a second time."
+    "candidate": "ClaudeCode v156",
+    "commit": "c06e389bddec2a95a394521a900065ba03b8f9ca"
   },
-  "code_lineage": "Codex v154, plus the v150 fixes v154 lacked, plus Issue 09 nonce binding, the Issue 10 annotation removal, the Issue 03 catalog rename and the readme heading revert",
+  "code_lineage": "v156 plus the readme.txt section restructure",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v156",
-  "github_hashid_at_pack": "c06e389bddec2a95a394521a900065ba03b8f9ca",
-  "candidate_source_artifact_commit": "c06e389bddec2a95a394521a900065ba03b8f9ca",
+  "internal_iteration": "v157",
+  "github_hashid_at_pack": "fb7b3ff663e7ff667a4ee6b52c803002aadaef93",
+  "candidate_source_artifact_commit": "fb7b3ff663e7ff667a4ee6b52c803002aadaef93",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "baseline": "origin/main at ad57cca (Record v154 candidate identity)",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
-  "v156_delta_from_v154": {
-    "modified": [
-      "flosc.php",
-      "readme.txt",
-      "phpcs.xml.dist",
-      "admin/offers.php",
-      "admin/settings.php",
-      "includes/class-flosc-framework.php",
-      "includes/flosc-admin.php",
-      "includes/flosc-personality-library.php",
-      "includes/flosc-request.php",
-      "includes/full-page-mode/class-flosc-full-page-mode.php",
-      "starter-packs/da1-catalog-sales/pack.json",
-      "starter-packs/vegan-latvian-kitchen/pack.json"
-    ],
-    "renamed": [
-      "starter-packs/da1-catalog-sales/catalog.tsv -> catalog.txt",
-      "starter-packs/vegan-latvian-kitchen/catalog.tsv -> catalog.txt"
-    ],
-    "added": [
-      "tests/check_tab_scope_and_nonce_binding.php"
-    ],
-    "removed": []
-  },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2829163,
-    "sha256": "8595fd580558ed60e358e664084753e5ad6a8b82ff64d9866716ec374baf1745",
-    "runtime_manifest_sha256": "f80c30299db65073a2e20faa4c6f1ba5ee8d9728d36f7619811a00ad57778b7d",
+    "bytes": 2829157,
+    "sha256": "af4f6013d8ddb58443ac30a13693b3c1c919c6686cee0a7e53155f2932f99840",
+    "runtime_manifest_sha256": "981f8b6f6b948980455ac4b8f86567f5789ac1a3ad2235d721cece9194b1ec92",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
     "runtime_manifest_method_validated_against": "v150 (zip fd35ce2d..., recorded 503700b3...) reproduces exactly with this method",
     "tests_entries": 0,
@@ -57,7 +32,7 @@
   },
   "review_items": {
     "issue_03_not_permitted_files": "Both cited catalogs renamed to .txt. The runtime filename is flosc_da1_catalog_{key}.tsv, built from the explicit catalog key in each pack.json, so nothing about DA1 changes. The zip carries no .tsv.",
-    "issue_05_external_services": "readme.txt heading reverted from '== External Services ==' to '= External Services ='. The promotion in v152 routed 130 lines through Description and past its 2500-word trim, truncating the published disclosure. tests/check_provider_identity.php fails on pristine v154 for this and passes here.",
+    "issue_05_external_services": "== External Services == is now its own top-level section. The official sample readme.txt carries == A brief Markdown Example ==, so a section outside the seven the parser names is sanctioned; class-parser.php:441-445 routes it to other_notes and re-emits the title as <h3>, and :462-465 concatenates other_notes onto description, so the H2 and a sub-heading inside == Other Notes == publish identical markup. In v156 it was a sub-heading inside the faq bucket, which Parser::parse_section() renders as a definition list -- the disclosure published as a FAQ entry. Starter Packs moved to == Installation == to free the tokens that made room for it under the cap.",
     "issue_09_nonces_and_permissions": "flosc_set_status and flosc_toggle_status now name the offer, and set_status also the requested status, through flosc_offer_action_nonce_action() which both the eight links and the handler call. Submission detection split from nonce verification at four handlers in admin/settings.php and the save handler in admin/offers.php.",
     "issue_10_sanitize_escape_validate": "All five phpcs:ignore comments for WordPress.Security.ValidatedSanitizedInput removed. The ruleset's declared list is now the only place a project sanitizer is credited, and there are no EscapeOutput annotations either, so disabling every annotation for both review sniffs changes nothing they report.",
     "issue_11_escape_when_echoed": "Unchanged from v154: zero EscapeOutput annotations, zero findings with the sniff live."
@@ -74,6 +49,19 @@
     "source_to_zip_parity": "passed: 243/243 identical",
     "official_plugin_check": "NOT RUN: no WordPress runtime in this container",
     "clean_install_wp_debug": "NOT RUN: no WordPress runtime in this container",
-    "runtime_click_through": "NOT RUN: no repaired offer control, split settings handler or renamed catalog has been exercised in a browser"
+    "runtime_click_through": "NOT RUN: no repaired offer control, split settings handler or renamed catalog has been exercised in a browser",
+    "readme_sections_measured": "description 2439/2500, installation 520/2500, faq 1444/5000, changelog 178/5000 -- no section truncates, so no trimmed_section_* warning"
+  },
+  "v157_delta_from_v156": {
+    "modified": [
+      "flosc.php",
+      "readme.txt",
+      "tests/check_provider_identity.php"
+    ],
+    "readme_moves": [
+      "= External Services =  ->  == External Services ==, out of the faq bucket into its own section",
+      "= FLOSC Site Policies =  ->  == FLOSC Site Policies ==, likewise",
+      "= Starter Packs =  moved from == Other Notes == into == Installation ==, freeing 338 tokens"
+    ]
   }
 }
