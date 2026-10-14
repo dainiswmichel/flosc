@@ -98,7 +98,7 @@ After activating:
 
 = Starter Packs =
 
-A new install has nothing to say. A starter pack fixes that in one click, so you can see a complete journey work before you configure anything.
+A new install already answers questions about your site in context, with an AI key in place. A starter pack adds the rest of the journey in one click — content gated by access level, and an offer at the end — so you can see Freeline → Login → Offer → Sale → Content working before you build your own.
 
 Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
 
