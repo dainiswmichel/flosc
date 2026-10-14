@@ -52,23 +52,6 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Consulting Intake** - Conversational questionnaire that qualifies leads and captures intent before outreach
 * **Sample Content First** - From listen to a few songs first here, to read some of my poems, to try these free recipes, FLOSC allows you to give samples before selling.  
 
-= Starter Packs =
-
-A new install has nothing to say. A starter pack fixes that in one click, so you can see a complete journey work before you configure anything.
-
-Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
-
-Four packs ship with FLOSC:
-
-* **WordPress Content Membership Journey** - One hundred deliberately silly WordPress posts, gated as a real membership library. Visitors read items 1–10, guests reach 1–30, members reach all 100 — including item 46, Why Pigeons Never Pay Parking Tickets.
-* **Membership Craft** - A hundred short articles about running a membership site — and the library itself is gated like one, so you are reading it from inside the example. Visitors read 15 articles, guests read 40, members read all 100.
-* **DA1 Catalog Sales Journey** - Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.
-* **Vegan Latvian Kitchen** - Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.
-
-Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
-
-All four are example content. Delete them, or take them apart and replace the subject with your own.
-
 = How It Works =
 
 1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology, in which callers receive and provide information by using voice or menu inputs, floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths -- all while drawing from your WordPress content and configurable content database. 
@@ -112,6 +95,23 @@ After activating:
 2. Create a new page and select a flow from the page editor
 3. Publish the page and visit it as a visitor to test your flow
 4. Add your own AI provider key in **Settings → FLOSC → AI**. For OpenAI, Anthropic, or Gemini, also activate the matching official AI Provider plugin. Paste the key in FLOSC (this flow or All Flows), not in Settings → Connectors.
+
+= Starter Packs =
+
+A new install has nothing to say. A starter pack fixes that in one click, so you can see a complete journey work before you configure anything.
+
+Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
+
+Four packs ship with FLOSC:
+
+* **WordPress Content Membership Journey** - One hundred deliberately silly WordPress posts, gated as a real membership library. Visitors read items 1–10, guests reach 1–30, members reach all 100 — including item 46, Why Pigeons Never Pay Parking Tickets.
+* **Membership Craft** - A hundred short articles about running a membership site — and the library itself is gated like one, so you are reading it from inside the example. Visitors read 15 articles, guests read 40, members read all 100.
+* **DA1 Catalog Sales Journey** - Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.
+* **Vegan Latvian Kitchen** - Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.
+
+Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
+
+All four are example content. Delete them, or take them apart and replace the subject with your own.
 
 == Frequently Asked Questions ==
 
@@ -211,7 +211,38 @@ FLOSC does not fetch content from, call an API at, or transmit WordPress, profil
 
 Current citation hosts include Wikipedia (`en.wikipedia.org`), the Electronic Text Corpus of Sumerian Literature (`etcsl.orinst.ox.ac.uk`), the Stanford Encyclopedia of Philosophy (`plato.stanford.edu`), the Rudolf Steiner Archive (`rsarchive.org`), BDK America (`www.bdkamerica.org`), Bible Gateway (`www.biblegateway.com`), Project Gutenberg (`www.gutenberg.org`), Nobel Prize (`www.nobelprize.org`), and the Viktor Frankl Institute (`www.viktorfrankl.org`). These are references, not FLOSC service dependencies.
 
-= External Services =
+== Upgrade Notice ==
+
+= 8.0.0 =
+Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI support, and optional social sign-in providers.
+
+== Changelog ==
+
+= 8.0.0 =
+* Initial stable 8.0.0 release for WordPress 7.1+ and PHP 7.4+
+* Guided flow architecture with IVR routes, quiz branching, and offer/content gating
+* Optional BYOK chat: one WordPress AI Client; official provider plugins for OpenAI, Anthropic, and Google; FLOSC hop for xAI; IVR scripted
+* Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
+* Included admin documentation updates for WordPress.org submission
+
+= Code standard =
+
+FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
+
+= Support & Contribution =
+
+For support, feature requests, or bug reports, visit:
+* [FLOSC.ai](https://flosc.ai)
+* [Project Site](https://flosc.ai)
+
+FLOSC is an open-source project. Contributions welcome!
+
+= Stay Connected =
+
+* Author: [solopreneur Dainis W. Michel](https://dainis.net)
+* Project: [FLOSC.ai](https://flosc.ai)
+
+== External Services ==
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
 
@@ -342,7 +373,7 @@ Data sent: the media URL. The visitor's browser then loads the provider player. 
 Service terms: https://www.youtube.com/t/terms , https://www.tiktok.com/legal/page/us/terms-of-service , https://www.spotify.com/legal/end-user-agreement/ , https://soundcloud.com/terms-of-use , https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ , https://vimeo.com/terms
 Privacy policy: https://policies.google.com/privacy , https://www.tiktok.com/legal/page/us/privacy-policy , https://www.spotify.com/legal/privacy-policy/ , https://soundcloud.com/pages/privacy , https://www.apple.com/legal/privacy/ , https://vimeo.com/privacy
 
-= FLOSC Site Policies =
+== FLOSC Site Policies ==
 
 These are the public policy pages for the FLOSC install. They are first-party pages and should be listed in the plugin disclosure block so WordPress can review them directly.
 
@@ -350,34 +381,3 @@ Terms of Service: https://flosc.ai/terms-of-service/
 Privacy Policy: https://flosc.ai/privacy/
 Data Deletion: https://flosc.ai/data-deletion/
 Platform Compliance: https://flosc.ai/platform-compliance/
-
-== Upgrade Notice ==
-
-= 8.0.0 =
-Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI support, and optional social sign-in providers.
-
-== Changelog ==
-
-= 8.0.0 =
-* Initial stable 8.0.0 release for WordPress 7.1+ and PHP 7.4+
-* Guided flow architecture with IVR routes, quiz branching, and offer/content gating
-* Optional BYOK chat: one WordPress AI Client; official provider plugins for OpenAI, Anthropic, and Google; FLOSC hop for xAI; IVR scripted
-* Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
-* Included admin documentation updates for WordPress.org submission
-
-= Code standard =
-
-FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
-
-= Support & Contribution =
-
-For support, feature requests, or bug reports, visit:
-* [FLOSC.ai](https://flosc.ai)
-* [Project Site](https://flosc.ai)
-
-FLOSC is an open-source project. Contributions welcome!
-
-= Stay Connected =
-
-* Author: [solopreneur Dainis W. Michel](https://dainis.net)
-* Project: [FLOSC.ai](https://flosc.ai)
