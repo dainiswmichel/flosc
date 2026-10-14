@@ -11,8 +11,7 @@
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
   "internal_iteration": "v158",
-  "github_hashid_at_pack": "085855f109f61076ff9e89dd61e416a8541b5a23",
-  "candidate_source_artifact_commit": "085855f109f61076ff9e89dd61e416a8541b5a23",
+  "github_hashid_at_pack": "deebe4a08b5f02023f347d4e9d4ed526aac03804",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "baseline": "origin/main at ad57cca (Record v154 candidate identity)",
   "requires_at_least": "7.1",
@@ -22,9 +21,9 @@
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2829212,
-    "sha256": "0446d4a8767850d76498d313248931edc5a6ba3e7cf5b2108a093cde8f40cdc6",
-    "runtime_manifest_sha256": "c7af7dfc9d0221fff0242ffc1d7cefd8b07fc3af8effbe37cf984ca21d0413c0",
+    "bytes": 2829206,
+    "sha256": "9777eca6b327b3f5394c5b0f9af5f12609946a454480ba2041fc064c74d53b41",
+    "runtime_manifest_sha256": "5b9c818728ea2e994cc71ecaa5f72395948b75c5bf5545e0f7c337ff72edd31e",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
     "runtime_manifest_method_validated_against": "v150 (zip fd35ce2d..., recorded 503700b3...) reproduces exactly with this method",
     "tests_entries": 0,
@@ -58,5 +57,6 @@
       "readme.txt"
     ],
     "note": "The Starter Packs opening claimed a new install 'has nothing to say'. A new install with an AI key answers questions about the site in context, so the premise was false. Replaced with what the install already does and what a pack adds on top."
-  }
+  },
+  "github_hashid_semantics": "The commit on main this candidate was built from, not this candidate's own commit. Setting it to the parent lets the whole candidate publish in one commit titled 'Home run candidate vNNN coded by ClaudeCode.', which is what the GitHub folder listing shows."
 }
