@@ -1,7 +1,7 @@
 === FLOSC ===
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
-Tags: membership, paywall, content restriction, quiz, lead generation
+Tags: leads, sales, access, ai, chatbot
 Requires at least: 7.1
 Requires PHP: 7.4
 Tested up to: 7.1
