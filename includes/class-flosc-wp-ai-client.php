@@ -316,6 +316,38 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error
 	 */
 	public static function generate_with_tools( $args, $executor ) {
+		try {
+			return self::generate_with_tools_inner( $args, $executor );
+		} catch ( Throwable $e ) {
+			flosc_log(
+				sprintf(
+					'FLOSC WP AI tool exception: %s in %s:%d — %s',
+					get_class( $e ),
+					$e->getFile(),
+					$e->getLine(),
+					$e->getMessage()
+				)
+			);
+
+			return new WP_Error(
+				'flosc_wp_ai_tool_exception',
+				'The AI tool layer could not complete this request.',
+				array(
+					'exception' => get_class( $e ),
+					'detail'    => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Run the existing tool loop behind its exception boundary.
+	 *
+	 * @param array    $args     Same as generate(), plus tools.
+	 * @param callable $executor Tool runner.
+	 * @return array|WP_Error
+	 */
+	private static function generate_with_tools_inner( $args, $executor ) {
 		$args     = is_array( $args ) ? $args : array();
 		$history  = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
 		$message  = (string) ( $args['message'] ?? '' );
