@@ -221,3 +221,41 @@ function flosc_nav_params( array $keys = array() ) {
 
 	return $flosc_out;
 }
+
+/**
+ * The nonce action for one offer-list control, built in one place.
+ *
+ * The offers tab mints these links and maybe_process_offer_actions() verifies
+ * them. Both sides call this, so neither can name an action the other does not.
+ *
+ * Before v156 only delete carried its target. set_status named no offer and no
+ * status, and toggle_status named no offer, so one link minted for one row
+ * verified for every row on the screen -- a nonce proves the request came from
+ * a form this user was served, and without the id in the action it cannot also
+ * prove which row that form was for. Status is part of the set_status action
+ * because the link encodes the outcome: a link minted to set draft must not
+ * verify for a request that sets active.
+ *
+ * @param string $action   One of delete_offer, toggle_status, set_status.
+ * @param string $offer_id The offer the control acts on.
+ * @param string $status   Requested status, for set_status only.
+ * @return string Nonce action, or '' when the action is not one of the three.
+ */
+function flosc_offer_action_nonce_action( $action, $offer_id, $status = '' ) {
+	$action = sanitize_key( (string) $action );
+	if ( ! in_array( $action, array( 'delete_offer', 'toggle_status', 'set_status' ), true ) ) {
+		return '';
+	}
+
+	$parts = array( 'flosc', $action, sanitize_text_field( (string) $offer_id ) );
+
+	if ( 'set_status' === $action ) {
+		$status = sanitize_key( (string) $status );
+		if ( ! in_array( $status, array( 'draft', 'inactive', 'active' ), true ) ) {
+			return '';
+		}
+		$parts[] = $status;
+	}
+
+	return implode( '_', $parts );
+}

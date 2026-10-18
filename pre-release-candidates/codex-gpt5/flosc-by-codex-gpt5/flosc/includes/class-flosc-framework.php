@@ -12102,7 +12102,6 @@ Example good response:
 		// fetch, "no key saved".
 		$typed = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
 			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
 		}
 
@@ -12192,7 +12191,6 @@ Example good response:
 		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$api_key  = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
 			$api_key = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
 		}
 
@@ -12261,7 +12259,6 @@ Example good response:
 		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 		$typed    = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
 			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
 		}
 
@@ -14903,8 +14900,8 @@ Example good response:
 		}
 
 		// -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts --
-		// Keep only flosc-app.js, companion, and payment SDKs (PayPal, Stripe).
-		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js' );
+		// Keep only flosc-app.js, companion, and the eagerly loaded Stripe SDK.
+		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'stripe-js' );
 		if ( isset( $wp_scripts->queue ) && is_array( $wp_scripts->queue ) ) {
 			foreach ( $wp_scripts->queue as $handle ) {
 				if ( in_array( $handle, $flosc_script_whitelist, true ) ) {
@@ -14943,8 +14940,8 @@ Example good response:
 		// 3. Preset CSS (variable definitions only)
 		$this->enqueue_chat_style();
 
-		// Payment SDKs first. Explicit version satisfies Plugin Check; CDN URLs strip
-		// ?ver= via script_loader_src (PayPal rejects unknown query params).
+		// Stripe remains eager. PayPal loads on demand when its checkout opens.
+		// Explicit version satisfies Plugin Check; the CDN URL strips ?ver= below.
 		$flosc_app_deps = array();
 
 		// Stripe.js — first-class when publishable key is set on Payments (WPDB).
@@ -14958,62 +14955,12 @@ Example good response:
 			}
 		}
 
-		// PayPal JS SDK — currency from provider; intent from active offer *type*
-		// (capture for one_time; subscription only when type is subscription or
-		// subscription.plans is set — not when a leftover subscription{} bag exists).
-		$paypal = $this->sale_manager->get_provider( 'paypal' );
-		if ( $paypal && $paypal->has_client_id() ) {
-			$pp_config    = $paypal->get_client_config();
-			$pp_client_id = $pp_config['clientId'] ?? '';
-			if ( $pp_client_id ) {
-				$pp_currency = $pp_config['currency'] ?? 'USD';
-				$pp_intent   = 'capture';
-				$flow        = $this->get_current_flow();
-				$stem        = '';
-				if ( is_array( $flow ) ) {
-					$ivr  = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
-					$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
-					if ( '' === $stem && ! empty( $flow['id'] ) ) {
-						$stem = sanitize_key( (string) $flow['id'] );
-					}
-				}
-				if ( '' !== $stem ) {
-					$fs          = get_option( 'flosc_flow_' . $stem, array() );
-					$flow_offers = is_array( $fs['offers'] ?? null ) ? $fs['offers'] : array();
-					foreach ( $flow_offers as $o ) {
-						if ( ! is_array( $o ) ) {
-							continue;
-						}
-						$active = ! empty( $o['active'] ) || ( 'active' === ( $o['status'] ?? '' ) );
-						if ( ! $active ) {
-							continue;
-						}
-						$type      = strtolower( (string) ( $o['type'] ?? 'one_time' ) );
-						$has_plans = ! empty( $o['subscription']['plans'] ) && is_array( $o['subscription']['plans'] );
-						if ( 'subscription' === $type || $has_plans ) {
-							$pp_intent = 'subscription';
-							break;
-						}
-					}
-				}
-				$pp_sdk = 'https://www.paypal.com/sdk/js?client-id=' . rawurlencode( $pp_client_id )
-					. '&currency=' . rawurlencode( $pp_currency )
-					. '&intent=' . rawurlencode( $pp_intent );
-				if ( 'subscription' === $pp_intent ) {
-					$pp_sdk .= '&vault=true';
-				}
-				// Explicit version for Plugin Check; ver is stripped for this handle below.
-				wp_enqueue_script( 'paypal-js', $pp_sdk, array(), defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '1', true );
-				$flosc_app_deps[] = 'paypal-js';
-			}
-		}
-
-		// Strip WP ?ver= from third-party payment CDN scripts (PayPal SDK query contract).
+		// Strip WP ?ver= from the Stripe CDN URL.
 		if ( ! empty( $flosc_app_deps ) ) {
 			add_filter(
 				'script_loader_src',
 				static function ( $src, $handle ) {
-					if ( in_array( $handle, array( 'paypal-js', 'stripe-js' ), true ) && is_string( $src ) && '' !== $src ) {
+					if ( 'stripe-js' === $handle && is_string( $src ) && '' !== $src ) {
 						return remove_query_arg( 'ver', $src );
 					}
 					return $src;

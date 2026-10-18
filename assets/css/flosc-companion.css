@@ -344,6 +344,18 @@
     border: none;
 }
 
+.flosc-companion-frame-error {
+	display: grid;
+	min-height: 180px;
+	padding: 24px;
+	place-items: center;
+	color: #4b5563;
+	background: #fff;
+	font-size: 14px;
+	line-height: 1.5;
+	text-align: center;
+}
+
 .flosc-companion.is-open .flosc-companion-fab {
     display: none;
 }

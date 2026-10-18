@@ -75,16 +75,12 @@ DENY_PATTERNS=(
   'quiz_development'
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
-  'testing-bench.sh'
-  'TESTING-ENVIRONMENT.md'
-  'testing-logs'
-  'testing-runtime'
-  'testing-environment'
-  'flosc-test'
-  'phpcs.xml.dist'
-  'phpcs-compat.xml.dist'
-  'phpstan.neon.dist'
   '.distignore'
+  'tests'
+  # Four full plugin trees plus their ZIPs live here on main. They are
+  # comparison candidates, not runtime code, and a ZIP that carried them would
+  # be four times the size and contain three other people's builds.
+  'pre-release-candidates'
 )
 
 rsync_excludes=()
@@ -103,14 +99,41 @@ done
 
 echo "[build-dist-zip] staging runtime tree -> $STAGE/flosc"
 mkdir -p "$STAGE/flosc"
-rsync -a \
-  --delete \
-  "${rsync_excludes[@]}" \
-  --exclude '.DS_Store' \
-  --exclude '*.zip' \
-  --exclude '*.log' \
-  --exclude '*.bundle' \
-  ./ "$STAGE/flosc/"
+
+# Extra excludes applied on top of .distignore and DENY_PATTERNS, in both
+# staging backends. Keep the two lists below in step with each other.
+extra_excludes=( '.DS_Store' '*.zip' '*.log' '*.bundle' )
+
+if command -v rsync >/dev/null 2>&1; then
+  rsync_extra=()
+  for p in "${extra_excludes[@]}"; do rsync_extra+=(--exclude "$p"); done
+  rsync -a \
+    --delete \
+    "${rsync_excludes[@]}" \
+    "${rsync_extra[@]}" \
+    ./ "$STAGE/flosc/"
+else
+  # No rsync (common in minimal containers and CI images). tar stages the
+  # same tree from the same exclude list, so the zip is built identically
+  # instead of the build refusing outright. rsync_excludes holds alternating
+  # "--exclude" / pattern entries; tar wants one --exclude=PATTERN per entry,
+  # and needs the leading "./" form plus a subtree glob to match what rsync
+  # matches by path component.
+  echo "[build-dist-zip] rsync not found -- staging with tar instead" >&2
+  tar_excludes=()
+  add_tar_exclude() {
+    local pat="${1#/}"
+    pat="${pat%/}"
+    [ -z "$pat" ] && return 0
+    tar_excludes+=( "--exclude=./${pat}" "--exclude=./${pat}/*" "--exclude=${pat}" )
+  }
+  for ((i = 0; i < ${#rsync_excludes[@]}; i++)); do
+    [ "${rsync_excludes[$i]}" = "--exclude" ] || continue
+    add_tar_exclude "${rsync_excludes[$((i + 1))]}"
+  done
+  for p in "${extra_excludes[@]}"; do add_tar_exclude "$p"; done
+  ( cd . && tar cf - "${tar_excludes[@]}" . ) | ( cd "$STAGE/flosc" && tar xf - )
+fi
 
 # --- Fail closed: scan staged tree for forbidden content ---
 fail=0
@@ -125,6 +148,8 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_archives/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
+  -path '*/tests' -o \
+  -path '*/tests/*' -o \
   -name 'create-sample-data.php' -o \
   -path '*/vendor' -o \
   -path '*/vendor/*' -o \
@@ -138,6 +163,13 @@ done < <(find "$STAGE/flosc" \( \
   -name 'composer.lock' -o \
   -name 'build-dist-zip.sh' -o \
   -name '.distignore' -o \
+  -name '.cursorrules' -o \
+  -name 'agents.md' -o \
+  -name 'AGENTS.md' -o \
+  -name 'CLAUDE.md' -o \
+  -name 'WORDPRESS-ORG-RELEASE.md' -o \
+  -name 'phpcs.xml' -o \
+  -name 'phpcs.xml.dist' -o \
   -name '*.zip' -o \
   -name '*.bundle' \
 \) -print0 2>/dev/null)

@@ -1278,11 +1278,18 @@ trait FLOSC_Admin_Trait {
 
 		$flosc_nonce = flosc_nav_param( '_wpnonce', array(), '', 'sanitize_text_field' );
 
-		$flosc_nonce_action = 'set_status' === $flosc_action
-			? 'flosc_set_status'
-			: ( 'toggle_status' === $flosc_action ? 'flosc_toggle_status' : 'flosc_delete_offer_' . $flosc_target );
+		/*
+		 * The requested status is read before the nonce because it is part of
+		 * the action the nonce has to match. flosc_nav_param() constrains it to
+		 * the three literals below, so nothing unvalidated reaches the action.
+		 */
+		$flosc_requested_status = 'set_status' === $flosc_action
+			? flosc_nav_param( 'status', array( 'draft', 'inactive', 'active' ), '' )
+			: '';
 
-		if ( ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
+		$flosc_nonce_action = flosc_offer_action_nonce_action( $flosc_action, $flosc_target, $flosc_requested_status );
+
+		if ( '' === $flosc_nonce_action || ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
 			wp_die( esc_html__( 'Nonce verification failed.', 'flosc' ), esc_html__( 'Invalid token', 'flosc' ), array( 'response' => 403 ) );
 		}
 
@@ -2532,7 +2539,7 @@ trait FLOSC_Admin_Trait {
 		}
 		$post     = wp_unslash( $_POST );
 		$save_ivr = sanitize_file_name( (string) ( $post['flosc_save_flow'] ?? '' ) );
-		$return   = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$return   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		$row      = $this->flosc_identity_flow_row( $save_ivr );
 		if ( '' === $save_ivr || ! in_array( $save_ivr, $this->flosc_admin_ivr_filenames(), true ) ) {
 			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'That flow could not be saved.', 'error' );
@@ -2553,7 +2560,7 @@ trait FLOSC_Admin_Trait {
 			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 		$post   = wp_unslash( $_POST );
-		$return = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$return = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		foreach ( $this->flosc_admin_ivr_filenames() as $ivr_file ) {
 			$row      = $this->flosc_identity_flow_row( $ivr_file );
 			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $ivr_file ) . '_' );
@@ -2595,7 +2602,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post      = wp_unslash( $_POST );
 		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_feedback'] ?? '' ) );
@@ -2622,7 +2629,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post = wp_unslash( $_POST );
 		$item = array(
@@ -2654,7 +2661,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post      = wp_unslash( $_POST );
 		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_praise'] ?? '' ) );
@@ -2681,7 +2688,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post = wp_unslash( $_POST );
 		$item = array(
@@ -2712,7 +2719,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		unset( $settings['chat_style_preset'], $settings['chat_style_bubble'], $settings['chat_style_accent'], $settings['chat_style_font'], $settings['chat_style_scale'] );
 		update_option( $key, $settings );

@@ -440,7 +440,9 @@ if ( ! in_array( $flosc_identity_view, array( 'single', 'all' ), true ) ) {
 // Do not redirect here — headers are already sent during page render (white content pane).
 
 // Trajectory quick-toggle: flip a trajectory post between LIVE (private) and OFF (draft).
-if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_toggle_trajectory_nonce'] ?? '' ), 'flosc_toggle_trajectory_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) ) {
+	check_admin_referer( 'flosc_toggle_trajectory_post', 'flosc_toggle_trajectory_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to toggle trajectory posts.', 'flosc' ) );
 	}
@@ -491,7 +493,9 @@ if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sa
 }
 
 // Concierge quick-create: create a private concierge post and sync it to the flow.
-if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_concierge_create_nonce'] ?? '' ), 'flosc_create_concierge_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_create_concierge_post'] ) ) {
+	check_admin_referer( 'flosc_create_concierge_post', 'flosc_concierge_create_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to create concierge posts.', 'flosc' ) );
 	}
@@ -600,7 +604,9 @@ if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( san
 }
 
 // Trajectory quick-create: create a private trajectory post and sync trajectory guidance into flow DB.
-if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_trajectory_create_nonce'] ?? '' ), 'flosc_create_trajectory_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_create_trajectory_post'] ) ) {
+	check_admin_referer( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to create trajectory posts.', 'flosc' ) );
 	}
@@ -701,7 +707,9 @@ if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sa
 }
 
 // Handle save.
-if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_save'] ) ) {
+	check_admin_referer( 'flosc_save_settings' );
 	if ( ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 		wp_die( esc_html__( 'You do not have permission to save this FLOSC flow.', 'flosc' ) );
 	}

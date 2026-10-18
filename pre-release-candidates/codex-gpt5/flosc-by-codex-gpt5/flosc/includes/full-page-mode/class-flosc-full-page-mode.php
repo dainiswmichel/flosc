@@ -172,7 +172,7 @@ class FLOSC_Full_Page_Mode {
 			0
 		);
 
-		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js' );
+		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'stripe-js' );
 		add_action(
 			'wp_print_scripts',
 			function () use ( $flosc_script_whitelist ) {
@@ -197,7 +197,7 @@ class FLOSC_Full_Page_Mode {
 		// v1.9.5: Also clear wp_print_footer_scripts action hooks.
 		// wp_print_footer_scripts() fires do_action('wp_print_footer_scripts').
 		// _wp_footer_scripts() is hooked there — it's the core function that calls
-		// $wp_scripts->do_footer_items() to output enqueued JS (flosc-app, paypal-js).
+		// $wp_scripts->do_footer_items() to output the surviving enqueued scripts.
 		// BuddyBoss/Jetpack ALSO hook inline JS + HTML templates on this action,
 		// bypassing our wp_footer cleanup. Fix: clear all, re-add only _wp_footer_scripts.
 		remove_all_actions( 'wp_print_footer_scripts' );
@@ -559,7 +559,21 @@ class FLOSC_Full_Page_Mode {
 		if ( current_user_can( 'manage_options' ) && isset( $_GET['flosc_test_offer'] ) && is_string( $_GET['flosc_test_offer'] ) ) {
 			$oid   = sanitize_text_field( wp_unslash( $_GET['flosc_test_offer'] ) );
 			$nonce = ( isset( $_GET['flosc_test_nonce'] ) && is_string( $_GET['flosc_test_nonce'] ) ) ? sanitize_text_field( wp_unslash( $_GET['flosc_test_nonce'] ) ) : '';
-			if ( wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) && $sale && method_exists( $sale, 'offers' ) ) {
+
+			/*
+			 * The nonce decides on its own, in its own statement.
+			 *
+			 * It was one term of an && chain alongside $sale and method_exists(),
+			 * which made two unrelated questions share a single branch: whether the
+			 * request is genuine, and whether a sale module can service it. Clearing
+			 * $oid on a failed nonce means the origin check depends on nothing but
+			 * itself, and the branch below is about capability only.
+			 */
+			if ( ! wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) ) {
+				$oid = '';
+			}
+
+			if ( '' !== $oid && $sale && method_exists( $sale, 'offers' ) ) {
 				$test_offer_id  = $oid;
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
 				foreach ( $all_raw_offers as $o ) {

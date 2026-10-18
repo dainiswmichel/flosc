@@ -3351,7 +3351,6 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			}
 		}
 		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Profile sanitizer preserves Markdown after validating UTF-8.
 			$profile_raw = flosc_sanitize_personality_profile_text( wp_unslash( $_POST['ai_base_prompt'] ) );
 			if ( '' === $profile_raw && ! empty( $_POST['ai_base_prompt'] ) ) {
 				wp_send_json_error( array( 'message' => __( 'The personality profile is not valid UTF-8 text.', 'flosc' ) ), 400 );
@@ -3359,7 +3358,6 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			$fields['ai_base_prompt'] = $profile_raw;
 		}
 		if ( isset( $_POST['workshop_json'] ) && is_string( $_POST['workshop_json'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Workshop sanitizer decodes and rebuilds valid JSON.
 			$workshop_raw = flosc_sanitize_personality_workshop( wp_unslash( $_POST['workshop_json'] ) );
 			if ( '' === $workshop_raw && ! empty( $_POST['workshop_json'] ) ) {
 				wp_send_json_error( array( 'message' => __( 'Workshop file was not valid JSON.', 'flosc' ) ), 400 );
