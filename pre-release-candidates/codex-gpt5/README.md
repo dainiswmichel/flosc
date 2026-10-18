@@ -35,10 +35,10 @@ Stripe and the server-side payment endpoints are unchanged.
 ## Artifact
 
 ```text
-ce52960f5fc61f35e166fdbabda3f38b5414551e90db79ca8e508c4e9eeb27dc  flosc.zip
+0458c0eb4b25f54fa17709b175add8a88c15c8ad9619f7255a01966bb86cfc22  flosc.zip
 ```
 
-- ZIP size: 2,829,290 bytes
+- ZIP size: 2,829,326 bytes
 - ZIP entries: 283
 - Shipping files: 243
 - Shipping PHP files: 154
@@ -51,4 +51,4 @@ ce52960f5fc61f35e166fdbabda3f38b5414551e90db79ca8e508c4e9eeb27dc  flosc.zip
 - Baseline: local v159 source
 - GitHub parent before publication: `2e34f2a1b0b7059930502c4bc8be70691faf11c6`
 - Candidate owner: Codex
-- Candidate commit: recorded by the follow-up identity commit
+- Candidate source commit: `3e7234be7903cf4c5b0c890b736eab70f88cf944`
