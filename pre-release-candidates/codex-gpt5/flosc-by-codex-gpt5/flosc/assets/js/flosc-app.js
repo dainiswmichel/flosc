@@ -67,6 +67,10 @@ class floscApp {
         this.stripe = null;
         this.cardElement = null;
 
+        // PayPal loads only when a PayPal checkout surface opens. Reuse one
+        // promise so repeated clicks cannot inject duplicate SDK scripts.
+        this._paypalSdkPromise = null;
+
         // Chat send serialization — companion + full page share one AI turn path.
         // Without this, a second user message while the first is in flight can drop
         // the first reply (only one response bubble / one token charge).
@@ -13276,8 +13280,80 @@ Purchased: ${ctx.purchased}
             this.stripe = Stripe(this.config.stripeKey);
         }
     }
+
+    loadPayPalSdk() {
+        if (window.paypal && typeof window.paypal.Buttons === 'function') {
+            return Promise.resolve(window.paypal);
+        }
+
+        if (this._paypalSdkPromise) {
+            return this._paypalSdkPromise;
+        }
+
+        const clientId = String(this.config.paypalClientId || '').trim();
+        const currency = String(this.config.paypalCurrency || 'USD').trim() || 'USD';
+        const intent = this.config.paypalSdkIntent === 'subscription' ? 'subscription' : 'capture';
+
+        if (!clientId) {
+            return Promise.reject(new Error('PayPal Client ID is not configured.'));
+        }
+
+        const params = new URLSearchParams({
+            'client-id': clientId,
+            components: 'buttons',
+            currency,
+            intent,
+        });
+        if (intent === 'subscription') {
+            params.set('vault', 'true');
+        }
+
+        this._paypalSdkPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.id = 'flosc-paypal-sdk';
+            script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
+            script.async = true;
+            script.dataset.pageType = 'checkout';
+
+            script.addEventListener('load', () => {
+                if (window.paypal && typeof window.paypal.Buttons === 'function') {
+                    resolve(window.paypal);
+                    return;
+                }
+
+                script.remove();
+                this._paypalSdkPromise = null;
+                reject(new Error('PayPal SDK loaded without Buttons support.'));
+            }, { once: true });
+
+            script.addEventListener('error', () => {
+                script.remove();
+                this._paypalSdkPromise = null;
+                reject(new Error('PayPal SDK failed to load.'));
+            }, { once: true });
+
+            document.head.appendChild(script);
+        });
+
+        return this._paypalSdkPromise;
+    }
+
+    renderPayPalSdkError(container, offerId) {
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="flosc-paypal-retry-wrap">
+                <div class="flosc-paypal-retry-error">PayPal could not load. Check your connection and try again.</div>
+                <button type="button" class="flosc-paypal-retry-btn">Try again</button>
+            </div>
+        `;
+        const retry = container.querySelector('.flosc-paypal-retry-btn');
+        if (retry) {
+            retry.addEventListener('click', () => this.showPaymentModal(offerId), { once: true });
+        }
+    }
     
-    showPaymentModal(offerId) {
+    async showPaymentModal(offerId) {
         const modal = document.getElementById('flosc_modal_payment');
         if (!modal) return;
 
@@ -13289,8 +13365,8 @@ Purchased: ${ctx.purchased}
 
         const offer = this.getOfferData(offerId);
         // Subscription path only when the offer is typed/configured as subscription.
-        // SDK intent (capture vs subscription) is enqueued from the same offer type —
-        // do not guess from display copy alone or Buttons will fail against the wrong intent.
+        // SDK intent comes from the flow's configured offers; do not guess from
+        // display copy alone or Buttons can load with the wrong transaction intent.
         const hasSubPlans = !!(offer?.subscription?.plans && Object.keys(offer.subscription.plans).length);
         const isSubscription = (offer?.type === 'subscription') || hasSubPlans;
         
@@ -13378,13 +13454,15 @@ Purchased: ${ctx.purchased}
         const accessTrigger = document.getElementById('flosc-access-code-trigger');
         this.setDisplayState(accessTrigger, true, 'block');
 
+        // Keep close and Access Code controls usable while a payment SDK loads.
+        this._bindPaymentModalChrome(modal);
+
         if (useStripe) {
             if (!this.stripe && window.Stripe) {
                 this.initStripe();
             }
             if (!this.stripe) {
                 this.logError('[FLOSC-CHECKOUT] Stripe selected but Stripe.js is not available');
-                this._bindPaymentModalChrome(modal);
                 return;
             }
             this.setDisplayState(paypalContainer, false, 'block');
@@ -13421,27 +13499,36 @@ Purchased: ${ctx.purchased}
             if (payBtn) {
                 payBtn.onclick = () => this.processModalPayment(offerId, payBtn, errorEl || document.getElementById('card-errors'));
             }
-            this._bindPaymentModalChrome(modal);
             return;
         }
 
-        // PayPal path (default for this product). SDK is enqueued correctly — no soft-fail UI.
+		// PayPal path (default for this product). Load its SDK only after checkout opens.
         this.setDisplayState(stripeForm, false, 'block');
         this.setDisplayState(payBtn, false, 'block');
         this.setDisplayState(separator, false, 'block');
         if (paypalContainer) {
             this.setDisplayState(paypalContainer, true, 'block');
-            paypalContainer.innerHTML = '';
-            if (typeof paypal === 'undefined' || typeof paypal.Buttons !== 'function') {
-                this.logError('[FLOSC-CHECKOUT] PayPal SDK missing (enqueue must load paypal-js without ?ver=)');
-            } else if (isSubscription) {
+			paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-muted">Loading secure checkout...</div>';
+			try {
+				await this.loadPayPalSdk();
+			} catch (error) {
+				this.logError('[FLOSC-CHECKOUT] PayPal SDK failed to load:', error);
+				this.renderPayPalSdkError(paypalContainer, offerId);
+				return;
+			}
+
+			// A second checkout may have replaced this one while the SDK loaded.
+			if (String(modal.dataset.offerId || '') !== String(offerId || '')) {
+				return;
+			}
+
+			paypalContainer.innerHTML = '';
+			if (isSubscription) {
                 this._renderSubscriptionCheckout(offerId, offer, paypalContainer);
             } else {
                 this._renderOneTimePayPal(offerId, paypalContainer);
             }
         }
-
-        this._bindPaymentModalChrome(modal);
     }
 
     _bindPaymentModalChrome(modal) {

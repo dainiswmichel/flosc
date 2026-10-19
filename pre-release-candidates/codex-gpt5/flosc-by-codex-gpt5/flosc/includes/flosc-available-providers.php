@@ -488,14 +488,21 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage AI providers.', 'flosc' ) );
 		}
 		check_admin_referer( 'flosc_save_available_providers' );
+		$posted_request = wp_unslash( $_POST );
+		if ( ! is_array( $posted_request )
+			|| ( isset( $posted_request['avail_api_key'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_api_key'] ) )
+			|| ( isset( $posted_request['avail_clear'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_clear'] ) )
+			|| ! flosc_submitted_fields_are_text( $posted_request, array( 'flosc_return_ivr' ) ) ) {
+			wp_die( esc_html__( 'Invalid provider settings request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
 
 		$posted = array();
-		if ( isset( $_POST['avail_api_key'] ) && is_array( $_POST['avail_api_key'] ) ) {
-			$posted = array_map( 'sanitize_text_field', wp_unslash( $_POST['avail_api_key'] ) );
+		if ( isset( $posted_request['avail_api_key'] ) ) {
+			$posted = array_map( 'sanitize_text_field', $posted_request['avail_api_key'] );
 		}
 		$clear = array();
-		if ( isset( $_POST['avail_clear'] ) && is_array( $_POST['avail_clear'] ) ) {
-			$clear = array_map( 'sanitize_text_field', wp_unslash( $_POST['avail_clear'] ) );
+		if ( isset( $posted_request['avail_clear'] ) ) {
+			$clear = array_map( 'sanitize_text_field', $posted_request['avail_clear'] );
 		}
 
 		$all = flosc_available_providers_get_all();
@@ -525,8 +532,8 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 
 		// Redirect target after the save above, which verified its own nonce and
 		// capability before writing. Only picks a tab on this site's admin.php.
-		$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_scalar( $_POST['flosc_return_ivr'] ) )
-			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
+		$ivr = isset( $posted_request['flosc_return_ivr'] )
+			? sanitize_file_name( $posted_request['flosc_return_ivr'] )
 			: '';
 		wp_safe_redirect(
 			add_query_arg(

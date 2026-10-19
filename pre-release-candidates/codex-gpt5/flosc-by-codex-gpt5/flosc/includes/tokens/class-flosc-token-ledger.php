@@ -133,6 +133,9 @@ class FLOSC_Token_Ledger {
 
 		$flow_id = '';
 		if ( is_array( $purchase_data ) && ! empty( $purchase_data['flow_id'] ) ) {
+			if ( ! flosc_submitted_value_is_text( $purchase_data['flow_id'] ) ) {
+				return 0;
+			}
 			$flow_id = sanitize_key( (string) $purchase_data['flow_id'] );
 		}
 		if ( '' === $flow_id ) {
@@ -315,6 +318,17 @@ class FLOSC_Token_Ledger {
 	 *               wallet is empty, and the caller must refuse the turn.
 	 */
 	public function reserve_visitor_tokens( $flow_id, $session_id, $estimated_cost, $request_id, $token_provider ) {
+		if ( ! flosc_submitted_value_is_text( $flow_id )
+			|| ! flosc_submitted_value_is_text( $session_id )
+			|| ! flosc_submitted_value_is_text( $estimated_cost )
+			|| ! flosc_submitted_value_is_text( $request_id ) ) {
+			return array(
+				'reserved'      => false,
+				'id'            => '',
+				'amount'        => 0,
+				'balance_after' => 0,
+			);
+		}
 		$session_id     = absint( $session_id );
 		$estimated_cost = max( 0, intval( $estimated_cost ) );
 		$request_id     = sanitize_key( (string) $request_id );
@@ -417,10 +431,20 @@ class FLOSC_Token_Ledger {
 	 *               charged is false when the reservation had already expired.
 	 */
 	public function settle_visitor_reservation( $reservation_id, $token_provider, $billing_meta = array() ) {
+		if ( ! flosc_submitted_value_is_text( $reservation_id ) ) {
+			return array(
+				'charged'       => false,
+				'charge_tokens' => 0,
+				'balance_after' => 0,
+			);
+		}
+
 		$reservation_id = sanitize_key( (string) $reservation_id );
 		$reservation    = get_transient( 'flosc_vtok_res_' . $reservation_id );
 		delete_transient( 'flosc_vtok_res_' . $reservation_id );
-		if ( ! is_array( $reservation ) || ! $token_provider ) {
+		if ( ! is_array( $reservation ) || ! $token_provider
+			|| ! isset( $reservation['flow_id'], $reservation['session_id'], $reservation['amount'] )
+			|| ! flosc_submitted_fields_are_text( $reservation, array( 'flow_id', 'session_id', 'amount' ) ) ) {
 			return array(
 				'charged'       => false,
 				'charge_tokens' => 0,
@@ -520,6 +544,15 @@ class FLOSC_Token_Ledger {
 				401
 			);
 		}
+		if ( ! flosc_rest_fields_are_text( $request, array( 'flow_id', 'visitor_session_id' ) ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => 'Invalid token grant request',
+				),
+				400
+			);
+		}
 
 		$flow_id = $this->flosc->flosc_normalize_flow_stem( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
 		if ( '' === $flow_id || 'default' === $flow_id ) {
@@ -595,6 +628,15 @@ class FLOSC_Token_Ledger {
 	 */
 	public function handle_visitor_session_balance( $request ) {
 		nocache_headers(); // Belt-and-suspenders against any caching layer.
+		if ( ! flosc_rest_fields_are_text( $request, array( 'session_id', 'flow_id' ) ) ) {
+			return new WP_REST_Response(
+				array(
+					'success'       => false,
+					'token_balance' => null,
+				),
+				400
+			);
+		}
 
 		$session_id = $this->flosc->flosc_normalize_session_id( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
 		$flow_id    = $this->flosc->flosc_normalize_flow_stem( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );

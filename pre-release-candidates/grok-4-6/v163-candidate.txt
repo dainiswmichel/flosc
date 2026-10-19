@@ -1,0 +1,6 @@
+Internal Iteration: v163
+Installable plugin: repository root
+Commit subject: Home run candidate v163 coded by Grok.
+Version: 8.0.0
+Requires at least: 7.1
+Requires PHP: 7.4

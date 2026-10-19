@@ -1,70 +1,54 @@
-# FLOSC 8.0.0 — Codex home-run candidate v154
+# FLOSC 8.0.0 — Codex home-run candidate v160
 
-This directory contains the complete v154 review candidate. The complete plugin
-source is in `flosc-by-codex-gpt5/flosc/`; `flosc.zip` is the exact distributable
-artifact built from that source. The public plugin version and stable tag remain
-8.0.0.
+This is the complete v160 review candidate built from the local v159 source.
+The public plugin version and stable tag remain 8.0.0.
 
-## Baseline and scope
+## Scope
 
-v154 starts from the frozen v153 Codex candidate and makes the agreed chat-log
-feedback repair:
+v160 changes PayPal SDK delivery only:
 
-- separates the REST feedback/praise deletion methods from the zero-argument
-  admin-post handlers, restoring the admin deletion journey;
-- lists non-zero-rated chat exchanges for the selected flow under **Memory &
-  Feedback**, including the personality that produced the response;
-- provides two editable, manually copyable drafts for each exchange: a
-  personality Memory & Feedback item with recommended density 55, and a Flow
-  Sticky sentence;
-- keeps a rating as protected evidence only; rating a response does not inject
-  the raw conversation into an AI prompt or mutate a flow or personality;
-- sends the existing flow-specific Sticky aspects through the active Chatpack
-  on each turn; and
-- lets the existing copy action read the administrator's edited textarea value.
+- removes the PayPal JavaScript SDK from the initial `/chat/` page dependencies;
+- loads the SDK asynchronously when a PayPal checkout modal opens;
+- reuses one loader promise so repeated clicks do not inject duplicate scripts;
+- preserves capture and subscription SDK parameters; and
+- shows a loading state and a retry control if the SDK cannot load.
 
-Legacy manual AI Feedback and Praise entries remain active below the new
-workspace and continue to guide the AI as before.
+Stripe and the server-side payment endpoints are unchanged.
 
-## Verification performed for this increment
+## Verification performed
 
-- PHP syntax passed on all 207 PHP files in the candidate source.
-- PHPCS with `phpcs.xml.dist` on the six edited shipping PHP files reported 0
-  errors and 12 standing signed-audio nonce warnings in the framework file.
-- The same six files passed PHPCompatibilityWP for PHP 7.4.
-- `tests/check_memory_feedback.php`, `tests/check_method_contract.php`,
-  `tests/check_identity_every_turn.php`, and `tests/check_log_contract.php`
-  passed.
-- `node --check assets/js/flosc-admin-events.js` passed.
-- A checksum-aware dry-run found local/candidate differences only in local
-  `.DS_Store` files and the local-only `testing-environment/` directory.
-- `unzip -t` passed. The ZIP contains 243 shipping files in 283 entries and no
-  tests.
-- The ZIP release gate passed metadata, readme disclosure, PHP syntax, and
-  packaging checks, but reported five failed or unverified gates: two bare-
-  suppression matches in explanatory comments, five security-sniff errors plus
-  25 warnings, the known HTTP_HOST and FILTER_DEFAULT comment/landmine greps,
-  and unavailable official Plugin Check. This candidate is therefore not being
-  represented as WordPress.org submission-ready.
+- PHP syntax passed for every PHP file in the local source.
+- PHPCompatibilityWP for PHP 7.4 passed.
+- 52 PHP regression scripts and 6 JavaScript regression scripts passed.
+- The PayPal lazy-load assertions in `check_companion_surface_contract.js` passed.
+- `unzip -t` passed for the exact artifact.
+- Live deployment completed on 2026-10m-18d. The live plugin reports internal
+  iteration v160, the four changed runtime files match local SHA-256 values,
+  `/chat/` returns HTTP 200, and its initial HTML contains no PayPal SDK URL.
+- WP-CLI activation-status verification was blocked because the active Contact
+  Form 7 package requires PHP 8.3 while the server CLI is PHP 8.0. The public
+  web request remained HTTP 200.
+- Full WordPress PHPCS and the release gate retain existing v159 findings. The
+  release gate reported seven failed or unverified checks, including unavailable
+  Plugin Check. This candidate is not represented as WordPress.org submission-ready.
 
-## Exact artifact
+## Artifact
 
 ```text
-b1b604adfeb5b07a9d6268d4c4b0c0b1ad89452c414ec2c8d7c033169c97c744  flosc.zip
+0458c0eb4b25f54fa17709b175add8a88c15c8ad9619f7255a01966bb86cfc22  flosc.zip
 ```
 
-Artifact inventory:
-
-- ZIP size: 2,828,118 bytes
+- ZIP size: 2,829,326 bytes
 - ZIP entries: 283
 - Shipping files: 243
-- Runtime manifest SHA-256:
-  `24a0e0b0f63d9c2c17b104db3dadcde0116465f5ba684ecef5d9c3814f5bc503`
+- Shipping PHP files: 154
+- Artifact root: `flosc/`
+- Tests in artifact: none
 
 ## Repository identity
 
-- Internal Iteration: v154
-- Header Github HashID / candidate source commit:
-  `4333777ef34591f05ce742bdf0d2e11550a14bb6`
-- GitHub parent before v154: `f46a29b64cbea816548a0aa9ecb133a7900698b7`
+- Internal iteration: v160
+- Baseline: local v159 source
+- GitHub parent before publication: `2e34f2a1b0b7059930502c4bc8be70691faf11c6`
 - Candidate owner: Codex
+- Candidate source commit: `3e7234be7903cf4c5b0c890b736eab70f88cf944`

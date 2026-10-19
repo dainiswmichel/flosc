@@ -1,17 +1,17 @@
 {
   "schema_version": 9,
   "candidate": "claude-opus-5",
-  "candidate_label": "FLOSC 8.0.0 home-run candidate v159",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v158",
   "owner": "ClaudeCode",
   "parent": {
-    "candidate": "ClaudeCode v158",
-    "commit": "2e34f2a1b0b7059930502c4bc8be70691faf11c6"
+    "candidate": "ClaudeCode v157",
+    "commit": "fb7b3ff663e7ff667a4ee6b52c803002aadaef93"
   },
-  "code_lineage": "v158 plus the restored readme.txt Screenshots section",
+  "code_lineage": "v157 plus one readme.txt copy correction in = Starter Packs =",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v159",
-  "github_hashid_at_pack": "2e34f2a1b0b7059930502c4bc8be70691faf11c6",
+  "internal_iteration": "v158",
+  "github_hashid_at_pack": "deebe4a08b5f02023f347d4e9d4ed526aac03804",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "baseline": "origin/main at ad57cca (Record v154 candidate identity)",
   "requires_at_least": "7.1",
@@ -21,9 +21,9 @@
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2829455,
-    "sha256": "6ac147a35819c32d0d1897999baaecfd801c779d6e9e4cb12f72c326ee4eb9d3",
-    "runtime_manifest_sha256": "ba94244dcd37ede1017bc113bbba8ee4ba9fe3199d833fba4db21f36c3652922",
+    "bytes": 2829206,
+    "sha256": "9777eca6b327b3f5394c5b0f9af5f12609946a454480ba2041fc064c74d53b41",
+    "runtime_manifest_sha256": "5b9c818728ea2e994cc71ecaa5f72395948b75c5bf5545e0f7c337ff72edd31e",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
     "runtime_manifest_method_validated_against": "v150 (zip fd35ce2d..., recorded 503700b3...) reproduces exactly with this method",
     "tests_entries": 0,
@@ -51,12 +51,12 @@
     "runtime_click_through": "NOT RUN: no repaired offer control, split settings handler or renamed catalog has been exercised in a browser",
     "readme_sections_measured": "description 2434/2500, installation 552/2500, faq 1442/5000, changelog 176/5000 -- no section truncates"
   },
-  "github_hashid_semantics": "The commit on main this candidate was built from, not this candidate's own commit. Setting it to the parent lets the whole candidate publish in one commit titled 'Home run candidate vNNN coded by ClaudeCode.', which is what the GitHub folder listing shows.",
-  "v159_delta_from_v158": {
+  "v158_delta_from_v157": {
     "modified": [
       "flosc.php",
       "readme.txt"
     ],
-    "note": "Restored the == Screenshots == section deleted by 25cfa98 on 2026-08-06. Seven entries, recovered verbatim from ac16edd. Tags line untouched."
-  }
+    "note": "The Starter Packs opening claimed a new install 'has nothing to say'. A new install with an AI key answers questions about the site in context, so the premise was false. Replaced with what the install already does and what a pack adds on top."
+  },
+  "github_hashid_semantics": "The commit on main this candidate was built from, not this candidate's own commit. Setting it to the parent lets the whole candidate publish in one commit titled 'Home run candidate vNNN coded by ClaudeCode.', which is what the GitHub folder listing shows."
 }

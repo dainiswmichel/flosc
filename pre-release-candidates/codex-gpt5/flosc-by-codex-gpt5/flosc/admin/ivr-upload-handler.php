@@ -685,9 +685,14 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 			return;
 		}
 
-		$action = isset( $_POST['flosc_portability_pack_action'] )
-			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_pack_action'] ) )
-			: '';
+		$posted = wp_unslash( $_POST );
+		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text(
+			$posted,
+			array( 'flosc_portability_pack_action', 'flosc_working_ivr', 'flosc_pack_filename', 'flosc_pack_attachment_id' )
+		) ) {
+			return;
+		}
+		$action = isset( $posted['flosc_portability_pack_action'] ) ? sanitize_key( $posted['flosc_portability_pack_action'] ) : '';
 		if ( '' === $action ) {
 			return;
 		}
@@ -696,14 +701,14 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 		}
 		check_admin_referer( 'flosc_portability_pack' );
 
-		$ivr_file      = isset( $_POST['flosc_working_ivr'] )
-			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
+		$ivr_file      = isset( $posted['flosc_working_ivr'] )
+			? sanitize_file_name( $posted['flosc_working_ivr'] )
 			: '';
-		$filename      = isset( $_POST['flosc_pack_filename'] )
-			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_pack_filename'] ) )
+		$filename      = isset( $posted['flosc_pack_filename'] )
+			? sanitize_file_name( $posted['flosc_pack_filename'] )
 			: '';
-		$attachment_id = isset( $_POST['flosc_pack_attachment_id'] )
-			? (int) $_POST['flosc_pack_attachment_id']
+		$attachment_id = isset( $posted['flosc_pack_attachment_id'] )
+			? absint( $posted['flosc_pack_attachment_id'] )
 			: 0;
 
 		$notes    = array();
@@ -793,13 +798,21 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		if ( ! empty( $GLOBALS['flosc_ivr_upload_handled'] ) ) {
 			return;
 		}
+		$posted = wp_unslash( $_POST );
+		$query  = wp_unslash( $_GET );
+		if ( ! is_array( $posted ) || ! is_array( $query ) || ! flosc_submitted_fields_are_text(
+			$posted,
+			array( 'flosc_portability_submit', 'flosc_upload_ivr_file', 'flosc_working_ivr', 'flosc_upload_redirect_tab', 'flosc_upload_redirect_view' )
+		) || ! flosc_submitted_fields_are_text( $query, array( 'ivr' ) ) ) {
+			return;
+		}
 
 		// Submit value is create|apply (clicked button) — no JS required.
-		$submit_raw = isset( $_POST['flosc_portability_submit'] )
-			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_submit'] ) )
+		$submit_raw = isset( $posted['flosc_portability_submit'] )
+			? sanitize_key( $posted['flosc_portability_submit'] )
 			: '';
 		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
-		$is_legacy  = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
+		$is_legacy  = ! empty( $posted['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
 		if ( ! $is_kit && ! $is_legacy ) {
 			return;
@@ -963,11 +976,11 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		}
 
 		// Current flow for Apply (and for DA1 assign after create).
-		$working_ivr = isset( $_POST['flosc_working_ivr'] )
-			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
+		$working_ivr = isset( $posted['flosc_working_ivr'] )
+			? sanitize_file_name( $posted['flosc_working_ivr'] )
 			: '';
-		if ( '' === $working_ivr && isset( $_GET['ivr'] ) ) {
-			$working_ivr = sanitize_file_name( (string) wp_unslash( $_GET['ivr'] ) );
+		if ( '' === $working_ivr && isset( $query['ivr'] ) ) {
+			$working_ivr = sanitize_file_name( $query['ivr'] );
 		}
 
 		$notes        = array();
@@ -1275,14 +1288,14 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			);
 		}
 
-		$redirect_tab = isset( $_POST['flosc_upload_redirect_tab'] )
-			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_tab'] ) )
+		$redirect_tab = isset( $posted['flosc_upload_redirect_tab'] )
+			? sanitize_key( $posted['flosc_upload_redirect_tab'] )
 			: 'flow';
 		if ( ! in_array( $redirect_tab, array( 'ivr-messages', 'flow', 'da1' ), true ) ) {
 			$redirect_tab = 'flow';
 		}
-		$redirect_view = isset( $_POST['flosc_upload_redirect_view'] )
-			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_view'] ) )
+		$redirect_view = isset( $posted['flosc_upload_redirect_view'] )
+			? sanitize_key( $posted['flosc_upload_redirect_view'] )
 			: 'all';
 		if ( ! in_array( $redirect_view, array( 'single', 'all' ), true ) ) {
 			$redirect_view = 'all';
