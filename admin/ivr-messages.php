@@ -762,7 +762,9 @@ if ( isset( $flosc_get['flosc_ivr_uploaded'] ) && '1' === (string) $flosc_get['f
 }
 
 // Handle explicit file import from IVR File Management (selected file -> FLOSC DB).
-if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_post['import_ivr_file'] ) ) {
+// Same shape rule as the handlers below: a list would reach sanitize_file_name()
+// and raise a TypeError, so nothing is imported.
+if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_post['import_ivr_file'] ) && flosc_submitted_fields_are_text( $flosc_post, array( 'import_ivr_file' ) ) ) {
 	check_admin_referer( 'flosc_import_selected_ivr_file' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to import IVR files.', 'flosc' ) );
