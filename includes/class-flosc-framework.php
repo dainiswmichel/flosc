@@ -3666,7 +3666,12 @@ The Team',
 		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
 			? sanitize_file_name( $post['flosc_return_ivr'] )
 			: '';
-		$label = sanitize_text_field( (string) ( $post['kb_label'] ?? '' ) );
+		$flosc_kb_label_raw = $post['kb_label'] ?? '';
+		if ( ! flosc_submitted_value_is_text( $flosc_kb_label_raw ) ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
+			exit;
+		}
+		$label = sanitize_text_field( (string) $flosc_kb_label_raw );
 		if ( '' === $label ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
 			exit;
@@ -12394,7 +12399,10 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post     = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
+		if ( ! flosc_submitted_fields_are_text( $post, array( 'ivr', 'provider', 'temperature', 'max_tokens', 'params' ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'Model tuning was not saved. One of its fields arrived as a list, so the stored tuning was left unchanged.', 'flosc' ) ), 400 );
+		}
 		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
 		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
 
@@ -12447,7 +12455,11 @@ Example good response:
 		// v5.0.2 FIX: Set flow context from posted IVR so flosc_get_setting reads
 		// the correct per-flow ai_provider. Without this, admin-ajax has no URL
 		// context, get_current_flow() returns null, and provider defaults to ''.
-		$ivr = sanitize_file_name( $post['ivr'] ?? '' );
+		$flosc_test_ivr = $post['ivr'] ?? '';
+		if ( ! flosc_submitted_value_is_text( $flosc_test_ivr ) ) {
+			wp_send_json_error( array( 'message' => __( 'The connection test did not run. The flow name arrived as a list.', 'flosc' ) ), 400 );
+		}
+		$ivr = sanitize_file_name( (string) $flosc_test_ivr );
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		}

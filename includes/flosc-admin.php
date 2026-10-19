@@ -2774,8 +2774,14 @@ trait FLOSC_Admin_Trait {
 	 */
 	public function handle_save_flow_record() {
 		check_admin_referer( 'flosc_save_flow_record' );
-		$flow_id = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
-		$is_new  = ( 'new' === $flow_id );
+		$flow_id = '';
+		if ( isset( $_POST['flow_id'] ) ) {
+			if ( ! is_string( $_POST['flow_id'] ) && ! is_numeric( $_POST['flow_id'] ) ) {
+				wp_die( esc_html__( 'The flow was not saved. The flow id arrived as a list, so the stored flow was left unchanged.', 'flosc' ), '', array( 'response' => 400 ) );
+			}
+			$flow_id = sanitize_key( wp_unslash( $_POST['flow_id'] ) );
+		}
+		$is_new = ( 'new' === $flow_id );
 		if ( $is_new && ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Only administrators can create new flows.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
@@ -2783,9 +2789,58 @@ trait FLOSC_Admin_Trait {
 			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 		$post = wp_unslash( $_POST );
-		$tab  = sanitize_key( (string) ( $post['flosc_return_tab'] ?? 'identity' ) );
+		$tab  = ( isset( $post['flosc_return_tab'] ) && flosc_submitted_value_is_text( $post['flosc_return_tab'] ) )
+			? sanitize_key( (string) $post['flosc_return_tab'] )
+			: 'identity';
 		if ( '' === $tab ) {
 			$tab = 'identity';
+		}
+
+		$flosc_record_text_keys = array(
+			'flosc_return_tab',
+			'flow_slug',
+			'flow_domain',
+			'flow_status',
+			'floscflow_name',
+			'floscflow_title',
+			'floscflow_tagline',
+			'floscflow_chatlogo',
+			'floscflow_favicon',
+			'floscflow_badge',
+			'floscflow_color',
+			'floscflow_share_text',
+			'ivr_file',
+			'wp_category',
+			'quiz_type',
+			'visitor_bar_text',
+			'visitor_bar_icon',
+		);
+		$flosc_record_ok        = flosc_submitted_fields_are_text( $post, $flosc_record_text_keys );
+		if ( $flosc_record_ok && isset( $post['visitor_menu_items'] ) ) {
+			if ( ! is_array( $post['visitor_menu_items'] ) ) {
+				$flosc_record_ok = false;
+			} else {
+				foreach ( $post['visitor_menu_items'] as $flosc_menu_item ) {
+					if ( ! is_array( $flosc_menu_item ) || ! flosc_submitted_fields_are_text( $flosc_menu_item, array( 'label', 'enabled' ) ) ) {
+						$flosc_record_ok = false;
+						break;
+					}
+				}
+			}
+		}
+		if ( ! $flosc_record_ok ) {
+			$this->flosc_redirect_notice(
+				add_query_arg(
+					array(
+						'page'    => 'flosc-flow-edit',
+						'flow_id' => $is_new ? 'new' : $flow_id,
+						'tab'     => $tab,
+					),
+					admin_url( 'admin.php' )
+				),
+				__( 'The flow was not saved. One of its fields arrived as a list, so the stored flow was left unchanged.', 'flosc' ),
+				'error'
+			);
 		}
 
 		if ( current_user_can( 'manage_options' ) && ( isset( $post['visitor_bar_text'] ) || isset( $post['visitor_bar_icon'] ) ) ) {

@@ -759,31 +759,38 @@ if ( isset( $flosc_da1_post['flosc_da1_create_catalog'] ) ) {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to manage DA1 catalogs.', 'flosc' ) );
 	}
-	$flosc_da1_label           = sanitize_text_field( (string) ( $flosc_da1_post['flosc_new_catalog_label'] ?? '' ) );
-	$flosc_da1_key_raw         = sanitize_text_field( (string) ( $flosc_da1_post['flosc_new_catalog_key'] ?? '' ) );
-	$flosc_da1_payload_columns = flosc_da1_sanitize_payload_columns(
-		(string) ( $flosc_da1_post['flosc_new_catalog_fields'] ?? 'Title, Description' ),
-		$flosc_required_columns
-	);
-	if ( empty( $flosc_da1_payload_columns ) ) {
-		$flosc_da1_payload_columns = array( 'Title', 'Description' );
-	}
-	$flosc_da1_key = flosc_da1_slugify( '' !== $flosc_da1_key_raw ? $flosc_da1_key_raw : $flosc_da1_label );
-	if ( '' === $flosc_da1_key ) {
-		$flosc_da1_notice_error = 'Catalog key is required.';
-	} elseif ( isset( $flosc_da1_catalogs[ $flosc_da1_key ] ) ) {
-		$flosc_da1_notice_error = 'Catalog key already exists.';
+	if ( ! flosc_submitted_fields_are_text( $flosc_da1_post, array( 'flosc_new_catalog_label', 'flosc_new_catalog_key', 'flosc_new_catalog_fields' ) ) ) {
+		$flosc_da1_notice_error    = 'The catalog was not created. One of its fields arrived as a list, so nothing was stored.';
+		$flosc_da1_label           = '';
+		$flosc_da1_key_raw         = '';
+		$flosc_da1_payload_columns = array();
 	} else {
-		$flosc_da1_catalogs[ $flosc_da1_key ] = array(
-			'description'     => $flosc_da1_label,
-			'key'             => $flosc_da1_key,
-			'filename'        => 'flosc_da1_catalog_' . $flosc_da1_key . '.tsv',
-			'payload_columns' => $flosc_da1_payload_columns,
-			'created_at'      => current_time( 'mysql' ),
+		$flosc_da1_label           = sanitize_text_field( (string) ( $flosc_da1_post['flosc_new_catalog_label'] ?? '' ) );
+		$flosc_da1_key_raw         = sanitize_text_field( (string) ( $flosc_da1_post['flosc_new_catalog_key'] ?? '' ) );
+		$flosc_da1_payload_columns = flosc_da1_sanitize_payload_columns(
+			(string) ( $flosc_da1_post['flosc_new_catalog_fields'] ?? 'Title, Description' ),
+			$flosc_required_columns
 		);
-		update_option( $flosc_catalog_index_option, $flosc_da1_catalogs, false );
-		$flosc_da1_requested_catalog_key = $flosc_da1_key;
-		$flosc_da1_notice_success        = 'Catalog created.';
+		if ( empty( $flosc_da1_payload_columns ) ) {
+			$flosc_da1_payload_columns = array( 'Title', 'Description' );
+		}
+		$flosc_da1_key = flosc_da1_slugify( '' !== $flosc_da1_key_raw ? $flosc_da1_key_raw : $flosc_da1_label );
+		if ( '' === $flosc_da1_key ) {
+			$flosc_da1_notice_error = 'Catalog key is required.';
+		} elseif ( isset( $flosc_da1_catalogs[ $flosc_da1_key ] ) ) {
+			$flosc_da1_notice_error = 'Catalog key already exists.';
+		} else {
+			$flosc_da1_catalogs[ $flosc_da1_key ] = array(
+				'description'     => $flosc_da1_label,
+				'key'             => $flosc_da1_key,
+				'filename'        => 'flosc_da1_catalog_' . $flosc_da1_key . '.tsv',
+				'payload_columns' => $flosc_da1_payload_columns,
+				'created_at'      => current_time( 'mysql' ),
+			);
+			update_option( $flosc_catalog_index_option, $flosc_da1_catalogs, false );
+			$flosc_da1_requested_catalog_key = $flosc_da1_key;
+			$flosc_da1_notice_success        = 'Catalog created.';
+		}
 	}
 }
 
@@ -792,18 +799,22 @@ if ( isset( $flosc_da1_post['flosc_da1_assign_catalogs'] ) && '' !== $flosc_da1_
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to assign DA1 catalogs.', 'flosc' ) );
 	}
-	$flosc_da1_assigned = sanitize_text_field( (string) ( $flosc_da1_post['flosc_flow_catalogs'] ?? '' ) );
-	$flosc_da1_parts    = array_filter( array_map( 'trim', explode( ',', (string) $flosc_da1_assigned ) ) );
-	$flosc_da1_clean    = array();
-	foreach ( $flosc_da1_parts as $flosc_da1_p ) {
-		$flosc_da1_k = flosc_da1_normalize_key( $flosc_da1_p );
-		if ( '' !== $flosc_da1_k && isset( $flosc_da1_catalogs[ $flosc_da1_k ] ) && ! in_array( $flosc_da1_k, $flosc_da1_clean, true ) ) {
-			$flosc_da1_clean[] = $flosc_da1_k;
+	if ( isset( $flosc_da1_post['flosc_flow_catalogs'] ) && ! flosc_submitted_value_is_text( $flosc_da1_post['flosc_flow_catalogs'] ) ) {
+		$flosc_da1_notice_error = 'The assignment was not saved. The catalog list arrived as a nested list, so the stored assignment was left unchanged.';
+	} else {
+		$flosc_da1_assigned = sanitize_text_field( (string) ( $flosc_da1_post['flosc_flow_catalogs'] ?? '' ) );
+		$flosc_da1_parts    = array_filter( array_map( 'trim', explode( ',', (string) $flosc_da1_assigned ) ) );
+		$flosc_da1_clean    = array();
+		foreach ( $flosc_da1_parts as $flosc_da1_p ) {
+			$flosc_da1_k = flosc_da1_normalize_key( $flosc_da1_p );
+			if ( '' !== $flosc_da1_k && isset( $flosc_da1_catalogs[ $flosc_da1_k ] ) && ! in_array( $flosc_da1_k, $flosc_da1_clean, true ) ) {
+				$flosc_da1_clean[] = $flosc_da1_k;
+			}
 		}
+		$flosc_da1_flow_assignments[ $flosc_da1_selected_ivr ] = $flosc_da1_clean;
+		update_option( $flosc_catalog_assign_option, $flosc_da1_flow_assignments, false );
+		$flosc_da1_notice_success = 'Flow catalog assignment saved.';
 	}
-	$flosc_da1_flow_assignments[ $flosc_da1_selected_ivr ] = $flosc_da1_clean;
-	update_option( $flosc_catalog_assign_option, $flosc_da1_flow_assignments, false );
-	$flosc_da1_notice_success = 'Flow catalog assignment saved.';
 }
 
 /*
