@@ -12102,7 +12102,11 @@ Example good response:
 		// fetch, "no key saved".
 		$typed = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+			$typed = filter_var(
+				wp_unslash( (string) $_POST['api_key'] ),
+				FILTER_CALLBACK,
+				array( 'options' => 'flosc_sanitize_api_secret' )
+			);
 		}
 
 		if ( '' !== $typed && ( strlen( $typed ) > 4096 || preg_match( '/[\x00-\x1F\x7F]/', $typed ) ) ) {
@@ -12191,7 +12195,11 @@ Example good response:
 		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$api_key  = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			$api_key = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+			$api_key = filter_var(
+				wp_unslash( (string) $_POST['api_key'] ),
+				FILTER_CALLBACK,
+				array( 'options' => 'flosc_sanitize_api_secret' )
+			);
 		}
 
 		$stored = flosc_store_provider_api_key( $ivr, $provider, $api_key );
@@ -12259,7 +12267,11 @@ Example good response:
 		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 		$typed    = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+			$typed = filter_var(
+				wp_unslash( (string) $_POST['api_key'] ),
+				FILTER_CALLBACK,
+				array( 'options' => 'flosc_sanitize_api_secret' )
+			);
 		}
 
 		if ( '' !== $ivr ) {
