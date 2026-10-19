@@ -1,0 +1,253 @@
+================================================================================
+PROPOSAL -- not a candidate.
+
+Prepared by   : ClaudeCode (Claude Opus 5), agent-id claude-opus-5
+Date          : 2026y-10m-19d UTC
+Status        : proposal only. No plugin file is edited by this document. No
+                iteration bump, no ZIP, no checksum, no manifest, no promotion,
+                no deployment. It carries no compliance or remediation
+                guarantee, and selection of any candidate remains solely with
+                Dainis W. Michel.
+Input         : the v160 gate run in re-submission-readiness.txt supplied by
+                Dainis W. Michel on 2026-10-19.
+Verified by me: the PHPStan symbol attribution below; the FLOSC_Filesystem
+                method inventory; the FLOSC_DEBUG and FLOSC_PLUGIN_URL
+                definitions at flosc.php:45 and :47; the contact-form mail
+                headers; the readme.txt section inventory across all seven
+                candidate lanes. All against the claude-opus-5 lane at v159.
+NOT verified  : the canonical v160 tree, which is not present in my container;
+                dainis.net, which my container's proxy refuses; Plugin Check;
+                any rendered WordPress page. Items resting on the v159 lane
+                rather than canonical v160 are marked where they appear.
+================================================================================
+
+FLOSC -- FINAL PASS TO A RESUBMISSION-READY ZIP
+Review ID: R flosc/dainismichel/2Jun26/T14 7Oct26/4.3  (P0TDX321123HGN)
+ClaudeCode (Claude Opus 5), 2026-10-19 UTC.
+
+Based on the v160 gate run in re-submission-readiness.txt:
+  tree  Internal Iteration v160, HashID 3e7234be7903cf4c5b0c890b736eab70f88cf944
+  zip   SHA-256 0458c0eb4b25f54fa17709b175add8a88c15c8ad9619f7255a01966bb86cfc22
+        283 entries, 2 829 326 bytes, tests/ 0, phpcs.xml.dist 0, vendor/ 0
+  gate  "blocks failed: 11"
+
+
+THE PLAN -- FIVE STEPS
+================================================================================
+
+1. START COLIMA. RUN PLUGIN CHECK AND THE CLEAN INSTALL.
+
+   This is the only thing standing between you and a resubmission. Blocks 17, 20
+   and 21 all failed on one cause:
+
+     failed to connect to the docker API at
+     unix:///Users/dainismichel/.colima/default/docker.sock ... no such file or
+     directory
+
+   docker 29.8.0 is installed (block 20 doctor says OK). The Colima VM was not
+   running. Start it, re-run blocks 17 and 20.
+
+   Three of the reviewer's checklist items depend on this and on nothing else:
+   Plugin Check, the clean install with WP_DEBUG, and "testing is essential".
+   Neither has ever produced output on any version of FLOSC.
+
+   Done when: block 20 procedure 10 and procedure 11 both print findings.
+
+2. FIX WHAT PLUGIN CHECK REPORTS. READ DEBUG.LOG.
+
+   Work from Plugin Check's actual output, not from predictions. It runs its own
+   ruleset, so what it flags will not match your project PHPCS run.
+
+   Then read debug.log from procedure 11. That is where the real state of the
+   plugin shows up -- static tools cannot see template-scope variables, error
+   branches, or anything that only exists when a page renders.
+
+   Done when: zero Plugin Check errors, and debug.log is empty or every line in
+   it has a fix.
+
+3. FIX THE TWO README ITEMS THE REVIEWER WILL CHECK.
+
+   a) External Services section. Block 12 on v160: "FAIL: External Services
+      section not found". On Issue05 the reviewer wrote: "Please verify that the
+      terms and privacy links exist and they have the proper content. We will
+      check those links in the next review."
+
+      Check two things: that readme.txt has a top-level == External Services ==
+      heading, and what string block 12 greps for -- the review email's own
+      example writes it lowercase, "== External services ==". One of the two is
+      wrong and the fix differs by which.
+
+      The heading itself is correct as written. It is not in the wordpress.org
+      parser's expected sections, so it renders as an <h3> appended to the
+      description -- which is the normal outcome and the exact form the review
+      email demonstrates. No change needed for the parser.
+
+      Also: a link written as `[www.example.org](https://www.example.org)`
+      publishes as literal text, backticks and all. Remove backticks from any
+      markdown link in that section.
+
+   b) Donate link. Issue02 is a timeout, not a dead link:
+      "Operation timed out after 8002 milliseconds with 245307 bytes received".
+      Their client got 245 KB and gave up at 8 seconds. The page answers. It
+      answers slowly. It will time out again if nothing changed.
+
+        curl -sS -o /dev/null -w '%{http_code} %{time_total}s %{size_download}B\n' \
+             --max-time 20 https://dainis.net/donate/
+
+      Run it cold, a few times, from outside your network if you can. If it is
+      near 8s the fix is on the page, not in readme.txt. I could not measure it
+      -- this container's proxy refuses dainis.net.
+
+   While you are in the file: confirm Tags is your line (ai, chatbot,
+   conversion, customer support, sales -- the candidate lanes still carry the old
+   one), and that Tested up to names the WordPress version you actually tested.
+
+4. CLICK THROUGH WHAT CHANGED, WITH WP_DEBUG ON.
+
+   Offer status, offer toggle, offer save, the four Settings submissions, AI
+   Feedback delete, the public contact form, one full Freeline-Login-Offer-Sale-
+   Content run.
+
+   Confirm one thing for Issue04 while a page is open: --flosc-primary in the
+   <head>, and window.marked defined before flosc-app.js runs. That has been
+   asserted statically for several iterations and never once observed.
+
+   Done when: each control does what it should and debug.log gains nothing.
+
+5. BUILD, UPLOAD, REPLY.
+
+   ./build-dist-zip.sh, record the SHA-256, re-run the gate against that exact
+   zip, upload, send the reply in the next section.
+
+
+THE REPLY
+================================================================================
+
+They asked for short and said not to list changes: "I didn't list all the
+changes, as the team will review the entire plugin again and that is not
+necessary at all."
+
+Four things only, because only these are non-obvious from the code:
+
+  - The two .tsv files are functional starter-pack data. The installer reads
+    them, each pack.json names its catalog file explicitly, installation fails
+    without them. One sentence on what a catalog is for: a site owner's list of
+    works, lessons, products or services that FLOSC turns into a conversational
+    sales journey. Ask whether they want a different extension rather than
+    converting to .csv pre-emptively.
+  - Why FLOSC creates and signs in non-privileged accounts, and what guards
+    those paths.
+  - That the nonce cases they cited are nonce- and capability-checked, naming
+    the handlers.
+  - Any Plugin Check warning you are keeping on purpose, with its reason. Write
+    this last; until step 2 you do not know what it says.
+
+  On Issue02, give the number you measured. They already know the page answers.
+  What they saw was eight seconds.
+
+
+WHERE THE ELEVEN ISSUES STAND
+================================================================================
+
+  01 Ajax endpoint                remediated, 4 signatures   needs step 1
+  02 Donate link                  disputed                   needs step 3b
+  03 Not permitted files (.tsv)   kept, documented            their call; your reply
+  04 wp_enqueue commands          remediated                 needs step 4 observation
+  05 Undocumented 3rd party       remediated V133/V135       needs step 3a
+  06 Creating / login users       remediated v136, v144      your written reason
+  07 Unclosed ob_start()          remediated v140            needs step 1
+  08 Changing global behaviour    remediated v143            needs step 1
+  09 Nonces and permissions       3 cited handlers correct   see below
+  10 Sanitize/escape/validate     14 cited reads addressed   see below
+  11 Escape on echo               remediated v153/v154      needs step 1
+
+  Issue09 -- the five traces recorded unsigned at v150. Two were closed in the
+  claude-opus-5 lane by flosc_offer_action_nonce_action() in
+  includes/flosc-request.php, which builds the nonce action for both the emitter
+  and the handler so they cannot drift; the three compound conditions were split
+  so routing is tested first and a bad nonce is refused rather than ignored.
+  Confirm these are in the canonical v160 tree -- the lanes and canonical have
+  diverged.
+
+  Issue10 -- three traces. One is closed: the contact form's Reply-To is built
+  from $email alone, which passes sanitize_email() and an is_email() early
+  return, so a comma or CR/LF cannot reach the header; the name fields go to the
+  body only. That was flagged as the first thing to look at and it no longer
+  holds. The other two to verify against v160:
+    class-flosc-framework.php:3619  handle_kb_save_edit() content validation
+    class-flosc-framework.php:3527  sanitize_file_name() on request values with
+                                    no (string) cast or is_scalar() -- an array
+                                    there is a fatal TypeError on PHP 8.3
+
+
+DO NOT SPEND TIME ON THESE
+================================================================================
+
+"blocks failed: 11" is not eleven problems. Two are real (06 and 12); the rest
+are environment, warnings-only, a tool misconfiguration, or a bug in the gate
+script itself. Specifically:
+
+  block 19  "NOT RUN: block 19 has no command" -> exit 1 on every run. While
+            that block is empty, "blocks failed" can never reach 0, so the
+            headline number is not a release signal.
+
+  block 08  0 ERRORS, 110 warnings -- with every suppression annotation renamed
+            so none can take effect. That is the strongest static result in the
+            run: it proves the suppressions are not load-bearing. It exits 1
+            only because the warning count is above zero.
+
+  block 05  0 errors, 50 warnings. Exit 2 means "some findings are
+            auto-fixable", not "worse than exit 1". PHPCS Runner.php:141-150
+            returns errors plus warnings; the 1-vs-2 split is fixability, not
+            severity.
+
+  block 06  5 errors, under the bare WordPress standard. The same tree is 0
+            errors under the project ruleset. The gap is the declared
+            customSanitizingFunctions: bare WPCS cannot know a FLOSC sanitizer
+            sanitizes. Let Plugin Check tell you whether these matter; do not
+            pre-fix them, and do not resolve them with phpcs:ignore.
+
+  block 14  746 PHPStan errors. 342 of them are two lines of configuration, not
+            code. testing-environment/phpstan.neon.dist uses excludePaths:
+            analyse: for */tests/*, which stops those files being reported on but
+            not being scanned for symbols -- so test stubs shadow the real ones.
+            The arities match exactly: the WP_Error stub at
+            tests/test_starter_pack_install.php:39 takes 2 parameters and PHPStan
+            reports "invoked with 3, 0-2 required" 221 times; the real
+            WP_Error::__construct takes 3. Same mechanism for esc_url_raw,
+            add_query_arg, check_admin_referer, current_user_can,
+            wp_remote_retrieve_response_code, wp_upload_dir, FLOSC_Filesystem
+            (20 errors -- all 20 methods exist in
+            includes/filesystem/class-flosc-filesystem.php) and
+            FLOSC_Site_Content_Index. A further 21 are FLOSC_PLUGIN_URL and
+            FLOSC_DEBUG, both defined at flosc.php:45 and :47, which PHPStan
+            needs in bootstrapFiles. PHPStan is not a WordPress.org review
+            criterion. Fix the config after you resubmit, not before.
+
+  block 18  Mostly its own extractor keeping trailing PHP syntax, so it curls
+            strings like https://api-m.paypal.com' and https://console.x.ai\n2.
+            The rest are POST-only endpoints correctly answering 401/404 to an
+            unauthenticated GET, and intentional placeholders (yoursite.com).
+            Worth knowing: https://dainis.net/donate/ is not among its 156 URLs.
+            The one URL the reviewer flagged is the one it never tests.
+
+  block 21  Playground fatals inside plugin-check's own PHPCS before FLOSC is
+            analysed: fopen(php://stdin) returns false in Playground's PHP, then
+            fclose(false) throws a TypeError in Config.php:466. That is a
+            plugin-check-in-Playground incompatibility and it is not evidence
+            about FLOSC in either direction. Playground is still useful for the
+            reviewer's manual click-through.
+
+
+WHAT CANNOT BE CLAIMED YET
+================================================================================
+
+  - Passes Plugin Check. It has never run, on any version.
+  - Tested on a clean install with WP_DEBUG. Procedure 11 has never produced
+    output.
+  - Anything from block 21, in either direction.
+  - A local zip digest matching a published one. build-dist-zip.sh output depends
+    on file mtimes and git does not store mtimes, so a rebuild of the same tree
+    gives a different digest. Compare file by file.
+  - Anything about canonical v160 that was checked only against a candidate lane.
+    The Issue09 and Issue10 notes above mark which items that is.
