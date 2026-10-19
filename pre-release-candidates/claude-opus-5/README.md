@@ -72,3 +72,16 @@ Behaviour measured against real WordPress 7.1.3, not assumed: `sanitize_file_nam
 
 Selection of a winning candidate, promotion and deployment remain solely with
 Dainis W. Michel.
+
+## Governance files deliberately absent from this candidate
+
+`agents.md`, `CLAUDE.md`, `.cursorrules`, `WORDPRESS-ORG-RELEASE.md` and `handoff*.md` are
+not in `flosc-by-claude-opus-5/flosc/`. They are not plugin source, `.distignore` already
+keeps every one of them out of the zip, and carrying them in a candidate means promoting
+that candidate would overwrite whatever sits on the canonical machine.
+
+This matters for `agents.md` specifically. That file has exactly one commit in this
+repository's history — `3e7234b`, the v160 Codex candidate commit of 2026-10-18 — and no
+commit touches it afterwards. Any edit made to it on the canonical machine since then
+exists nowhere in this repository, so copying the repository's version onto that machine
+destroys those edits silently, with no diff to show for it.
