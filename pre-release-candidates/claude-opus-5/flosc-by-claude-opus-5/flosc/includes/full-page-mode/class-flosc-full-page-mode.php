@@ -172,7 +172,7 @@ class FLOSC_Full_Page_Mode {
 			0
 		);
 
-		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js' );
+		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'stripe-js' );
 		add_action(
 			'wp_print_scripts',
 			function () use ( $flosc_script_whitelist ) {
@@ -197,7 +197,7 @@ class FLOSC_Full_Page_Mode {
 		// v1.9.5: Also clear wp_print_footer_scripts action hooks.
 		// wp_print_footer_scripts() fires do_action('wp_print_footer_scripts').
 		// _wp_footer_scripts() is hooked there — it's the core function that calls
-		// $wp_scripts->do_footer_items() to output enqueued JS (flosc-app, paypal-js).
+		// $wp_scripts->do_footer_items() to output the surviving enqueued scripts.
 		// BuddyBoss/Jetpack ALSO hook inline JS + HTML templates on this action,
 		// bypassing our wp_footer cleanup. Fix: clear all, re-add only _wp_footer_scripts.
 		remove_all_actions( 'wp_print_footer_scripts' );
@@ -461,7 +461,8 @@ class FLOSC_Full_Page_Mode {
 		nocache_headers();
 
 		// Track referral (v1.0.7: use array syntax with SameSite).
-		$ref = sanitize_text_field( (string) get_query_var( 'ref' ) );
+		$flosc_ref_query = get_query_var( 'ref' );
+		$ref             = flosc_submitted_value_is_text( $flosc_ref_query ) ? sanitize_text_field( (string) $flosc_ref_query ) : '';
 		if ( '' === $ref && isset( $_GET['ref'] ) && is_string( $_GET['ref'] ) ) {
 			$ref = sanitize_text_field( wp_unslash( $_GET['ref'] ) );
 		}

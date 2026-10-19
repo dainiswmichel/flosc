@@ -78,6 +78,9 @@ if ( ! function_exists( 'flosc_store_provider_api_key' ) ) {
 	 * @return array{option:string,setting:string,suffix:string}|WP_Error
 	 */
 	function flosc_store_provider_api_key( $ivr, $provider, $api_key ) {
+		if ( ! flosc_submitted_value_is_text( $ivr ) || ! flosc_submitted_value_is_text( $provider ) || ! flosc_submitted_value_is_text( $api_key ) ) {
+			return new WP_Error( 'flosc_key_shape', __( 'That value arrived as a list.', 'flosc' ) );
+		}
 		$provider = sanitize_key( (string) $provider );
 		$ivr      = basename( (string) $ivr );
 		$api_key  = trim( (string) $api_key );
@@ -145,6 +148,9 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 	 * @return array{option:string,setting:string,model:string}|WP_Error
 	 */
 	function flosc_store_provider_model( $ivr, $provider, $model ) {
+		if ( ! flosc_submitted_value_is_text( $ivr ) || ! flosc_submitted_value_is_text( $provider ) || ! flosc_submitted_value_is_text( $model ) ) {
+			return new WP_Error( 'flosc_model_shape', __( 'That value arrived as a list.', 'flosc' ) );
+		}
 		$provider = sanitize_key( (string) $provider );
 		$ivr      = basename( (string) $ivr );
 		$model    = trim( (string) $model );

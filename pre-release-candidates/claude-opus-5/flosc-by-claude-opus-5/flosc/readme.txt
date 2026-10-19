@@ -1,7 +1,7 @@
 === FLOSC ===
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
-Tags: leads, sales, access, ai, chatbot
+Tags: ai, chatbot, conversion, customer support, sales
 Requires at least: 7.1
 Requires PHP: 7.4
 Tested up to: 7.1
@@ -210,16 +210,6 @@ When "Include influences" is disabled, those materials remain in `workshop_json`
 FLOSC does not fetch content from, call an API at, or transmit WordPress, profile, visitor, or conversation data to the cited websites. Opening a citation is an ordinary administrator-initiated browser navigation.
 
 Current citation hosts include Wikipedia (`en.wikipedia.org`), the Electronic Text Corpus of Sumerian Literature (`etcsl.orinst.ox.ac.uk`), the Stanford Encyclopedia of Philosophy (`plato.stanford.edu`), the Rudolf Steiner Archive (`rsarchive.org`), BDK America (`www.bdkamerica.org`), Bible Gateway (`www.biblegateway.com`), Project Gutenberg (`www.gutenberg.org`), Nobel Prize (`www.nobelprize.org`), and the Viktor Frankl Institute (`www.viktorfrankl.org`). These are references, not FLOSC service dependencies.
-
-== Screenshots ==
-
-1. screenshot-1.png - SSO Settings: Configure single sign-on options and authentication behavior.
-2. screenshot-2.png - Offers Settings: Manage offer configuration and sale-stage settings.
-3. screenshot-3.png - Member Levels Settings: Configure membership-level access and progression settings.
-4. screenshot-4.png - AutoPrompt Panel Settings: Configure quick prompts and response shortcuts.
-5. screenshot-5.png - IVR Management Settings: Manage IVR message routes and conversational structure.
-6. screenshot-6.png - Identity Settings: Set plugin name, title, and brand identity values.
-7. screenshot-7.png - Flow Settings: Configure the core flow sequence and behavior.
 
 == Upgrade Notice ==
 

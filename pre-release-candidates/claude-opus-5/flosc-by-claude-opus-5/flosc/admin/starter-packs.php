@@ -37,8 +37,14 @@ if ( ! function_exists( 'flosc_starter_packs_handle_post' ) ) {
 			wp_die( esc_html__( 'You do not have permission to install starter packs.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 
-		$flosc_sp_slug   = isset( $_POST['flosc_sp_slug'] ) ? sanitize_key( wp_unslash( $_POST['flosc_sp_slug'] ) ) : '';
-		$flosc_sp_action = isset( $_POST['flosc_sp_action'] ) ? sanitize_key( wp_unslash( $_POST['flosc_sp_action'] ) ) : '';
+		$flosc_sp_slug = '';
+		if ( isset( $_POST['flosc_sp_slug'] ) && ( is_string( $_POST['flosc_sp_slug'] ) || is_numeric( $_POST['flosc_sp_slug'] ) ) ) {
+			$flosc_sp_slug = sanitize_key( wp_unslash( $_POST['flosc_sp_slug'] ) );
+		}
+		$flosc_sp_action = '';
+		if ( isset( $_POST['flosc_sp_action'] ) && ( is_string( $_POST['flosc_sp_action'] ) || is_numeric( $_POST['flosc_sp_action'] ) ) ) {
+			$flosc_sp_action = sanitize_key( wp_unslash( $_POST['flosc_sp_action'] ) );
+		}
 
 		if ( 'install' === $flosc_sp_action ) {
 			$flosc_sp_notice = FLOSC_Starter_Packs::install( $flosc_sp_slug );
@@ -51,10 +57,11 @@ if ( ! function_exists( 'flosc_starter_packs_handle_post' ) ) {
 		} elseif ( 'disable_personality' === $flosc_sp_action ) {
 			$flosc_sp_notice = FLOSC_Starter_Packs::remove_personality( $flosc_sp_slug );
 		} elseif ( 'personality' === $flosc_sp_action ) {
-			$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
-				? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
-				: '';
-			$flosc_sp_notice      = FLOSC_Starter_Packs::set_personality( $flosc_sp_slug, $flosc_sp_personality );
+			$flosc_sp_personality = '';
+			if ( isset( $_POST['flosc_sp_personality'] ) && ( is_string( $_POST['flosc_sp_personality'] ) || is_numeric( $_POST['flosc_sp_personality'] ) ) ) {
+				$flosc_sp_personality = sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) );
+			}
+			$flosc_sp_notice = FLOSC_Starter_Packs::set_personality( $flosc_sp_slug, $flosc_sp_personality );
 		}
 
 		return $flosc_sp_notice;

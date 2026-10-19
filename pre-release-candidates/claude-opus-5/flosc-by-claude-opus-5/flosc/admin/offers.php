@@ -158,6 +158,23 @@ function flosc_handle_offer_save() {
 		return;
 	}
 
+	// A list posted into a one-value field, or a one-value field posted where a
+	// coupon column must be a list, leaves the stored offer unchanged.
+	if ( ! flosc_submitted_request_is_text(
+		$flosc_post,
+		array(
+			'offer_coupon_code',
+			'offer_coupon_type',
+			'offer_coupon_value',
+			'offer_coupon_valid_from',
+			'offer_coupon_valid_until',
+			'offer_coupon_active',
+		),
+		array( 'save_offer', 'flosc_save_offer_nonce', '_wp_http_referer' )
+	) ) {
+		return;
+	}
+
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.
 	$fk = sanitize_text_field( $flosc_post['flosc_flow_key'] ?? '' );
