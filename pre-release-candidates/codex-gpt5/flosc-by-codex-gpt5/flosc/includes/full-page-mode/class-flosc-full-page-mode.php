@@ -461,7 +461,8 @@ class FLOSC_Full_Page_Mode {
 		nocache_headers();
 
 		// Track referral (v1.0.7: use array syntax with SameSite).
-		$ref = sanitize_text_field( (string) get_query_var( 'ref' ) );
+		$flosc_ref_query = get_query_var( 'ref' );
+		$ref             = flosc_submitted_value_is_text( $flosc_ref_query ) ? sanitize_text_field( (string) $flosc_ref_query ) : '';
 		if ( '' === $ref && isset( $_GET['ref'] ) && is_string( $_GET['ref'] ) ) {
 			$ref = sanitize_text_field( wp_unslash( $_GET['ref'] ) );
 		}

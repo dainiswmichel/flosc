@@ -685,23 +685,14 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 			return;
 		}
 
-		$flosc_posted = wp_unslash( $_POST );
-		if ( ! is_array( $flosc_posted ) || ! flosc_submitted_fields_are_text(
-			$flosc_posted,
-			array(
-				'flosc_portability_pack_action',
-				'flosc_working_ivr',
-				'flosc_pack_filename',
-				'flosc_pack_attachment_id',
-			)
+		$posted = wp_unslash( $_POST );
+		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text(
+			$posted,
+			array( 'flosc_portability_pack_action', 'flosc_working_ivr', 'flosc_pack_filename', 'flosc_pack_attachment_id' )
 		) ) {
 			return;
 		}
-
-		$action = '';
-		if ( isset( $_POST['flosc_portability_pack_action'] ) && ( is_string( $_POST['flosc_portability_pack_action'] ) || is_numeric( $_POST['flosc_portability_pack_action'] ) ) ) {
-			$action = sanitize_key( wp_unslash( $_POST['flosc_portability_pack_action'] ) );
-		}
+		$action = isset( $posted['flosc_portability_pack_action'] ) ? sanitize_key( $posted['flosc_portability_pack_action'] ) : '';
 		if ( '' === $action ) {
 			return;
 		}
@@ -710,18 +701,15 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 		}
 		check_admin_referer( 'flosc_portability_pack' );
 
-		$ivr_file = '';
-		if ( isset( $_POST['flosc_working_ivr'] ) && ( is_string( $_POST['flosc_working_ivr'] ) || is_numeric( $_POST['flosc_working_ivr'] ) ) ) {
-			$ivr_file = sanitize_file_name( wp_unslash( $_POST['flosc_working_ivr'] ) );
-		}
-		$filename = '';
-		if ( isset( $_POST['flosc_pack_filename'] ) && ( is_string( $_POST['flosc_pack_filename'] ) || is_numeric( $_POST['flosc_pack_filename'] ) ) ) {
-			$filename = sanitize_file_name( wp_unslash( $_POST['flosc_pack_filename'] ) );
-		}
-		$attachment_id = 0;
-		if ( isset( $_POST['flosc_pack_attachment_id'] ) && ( is_string( $_POST['flosc_pack_attachment_id'] ) || is_numeric( $_POST['flosc_pack_attachment_id'] ) ) ) {
-			$attachment_id = absint( wp_unslash( $_POST['flosc_pack_attachment_id'] ) );
-		}
+		$ivr_file      = isset( $posted['flosc_working_ivr'] )
+			? sanitize_file_name( $posted['flosc_working_ivr'] )
+			: '';
+		$filename      = isset( $posted['flosc_pack_filename'] )
+			? sanitize_file_name( $posted['flosc_pack_filename'] )
+			: '';
+		$attachment_id = isset( $posted['flosc_pack_attachment_id'] )
+			? absint( $posted['flosc_pack_attachment_id'] )
+			: 0;
 
 		$notes    = array();
 		$is_error = false;
@@ -810,33 +798,21 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		if ( ! empty( $GLOBALS['flosc_ivr_upload_handled'] ) ) {
 			return;
 		}
-
-		$flosc_posted = wp_unslash( $_POST );
-		$flosc_query  = wp_unslash( $_GET );
-		if ( ! is_array( $flosc_posted ) || ! is_array( $flosc_query ) || ! flosc_submitted_fields_are_text(
-			$flosc_posted,
-			array(
-				'flosc_portability_submit',
-				'flosc_upload_ivr_file',
-				'flosc_working_ivr',
-				'flosc_upload_redirect_tab',
-				'flosc_upload_redirect_view',
-			)
-		) || ! flosc_submitted_fields_are_text( $flosc_query, array( 'ivr' ) ) ) {
+		$posted = wp_unslash( $_POST );
+		$query  = wp_unslash( $_GET );
+		if ( ! is_array( $posted ) || ! is_array( $query ) || ! flosc_submitted_fields_are_text(
+			$posted,
+			array( 'flosc_portability_submit', 'flosc_upload_ivr_file', 'flosc_working_ivr', 'flosc_upload_redirect_tab', 'flosc_upload_redirect_view' )
+		) || ! flosc_submitted_fields_are_text( $query, array( 'ivr' ) ) ) {
 			return;
 		}
 
 		// Submit value is create|apply (clicked button) — no JS required.
-		$submit_raw = '';
-		if ( isset( $_POST['flosc_portability_submit'] ) && ( is_string( $_POST['flosc_portability_submit'] ) || is_numeric( $_POST['flosc_portability_submit'] ) ) ) {
-			$submit_raw = sanitize_key( wp_unslash( $_POST['flosc_portability_submit'] ) );
-		}
-		$is_kit    = in_array( $submit_raw, array( 'create', 'apply' ), true );
-		$is_legacy = false;
-		if ( isset( $_POST['flosc_upload_ivr_file'] ) && ( is_string( $_POST['flosc_upload_ivr_file'] ) || is_numeric( $_POST['flosc_upload_ivr_file'] ) ) ) {
-			$flosc_legacy_flag = sanitize_text_field( wp_unslash( $_POST['flosc_upload_ivr_file'] ) );
-			$is_legacy         = ( '' !== $flosc_legacy_flag ) && ! empty( $_FILES['ivr_file_upload']['name'] );
-		}
+		$submit_raw = isset( $posted['flosc_portability_submit'] )
+			? sanitize_key( $posted['flosc_portability_submit'] )
+			: '';
+		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
+		$is_legacy  = ! empty( $posted['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
 		if ( ! $is_kit && ! $is_legacy ) {
 			return;
@@ -1000,12 +976,11 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		}
 
 		// Current flow for Apply (and for DA1 assign after create).
-		$working_ivr = '';
-		if ( isset( $_POST['flosc_working_ivr'] ) && ( is_string( $_POST['flosc_working_ivr'] ) || is_numeric( $_POST['flosc_working_ivr'] ) ) ) {
-			$working_ivr = sanitize_file_name( wp_unslash( $_POST['flosc_working_ivr'] ) );
-		}
-		if ( '' === $working_ivr && isset( $_GET['ivr'] ) && ( is_string( $_GET['ivr'] ) || is_numeric( $_GET['ivr'] ) ) ) {
-			$working_ivr = sanitize_file_name( wp_unslash( $_GET['ivr'] ) );
+		$working_ivr = isset( $posted['flosc_working_ivr'] )
+			? sanitize_file_name( $posted['flosc_working_ivr'] )
+			: '';
+		if ( '' === $working_ivr && isset( $query['ivr'] ) ) {
+			$working_ivr = sanitize_file_name( $query['ivr'] );
 		}
 
 		$notes        = array();
@@ -1313,17 +1288,15 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			);
 		}
 
-		$redirect_tab = 'flow';
-		if ( isset( $_POST['flosc_upload_redirect_tab'] ) && ( is_string( $_POST['flosc_upload_redirect_tab'] ) || is_numeric( $_POST['flosc_upload_redirect_tab'] ) ) ) {
-			$redirect_tab = sanitize_key( wp_unslash( $_POST['flosc_upload_redirect_tab'] ) );
-		}
+		$redirect_tab = isset( $posted['flosc_upload_redirect_tab'] )
+			? sanitize_key( $posted['flosc_upload_redirect_tab'] )
+			: 'flow';
 		if ( ! in_array( $redirect_tab, array( 'ivr-messages', 'flow', 'da1' ), true ) ) {
 			$redirect_tab = 'flow';
 		}
-		$redirect_view = 'all';
-		if ( isset( $_POST['flosc_upload_redirect_view'] ) && ( is_string( $_POST['flosc_upload_redirect_view'] ) || is_numeric( $_POST['flosc_upload_redirect_view'] ) ) ) {
-			$redirect_view = sanitize_key( wp_unslash( $_POST['flosc_upload_redirect_view'] ) );
-		}
+		$redirect_view = isset( $posted['flosc_upload_redirect_view'] )
+			? sanitize_key( $posted['flosc_upload_redirect_view'] )
+			: 'all';
 		if ( ! in_array( $redirect_view, array( 'single', 'all' ), true ) ) {
 			$redirect_view = 'all';
 		}

@@ -13,6 +13,36 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 trait FLOSC_Chat_Turn_Trait {
 	/**
+	 * Validate the scalar cells inside the optional browsing context.
+	 *
+	 * @param mixed $context Request context.
+	 * @return bool
+	 */
+	private function flosc_chat_context_is_valid( $context ) {
+		if ( null === $context ) {
+			return true;
+		}
+		if ( ! is_array( $context ) || ! flosc_submitted_fields_are_text(
+			$context,
+			array( 'flow_id', 'browsing_page_url', 'browsing_page_title', 'browsing_page_path', 'browsing_page_referrer', 'browsing_surface', 'browsing_page_post_id', 'browsing_tab_index' )
+		) ) {
+			return false;
+		}
+		if ( ! isset( $context['browsing_surf_trail'] ) ) {
+			return true;
+		}
+		if ( ! is_array( $context['browsing_surf_trail'] ) ) {
+			return false;
+		}
+		foreach ( $context['browsing_surf_trail'] as $trail_item ) {
+			if ( ! is_array( $trail_item ) || ! flosc_submitted_fields_are_text( $trail_item, array( 'url', 'title', 'path' ) ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * A visitor's turn must never end as WordPress fatal HTML inside a chat
 	 * bubble. Everything below this point may touch third-party provider code,
 	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
@@ -63,6 +93,20 @@ trait FLOSC_Chat_Turn_Trait {
 	private function handle_chat_turn( $request ) {
 		$flosc_chat_start_time = microtime( true );
 		$flosc_response_source = 'ivr'; // Track how response was generated.
+		$context_raw            = $request->get_param( 'context' );
+		if ( ! flosc_rest_fields_are_text(
+			$request,
+			array( 'message', 'turn_id', 'resume_turn_id', 'session_id', 'journey_id', 'flow_id', 'ivr_file', 'ivr_guidance', 'ivr_message_name' )
+		) || ! $this->flosc_chat_context_is_valid( $context_raw ) ) {
+			return new WP_REST_Response(
+				array(
+					'success'    => false,
+					'error'      => __( 'Please check the request fields and try again.', 'flosc' ),
+					'error_code' => 'invalid_request_shape',
+				),
+				400
+			);
+		}
 
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
 
@@ -150,7 +194,7 @@ trait FLOSC_Chat_Turn_Trait {
 		$journey_id = class_exists( 'FLOSC_Chat_Logger' )
 			? FLOSC_Chat_Logger::flosc_sanitize_journey_id( $request->get_param( 'journey_id' ) )
 			: '';
-		$context    = $request->get_param( 'context' ) ?? array();
+		$context    = null === $context_raw ? array() : $context_raw;
 		if ( is_array( $context ) ) {
 			if ( isset( $context['browsing_page_url'] ) ) {
 				$context['browsing_page_url'] = esc_url_raw( (string) $context['browsing_page_url'] );
@@ -475,19 +519,6 @@ trait FLOSC_Chat_Turn_Trait {
 						'success'    => false,
 						'error'      => __( 'Invalid guest account request payload.', 'flosc' ),
 						'error_code' => 'contact_form_invalid',
-					),
-					400
-				);
-			}
-			if ( ! flosc_submitted_fields_are_text(
-				$contact_form,
-				array( 'first_name', 'last_name', 'email', 'phone', 'message', 'company', 'rendered_at' )
-			) ) {
-				return new WP_REST_Response(
-					array(
-						'success'    => false,
-						'error'      => __( 'Please check the request fields and try again.', 'flosc' ),
-						'error_code' => 'contact_form_rejected',
 					),
 					400
 				);
@@ -1368,8 +1399,20 @@ trait FLOSC_Chat_Turn_Trait {
 	 * @return mixed
 	 */
 	private function handle_chat_with_rag_turn( $request ) {
+		$context_raw = $request->get_param( 'context' );
+		if ( ! flosc_rest_fields_are_text( $request, array( 'message', 'flow_id', 'ivr_file', 'session_id', 'journey_id' ) )
+			|| ! $this->flosc_chat_context_is_valid( $context_raw ) ) {
+			return new WP_REST_Response(
+				array(
+					'success'    => false,
+					'error'      => __( 'Please check the request fields and try again.', 'flosc' ),
+					'error_code' => 'invalid_request_shape',
+				),
+				400
+			);
+		}
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
-		$context = $request->get_param( 'context' ) ?? array();
+		$context = null === $context_raw ? array() : $context_raw;
 		if ( is_array( $context ) ) {
 			if ( isset( $context['browsing_page_url'] ) ) {
 				$context['browsing_page_url'] = esc_url_raw( (string) $context['browsing_page_url'] );

@@ -202,6 +202,10 @@ class FLOSC_Trajectory {
 	 * @param mixed $post_id Post ID.
 	 */
 	public static function save_meta_box( $post_id ) {
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
 		$map = array(
 			'flow'               => 'flosc_trj_flow',
 			'keywords'           => 'flosc_trj_keywords',
@@ -210,39 +214,30 @@ class FLOSC_Trajectory {
 			'off_ramp_phrases'   => 'flosc_trj_off_ramp_phrases',
 			'off_ramp_exactness' => 'flosc_trj_off_ramp_exactness',
 		);
-
-		// One bad field refuses the whole save. A later field must not be
-		// written after an earlier field arrived as a list.
-		$flosc_posted     = wp_unslash( $_POST );
-		$flosc_shape_keys = array( 'flosc_trajectory_nonce' );
-		foreach ( $map as $flosc_field ) {
-			$flosc_shape_keys[] = $flosc_field;
-		}
-		if ( ! is_array( $flosc_posted ) || ! flosc_submitted_fields_are_text( $flosc_posted, $flosc_shape_keys ) ) {
+		$posted     = wp_unslash( $_POST );
+		$shape_keys = array_merge( array( 'flosc_trajectory_nonce' ), array_values( $map ) );
+		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text( $posted, $shape_keys ) ) {
 			return;
 		}
-
-		if ( ! isset( $_POST['flosc_trajectory_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ), 'flosc_trajectory_meta' ) ) {
-			return;
-		}
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		$nonce = isset( $posted['flosc_trajectory_nonce'] ) ? sanitize_text_field( $posted['flosc_trajectory_nonce'] ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'flosc_trajectory_meta' ) ) {
 			return;
 		}
 
 		foreach ( $map as $key => $field ) {
-			if ( ! isset( $_POST[ $field ] ) ) {
+			if ( ! isset( $posted[ $field ] ) ) {
 				continue;
 			}
 			if ( 'instructions' === $key ) {
-				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
+				$value = sanitize_textarea_field( $posted[ $field ] );
 			} elseif ( 'off_ramp_phrases' === $key ) {
-				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
+				$value = sanitize_textarea_field( $posted[ $field ] );
 			} elseif ( 'off_ramp_exactness' === $key ) {
-				$value = self::off_ramp_exactness( sanitize_key( wp_unslash( $_POST[ $field ] ) ) );
+				$value = self::off_ramp_exactness( sanitize_key( $posted[ $field ] ) );
 			} elseif ( 'priority' === $key ) {
-				$value = (string) max( 0, min( 100, absint( wp_unslash( $_POST[ $field ] ) ) ) );
+				$value = (string) max( 0, min( 100, absint( $posted[ $field ] ) ) );
 			} else {
-				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				$value = sanitize_text_field( $posted[ $field ] );
 			}
 			update_post_meta( $post_id, self::META[ $key ], $value );
 		}

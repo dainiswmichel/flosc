@@ -1,16 +1,16 @@
 {
   "schema_version": 10,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 home-run candidate v160",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v164",
   "owner": "Codex",
-  "created_michel_date": "2026-10m-18d",
-  "repository_parent": "2e34f2a1b0b7059930502c4bc8be70691faf11c6",
-  "code_lineage": "local v159 plus PayPal SDK lazy loading",
+  "created_michel_date": "2026-10m-19d",
+  "repository_parent": "823ccad5e906255085feebf97fbfefb3449b9800",
+  "code_lineage": "canonical v162 plus complete Issue 10 request-shape remediation, reviewed against Grok v163",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v160",
-  "github_hashid_at_pack": "3e7234be7903cf4c5b0c890b736eab70f88cf944",
-  "candidate_source_artifact_commit": "3e7234be7903cf4c5b0c890b736eab70f88cf944",
+  "internal_iteration": "v164",
+  "github_hashid_at_pack": "823ccad5e906255085feebf97fbfefb3449b9800",
+  "candidate_source_artifact_commit": "recorded by the v164 Git commit",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": {
     "path": "flosc.zip",
@@ -18,21 +18,19 @@
     "entries": 283,
     "files": 243,
     "php_files": 154,
-    "bytes": 2829326,
-    "sha256": "0458c0eb4b25f54fa17709b175add8a88c15c8ad9619f7255a01966bb86cfc22",
+    "bytes": 2837308,
+    "sha256": "b421e0dc4ca0cc83fe4b00ac45dc96c533fdb080d35e1351e84fe50291b1b08d",
     "tests_entries": 0
   },
   "verification": {
     "all_php_lint": "passed",
     "php_compatibility_7_4": "passed",
-    "php_regression_scripts": "52 passed, 0 failed",
-    "javascript_regression_scripts": "6 passed, 0 failed",
-    "paypal_lazy_load_contract": "passed",
+    "issue10_actual_handler_test": "passed",
+    "php_regression_scripts": "53 passed, 2 unrelated pre-existing assertions failed",
+    "wordpress_security_phpcs": "passed: 0 errors, 25 nonce warnings",
     "zip_integrity": "passed",
-    "full_wordpress_phpcs": "failed on existing v159 findings",
-    "full_release_gate": "7 failed or unverified checks",
+    "full_release_gate": "4 failed or unverified checks unrelated to Issue 10; see handoff",
     "official_plugin_check": "unverified: no booting local WP_PATH",
-    "live_deployment": "passed: v160 checksums match and /chat/ returned HTTP 200",
-    "live_wp_cli": "blocked by Contact Form 7 requiring PHP 8.3 under CLI PHP 8.0"
+    "live_deployment": "passed: full v164 zip installed and all live PHP files linted clean"
   }
 }

@@ -287,6 +287,13 @@ class FLOSC_Session_Rest {
 	 * @param mixed $request Request.
 	 */
 	public function delete_session( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'id', 'flow_id', 'ivr_file' ) ) ) {
+			return new WP_Error(
+				'invalid_request_shape',
+				__( 'Please check the session fields and try again.', 'flosc' ),
+				array( 'status' => 400 )
+			);
+		}
 		$session_id = absint( $request->get_param( 'id' ) );
 		$user_id    = get_current_user_id();
 		if ( ! $user_id ) {
@@ -334,17 +341,15 @@ class FLOSC_Session_Rest {
 	 * @param mixed $request Request.
 	 */
 	public function rename_session( $request ) {
-		$id_raw    = $request->get_param( 'id' );
-		$title_raw = $request->get_param( 'title' );
-		if ( ! flosc_submitted_value_is_text( $id_raw ) || ! flosc_submitted_value_is_text( $title_raw ) ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'id', 'title', 'flow_id', 'ivr_file' ) ) ) {
 			return new WP_Error(
 				'flosc_title_required',
 				__( 'Title is required.', 'flosc' ),
 				array( 'status' => 400 )
 			);
 		}
-		$session_id = absint( $id_raw );
-		$title      = sanitize_text_field( (string) $title_raw );
+		$session_id = absint( $request->get_param( 'id' ) );
+		$title      = sanitize_text_field( (string) ( $request->get_param( 'title' ) ?? '' ) );
 		$user_id    = get_current_user_id();
 		if ( ! $user_id ) {
 			return new WP_Error(

@@ -60,6 +60,29 @@ function flosc_submitted_fields_are_text( array $source, array $keys ) {
 }
 
 /**
+ * Whether every present named REST parameter is one text value or a number.
+ *
+ * Missing optional parameters are allowed. Arrays and objects are refused
+ * before a handler can cast them to the word "Array" or persist a fallback.
+ *
+ * @param mixed $request REST request-like object.
+ * @param array $keys    Parameter names that must be scalar when present.
+ * @return bool
+ */
+function flosc_rest_fields_are_text( $request, array $keys ) {
+	if ( ! is_object( $request ) || ! method_exists( $request, 'get_param' ) ) {
+		return false;
+	}
+	foreach ( $keys as $key ) {
+		$value = $request->get_param( $key );
+		if ( null !== $value && ! flosc_submitted_value_is_text( $value ) ) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
  * Whether a copied value is a list and every entry in it is text or a number.
  *
  * A string is not a list. A list entry that is itself a list is not text.

@@ -143,9 +143,6 @@ function flosc_handle_autoprompts_save() {
 			if ( ! isset( $flosc_post[ $flosc_pill_key ] ) ) {
 				continue;
 			}
-			// A string is not a pill list. Replacing the stored pills with an
-			// empty list would wipe them. A cell that is itself a list must
-			// not be stored either.
 			if ( ! is_array( $flosc_post[ $flosc_pill_key ] ) ) {
 				return;
 			}

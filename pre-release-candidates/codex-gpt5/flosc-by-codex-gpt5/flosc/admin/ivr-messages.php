@@ -1106,115 +1106,148 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 		wp_die( esc_html__( 'You do not have permission to edit IVR messages.', 'flosc' ) );
 	}
 
-	// DB = live runtime, IVR file = portable config. Always save to both.
-
-	$flosc_messages = flosc_flow_get_messages( $flosc_flow_settings );
-	$flosc_phases   = flosc_flow_get_phases( $flosc_flow_settings );
-
-	$flosc_msg_id         = sanitize_key( (string) ( $flosc_post['message_id'] ?? '' ) );
-	$flosc_phase          = sanitize_key( (string) ( $flosc_post['message_phase'] ?? '' ) );
-	$flosc_allowed_phases = array( 'freeline', 'login', 'offer', 'sale', 'content' );
-	if ( ! in_array( $flosc_phase, $flosc_allowed_phases, true ) ) {
-		$flosc_phase = 'freeline';
-	}
-
-	if ( '' === $flosc_msg_id ) {
-		add_settings_error( 'flosc_settings', 'message_id_required', 'Message id is required.', 'error' );
+	// A list posted into any one-value field stops the save before the phase
+	// map, the database write, and the IVR file export. The stored message stays.
+	$flosc_ivr_text_fields = array(
+		'message_id',
+		'message_phase',
+		'message_content',
+		'message_name',
+		'message_type',
+		'message_conditions',
+		'message_style',
+		'message_icon',
+		'message_user_input',
+		'message_keywords',
+		'message_action',
+		'message_offer_id',
+		'message_price',
+		'message_discount_price',
+		'message_timer',
+		'message_display_format',
+		'message_html_file',
+		'message_woo_product',
+		'message_post_id',
+		'message_individual_password',
+		'message_password_prompt',
+		'message_password_success',
+		'message_password_max_tries',
+		'message_password_retry',
+	);
+	if ( ! flosc_submitted_fields_are_text( $flosc_post, $flosc_ivr_text_fields ) ) {
+		add_settings_error( 'flosc_settings', 'message_shape_invalid', 'The message was not saved. One of its fields arrived as a list, so the stored message was left unchanged.', 'error' );
 	} else {
 
-		// Pass 5: message bodies use IVR markdown sanitizer (null-byte/size/UTF-8).
-		$flosc_raw_content   = (string) ( $flosc_post['message_content'] ?? '' );
-		$flosc_clean_content = flosc_sanitize_ivr_markdown( $flosc_raw_content, 200000 );
-		if ( is_wp_error( $flosc_clean_content ) ) {
-			add_settings_error( 'flosc_settings', 'message_content_invalid', $flosc_clean_content->get_error_message(), 'error' );
+		// DB = live runtime, IVR file = portable config. Always save to both.
+
+		$flosc_messages = flosc_flow_get_messages( $flosc_flow_settings );
+		$flosc_phases   = flosc_flow_get_phases( $flosc_flow_settings );
+
+		$flosc_msg_id         = sanitize_key( (string) ( $flosc_post['message_id'] ?? '' ) );
+		$flosc_phase          = sanitize_key( (string) ( $flosc_post['message_phase'] ?? '' ) );
+		$flosc_allowed_phases = array( 'freeline', 'login', 'offer', 'sale', 'content' );
+		if ( ! in_array( $flosc_phase, $flosc_allowed_phases, true ) ) {
+			$flosc_phase = 'freeline';
+		}
+
+		if ( '' === $flosc_msg_id ) {
+			add_settings_error( 'flosc_settings', 'message_id_required', 'Message id is required.', 'error' );
 		} else {
 
-			$flosc_message_data = array(
-				'name'       => sanitize_text_field( $flosc_post['message_name'] ?? '' ),
-				'type'       => sanitize_text_field( $flosc_post['message_type'] ?? '' ),
-				'phase'      => $flosc_phase,
-				'content'    => $flosc_clean_content,
-				'conditions' => sanitize_text_field( $flosc_post['message_conditions'] ?? '' ),
-				'style'      => sanitize_text_field( $flosc_post['message_style'] ?? 'default' ),
-				'icon'       => sanitize_text_field( $flosc_post['message_icon'] ?? '' ),
-				'user_input' => sanitize_text_field( $flosc_post['message_user_input'] ?? '' ),
-				'keywords'   => sanitize_text_field( $flosc_post['message_keywords'] ?? '' ),
-				'action'     => sanitize_text_field( $flosc_post['message_action'] ?? '' ),
-			);
+			// Pass 5: message bodies use IVR markdown sanitizer (null-byte/size/UTF-8).
+			$flosc_raw_content   = (string) ( $flosc_post['message_content'] ?? '' );
+			$flosc_clean_content = flosc_sanitize_ivr_markdown( $flosc_raw_content, 200000 );
+			if ( is_wp_error( $flosc_clean_content ) ) {
+				add_settings_error( 'flosc_settings', 'message_content_invalid', $flosc_clean_content->get_error_message(), 'error' );
+			} else {
 
-			// v1.6.2: Include offer-specific fields when type is 'offer'.
-			if ( 'offer' === $flosc_message_data['type'] ) {
-				$flosc_offer_fields = array(
-					'offer_id'       => sanitize_text_field( $flosc_post['message_offer_id'] ?? '' ),
-					'price'          => sanitize_text_field( $flosc_post['message_price'] ?? '' ),
-					'discount_price' => sanitize_text_field( $flosc_post['message_discount_price'] ?? '' ),
-					'timer'          => intval( $flosc_post['message_timer'] ?? 0 ),
-					'display_format' => sanitize_text_field( $flosc_post['message_display_format'] ?? 'card' ),
-					'html_file'      => sanitize_file_name( $flosc_post['message_html_file'] ?? '' ),
-					'woo_product'    => sanitize_text_field( $flosc_post['message_woo_product'] ?? '' ),
-					'post_id'        => intval( $flosc_post['message_post_id'] ?? 0 ),
+				$flosc_message_data = array(
+					'name'       => sanitize_text_field( $flosc_post['message_name'] ?? '' ),
+					'type'       => sanitize_text_field( $flosc_post['message_type'] ?? '' ),
+					'phase'      => $flosc_phase,
+					'content'    => $flosc_clean_content,
+					'conditions' => sanitize_text_field( $flosc_post['message_conditions'] ?? '' ),
+					'style'      => sanitize_text_field( $flosc_post['message_style'] ?? 'default' ),
+					'icon'       => sanitize_text_field( $flosc_post['message_icon'] ?? '' ),
+					'user_input' => sanitize_text_field( $flosc_post['message_user_input'] ?? '' ),
+					'keywords'   => sanitize_text_field( $flosc_post['message_keywords'] ?? '' ),
+					'action'     => sanitize_text_field( $flosc_post['message_action'] ?? '' ),
 				);
-				// Only store non-empty values (timer 0 is valid — use array_key_exists path for ints).
-				foreach ( $flosc_offer_fields as $flosc_k => $flosc_v ) {
-					if ( 'timer' === $flosc_k || 'post_id' === $flosc_k ) {
-						$flosc_message_data[ $flosc_k ] = $flosc_v;
-					} elseif ( '' !== $flosc_v && null !== $flosc_v ) {
-						$flosc_message_data[ $flosc_k ] = $flosc_v;
+
+				// v1.6.2: Include offer-specific fields when type is 'offer'.
+				if ( 'offer' === $flosc_message_data['type'] ) {
+					$flosc_offer_fields = array(
+						'offer_id'       => sanitize_text_field( $flosc_post['message_offer_id'] ?? '' ),
+						'price'          => sanitize_text_field( $flosc_post['message_price'] ?? '' ),
+						'discount_price' => sanitize_text_field( $flosc_post['message_discount_price'] ?? '' ),
+						'timer'          => intval( $flosc_post['message_timer'] ?? 0 ),
+						'display_format' => sanitize_text_field( $flosc_post['message_display_format'] ?? 'card' ),
+						'html_file'      => sanitize_file_name( $flosc_post['message_html_file'] ?? '' ),
+						'woo_product'    => sanitize_text_field( $flosc_post['message_woo_product'] ?? '' ),
+						'post_id'        => intval( $flosc_post['message_post_id'] ?? 0 ),
+					);
+					// Only store non-empty values (timer 0 is valid — use array_key_exists path for ints).
+					foreach ( $flosc_offer_fields as $flosc_k => $flosc_v ) {
+						if ( 'timer' === $flosc_k || 'post_id' === $flosc_k ) {
+							$flosc_message_data[ $flosc_k ] = $flosc_v;
+						} elseif ( '' !== $flosc_v && null !== $flosc_v ) {
+							$flosc_message_data[ $flosc_k ] = $flosc_v;
+						}
 					}
 				}
-			}
 
-			// v8.0.0: Concierge fields when type is 'concierge' — keyword-triggered message
-			// with an optional password gate. Retry messages are one per line (the retry list).
-			if ( 'concierge' === $flosc_message_data['type'] ) {
-				$flosc_message_data['individual_message_password'] = sanitize_text_field( $flosc_post['message_individual_password'] ?? '' );
-				$flosc_message_data['password_prompt']             = sanitize_text_field( $flosc_post['message_password_prompt'] ?? '' );
-				$flosc_message_data['password_success']            = sanitize_text_field( $flosc_post['message_password_success'] ?? '' );
-				$flosc_message_data['password_max_tries']          = max( 1, intval( $flosc_post['message_password_max_tries'] ?? 3 ) );
-				$flosc_retry_list                                  = array();
-				foreach ( preg_split( '/\r\n|\r|\n/', (string) ( $flosc_post['message_password_retry'] ?? '' ) ) as $flosc_retry_line ) {
-					$flosc_retry_line = sanitize_text_field( $flosc_retry_line );
-					if ( '' !== $flosc_retry_line ) {
-						$flosc_retry_list[] = $flosc_retry_line;
+				// v8.0.0: Concierge fields when type is 'concierge' — keyword-triggered message
+				// with an optional password gate. Retry messages are one per line (the retry list).
+				if ( 'concierge' === $flosc_message_data['type'] ) {
+					$flosc_message_data['individual_message_password'] = sanitize_text_field( $flosc_post['message_individual_password'] ?? '' );
+					$flosc_message_data['password_prompt']             = sanitize_text_field( $flosc_post['message_password_prompt'] ?? '' );
+					$flosc_message_data['password_success']            = sanitize_text_field( $flosc_post['message_password_success'] ?? '' );
+					$flosc_message_data['password_max_tries']          = max( 1, intval( $flosc_post['message_password_max_tries'] ?? 3 ) );
+					$flosc_retry_list                                  = array();
+					foreach ( preg_split( '/\r\n|\r|\n/', (string) ( $flosc_post['message_password_retry'] ?? '' ) ) as $flosc_retry_line ) {
+						$flosc_retry_line = sanitize_text_field( $flosc_retry_line );
+						if ( '' !== $flosc_retry_line ) {
+							$flosc_retry_list[] = $flosc_retry_line;
+						}
 					}
+					$flosc_message_data['password_retry_messages'] = $flosc_retry_list;
 				}
-				$flosc_message_data['password_retry_messages'] = $flosc_retry_list;
-			}
 
-			// Save message to FLOSC DB (per-flow). Merge over the existing message so fields
-			// the editor does not expose (e.g. MessagePanel) survive an edit instead of being
-			// dropped. The form's fields still win — present-in-form values override the old
-			// ones — so a field can be edited or cleared; only untouched fields are preserved.
-			$flosc_existing_message          = ( isset( $flosc_messages[ $flosc_msg_id ] ) && is_array( $flosc_messages[ $flosc_msg_id ] ) ) ? $flosc_messages[ $flosc_msg_id ] : array();
-			$flosc_messages[ $flosc_msg_id ] = array_merge( $flosc_existing_message, $flosc_message_data );
-			if ( $flosc_flow_key ) {
-				$flosc_fs     = get_option( $flosc_flow_key, array() );
-				$flosc_styles = flosc_flow_get_styles( $flosc_fs );
+				// Save message to FLOSC DB (per-flow). Merge over the existing message so fields
+				// the editor does not expose (e.g. MessagePanel) survive an edit instead of being
+				// dropped. The form's fields still win — present-in-form values override the old
+				// ones — so a field can be edited or cleared; only untouched fields are preserved.
+				$flosc_existing_message          = ( isset( $flosc_messages[ $flosc_msg_id ] ) && is_array( $flosc_messages[ $flosc_msg_id ] ) ) ? $flosc_messages[ $flosc_msg_id ] : array();
+				$flosc_messages[ $flosc_msg_id ] = array_merge( $flosc_existing_message, $flosc_message_data );
+				if ( $flosc_flow_key ) {
+					$flosc_fs     = get_option( $flosc_flow_key, array() );
+					$flosc_styles = flosc_flow_get_styles( $flosc_fs );
 
-				// Update phase mapping.
-				if ( ! isset( $flosc_phases[ $flosc_phase ] ) ) {
-					$flosc_phases[ $flosc_phase ] = array();
+					// Update phase mapping.
+					if ( ! isset( $flosc_phases[ $flosc_phase ] ) ) {
+						$flosc_phases[ $flosc_phase ] = array();
+					}
+					if ( ! in_array( (string) $flosc_msg_id, array_map( 'strval', $flosc_phases[ $flosc_phase ] ), true ) ) {
+						$flosc_phases[ $flosc_phase ][] = $flosc_msg_id;
+					}
+					flosc_flow_set_runtime( $flosc_fs, $flosc_messages, $flosc_phases, $flosc_styles );
+					update_option( $flosc_flow_key, $flosc_fs );
+					$GLOBALS['flosc_current_settings'] = $flosc_fs;
+					$flosc_flow_settings               = $flosc_fs;
 				}
-				if ( ! in_array( (string) $flosc_msg_id, array_map( 'strval', $flosc_phases[ $flosc_phase ] ), true ) ) {
-					$flosc_phases[ $flosc_phase ][] = $flosc_msg_id;
-				}
-				flosc_flow_set_runtime( $flosc_fs, $flosc_messages, $flosc_phases, $flosc_styles );
-				update_option( $flosc_flow_key, $flosc_fs );
-				$GLOBALS['flosc_current_settings'] = $flosc_fs;
-				$flosc_flow_settings               = $flosc_fs;
-			}
 
-			// Always save to both: DB is the live runtime, IVR file is the portable config.
-			$flosc_export_path = function_exists( 'flosc_data_file_path' )
-			? flosc_data_file_path( $flosc_active_ivr_file )
-			: $flosc_ivr_file_write_path;
-			flosc_auto_export_ivr_to_file( $flosc_flow_key, $flosc_export_path );
-			add_settings_error( 'flosc_settings', 'message_saved', 'Saved to FLOSC DB (live) and IVR file (portable config).', 'success' );
-		} // end valid message content
-	} // end non-empty message_id
+				// Always save to both: DB is the live runtime, IVR file is the portable config.
+				$flosc_export_path = function_exists( 'flosc_data_file_path' )
+				? flosc_data_file_path( $flosc_active_ivr_file )
+				: $flosc_ivr_file_write_path;
+				flosc_auto_export_ivr_to_file( $flosc_flow_key, $flosc_export_path );
+				add_settings_error( 'flosc_settings', 'message_saved', 'Saved to FLOSC DB (live) and IVR file (portable config).', 'success' );
+			} // end valid message content
+		} // end non-empty message_id
+	} // end one-value fields
 }
 
-if ( isset( $flosc_get['delete_message'] ) && isset( $flosc_get['phase'] ) ) {
+if ( isset( $flosc_get['delete_message'] ) && isset( $flosc_get['phase'] ) && flosc_submitted_fields_are_text( $flosc_get, array( 'delete_message', 'phase' ) ) ) {
 	$flosc_msg_id = sanitize_key( (string) $flosc_get['delete_message'] );
 	$flosc_phase  = sanitize_key( (string) $flosc_get['phase'] );
 	check_admin_referer( 'flosc_delete_message_' . $flosc_msg_id );

@@ -135,6 +135,9 @@ trait FLOSC_REST_Trait {
 		if ( empty( $nonce ) ) {
 			$nonce = $request->get_param( '_wpnonce' );
 		}
+		if ( ! flosc_submitted_value_is_text( $nonce ) ) {
+			return new WP_Error( 'forbidden', __( 'Invalid or missing security token.', 'flosc' ), array( 'status' => 403 ) );
+		}
 		$nonce = sanitize_text_field( (string) $nonce );
 		if ( ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
 			return new WP_Error( 'forbidden', __( 'Invalid or missing security token.', 'flosc' ), array( 'status' => 403 ) );
@@ -155,6 +158,9 @@ trait FLOSC_REST_Trait {
 		$nonce_result = $this->check_checkout_endpoint_permission( $request );
 		if ( true !== $nonce_result ) {
 			return $nonce_result;
+		}
+		if ( ! flosc_rest_fields_are_text( $request, array( 'binding_token', 'session_id', 'provider', 'flow_id', 'offer_id' ) ) ) {
+			return new WP_Error( 'flosc_checkout_binding_required', __( 'Checkout binding token and session_id are required.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$binding_token = sanitize_text_field( (string) $request->get_param( 'binding_token' ) );
@@ -238,6 +244,9 @@ trait FLOSC_REST_Trait {
 	 * @param mixed $request Request.
 	 */
 	public function check_webhook_endpoint_permission( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'provider' ) ) ) {
+			return new WP_Error( 'flosc_invalid_webhook_provider', __( 'Invalid webhook provider.', 'flosc' ), array( 'status' => 400 ) );
+		}
 		$provider = sanitize_key( (string) $request->get_param( 'provider' ) );
 		if ( ! in_array( $provider, array( 'stripe', 'paypal', 'clickbank' ), true ) ) {
 			return new WP_Error( 'flosc_invalid_webhook_provider', __( 'Invalid webhook provider.', 'flosc' ), array( 'status' => 400 ) );
@@ -255,6 +264,9 @@ trait FLOSC_REST_Trait {
 	 * @return string|WP_Error
 	 */
 	private function normalize_ivr_phase( $raw_phase ) {
+		if ( null !== $raw_phase && ! flosc_submitted_value_is_text( $raw_phase ) ) {
+			return new WP_Error( 'flosc_invalid_phase', __( 'Invalid FLOSC phase.', 'flosc' ), array( 'status' => 400 ) );
+		}
 		$phase = ( null === $raw_phase || '' === $raw_phase )
 			? 'freeline'
 			: sanitize_key( (string) $raw_phase );
@@ -387,6 +399,9 @@ trait FLOSC_REST_Trait {
 	 * @return true|WP_Error
 	 */
 	public function check_visitor_session_poll_permission( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'session_id', 'poll_token' ) ) ) {
+			return new WP_Error( 'flosc_missing_session_token', __( 'Missing session token.', 'flosc' ), array( 'status' => 403 ) );
+		}
 		// Canonicalize to the same crc32 id the chat logger and admin-inject
 		// handlers store under; absint() on the raw Date.now() string would key
 		// a different session and fail the ownership check (403), so the widget
@@ -429,6 +444,9 @@ trait FLOSC_REST_Trait {
 		if ( is_wp_error( $public_check ) ) {
 			return $public_check;
 		}
+		if ( ! flosc_rest_fields_are_text( $request, array( 'session_id' ) ) ) {
+			return new WP_Error( 'invalid_session_id', __( 'Invalid session id.', 'flosc' ), array( 'status' => 400 ) );
+		}
 
 		// Canonicalize to the same crc32 id the chat logger and admin-inject
 		// handlers store under; absint() on the raw Date.now() string would key
@@ -458,6 +476,9 @@ trait FLOSC_REST_Trait {
 	 * @return WP_REST_Response
 	 */
 	public function handle_oembed( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'url', 'retry' ) ) ) {
+			return new WP_REST_Response( array( 'success' => false ), 400 );
+		}
 		$url   = esc_url_raw( (string) $request->get_param( 'url' ) );
 		$retry = '1' === sanitize_text_field( (string) $request->get_param( 'retry' ) );
 		if ( '' === $url || ! wp_http_validate_url( $url ) ) {

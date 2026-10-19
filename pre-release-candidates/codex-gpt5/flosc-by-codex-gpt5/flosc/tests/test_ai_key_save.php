@@ -47,6 +47,7 @@ class WP_Error {
 }
 function is_wp_error( $t ) { return $t instanceof WP_Error; }
 
+require_once __DIR__ . '/../includes/flosc-accessors.php';
 require_once __DIR__ . '/../includes/ai/flosc-provider-profiles.php';
 require_once __DIR__ . '/../includes/ai/flosc-model-parameters.php';
 require_once __DIR__ . '/../includes/ai/flosc-provider-keys.php';

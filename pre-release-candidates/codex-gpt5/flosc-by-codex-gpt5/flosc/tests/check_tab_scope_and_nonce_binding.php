@@ -418,10 +418,10 @@ echo "\nNeither review sniff is suppressed anywhere in the shipping code\n";
  * is read instead of hunting annotations, and renaming every annotation in the
  * tree therefore changes nothing either sniff reports.
  *
- * Measured on this tree: the project ruleset reports 0 errors for both sniffs,
- * and 0 again with annotations disabled. The bare WordPress standard reports 5
- * for them, because it discards customSanitizingFunctions -- that difference is
- * the declarations being dropped, not code changing.
+ * Measured on this tree: the project ruleset and the bare WordPress standard
+ * both report 0 errors for these sniffs with annotations disabled. The five
+ * reviewer-facing request reads use FILTER_CALLBACK with their field-specific
+ * sanitizer, so the stock standard sees the boundary without an annotation.
  */
 $flosc_suppressions = array();
 $flosc_walk         = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $flosc_root ) );
@@ -430,7 +430,9 @@ foreach ( $flosc_walk as $flosc_f ) {
 		continue;
 	}
 	$flosc_p = str_replace( '\\', '/', $flosc_f->getPathname() );
-	if ( false !== strpos( $flosc_p, '/tests/' ) || false !== strpos( $flosc_p, '/vendor/' ) ) {
+	if ( false !== strpos( $flosc_p, '/tests/' )
+		|| false !== strpos( $flosc_p, '/vendor/' )
+		|| false !== strpos( $flosc_p, '/pre-release-candidates/' ) ) {
 		continue;
 	}
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local source in a CLI-only audit.
@@ -458,7 +460,10 @@ foreach ( array_unique( $flosc_declared[1] ) as $flosc_fn ) {
 		if ( ! $flosc_f2->isFile() || 'php' !== $flosc_f2->getExtension() ) {
 			continue;
 		}
-		if ( false !== strpos( str_replace( '\\', '/', $flosc_f2->getPathname() ), '/tests/' ) ) {
+		$flosc_p2 = str_replace( '\\', '/', $flosc_f2->getPathname() );
+		if ( false !== strpos( $flosc_p2, '/tests/' )
+			|| false !== strpos( $flosc_p2, '/vendor/' )
+			|| false !== strpos( $flosc_p2, '/pre-release-candidates/' ) ) {
 			continue;
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local source in a CLI-only audit.
@@ -475,6 +480,38 @@ flosc_tabscope_assert(
 	'every function the ruleset credits as a sanitizer exists in the shipping tree'
 		. ( $flosc_missing ? ' -- ' . implode( ', ', $flosc_missing ) : '' ),
 	array() === $flosc_missing
+);
+
+echo "\nThe stock WordPress standard can see all five custom-sanitizer boundaries\n";
+
+$flosc_personality = flosc_tabscope_read( 'includes/flosc-personality-library.php' );
+$flosc_api_filters = preg_match_all(
+	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_api_secret' \)/",
+	$flosc_fw,
+	$flosc_api_matches
+);
+$flosc_profile_filters = preg_match_all(
+	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_personality_profile_text' \)/",
+	$flosc_personality,
+	$flosc_profile_matches
+);
+$flosc_workshop_filters = preg_match_all(
+	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_personality_workshop' \)/",
+	$flosc_personality,
+	$flosc_workshop_matches
+);
+
+flosc_tabscope_assert(
+	'the three provider-key request reads use the byte-preserving callback',
+	3 === $flosc_api_filters
+);
+flosc_tabscope_assert(
+	'the personality profile request uses its Markdown-preserving callback',
+	1 === $flosc_profile_filters
+);
+flosc_tabscope_assert(
+	'the workshop request uses its validating JSON callback',
+	1 === $flosc_workshop_filters
 );
 
 echo "\nEvery request value reaching sanitize_file_name() has its shape established\n";
@@ -496,7 +533,9 @@ foreach ( $flosc_iter as $flosc_file ) {
 		continue;
 	}
 	$flosc_path = str_replace( '\\', '/', $flosc_file->getPathname() );
-	if ( false !== strpos( $flosc_path, '/tests/' ) || false !== strpos( $flosc_path, '/vendor/' ) ) {
+	if ( false !== strpos( $flosc_path, '/tests/' )
+		|| false !== strpos( $flosc_path, '/vendor/' )
+		|| false !== strpos( $flosc_path, '/pre-release-candidates/' ) ) {
 		continue;
 	}
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local source in a CLI-only audit.
