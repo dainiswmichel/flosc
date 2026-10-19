@@ -3,8 +3,8 @@
 **Iteration:** v166
 **Baseline:** v164, commit `f051f94abd9f8768b51544f3d60d925d3ac8a522` (Codex)
 **Source tree:** `flosc-by-claude-opus-5/flosc/`
-**ZIP:** not built. `agents.md` forbids a zip before Dainis confirms the change works, and
-no WordPress page has been loaded against it.
+**ZIP:** `flosc.zip`, SHA-256 `28248f35fb5004234d091d663b71b49c68cb6a73d9b0ae8430c99eb4a52fa7a5`
+**Source commit:** `fd00517470507e20caa35fbe3ae006a1842bafcd`
 
 ## Scope
 
