@@ -854,7 +854,7 @@ class FLOSC_Framework {
 			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_user_sticky_nonce'] ) ), 'flosc_save_user_sticky_' . $user_id ) ) {
 			return;
 		}
-		if ( ! isset( $_POST['flosc_user_sticky'] ) ) {
+		if ( ! isset( $_POST['flosc_user_sticky'] ) || ( ! is_string( $_POST['flosc_user_sticky'] ) && ! is_numeric( $_POST['flosc_user_sticky'] ) ) ) {
 			return;
 		}
 		$sticky = sanitize_textarea_field( wp_unslash( $_POST['flosc_user_sticky'] ) );
@@ -8259,9 +8259,16 @@ Example good response:
 	 * @return WP_REST_Response|WP_Error What the code granted, or an error when it is not valid here.
 	 */
 	public function handle_redeem_access_code( $request ) {
-		$code           = $request->get_param( 'code' );
-		$flow_id        = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
-		$offer_id_param = sanitize_text_field( $request->get_param( 'offer_id' ) ?? '' );
+		$code      = $request->get_param( 'code' );
+		$flow_raw  = $request->get_param( 'flow_id' );
+		$offer_raw = $request->get_param( 'offer_id' );
+		if ( ! flosc_submitted_value_is_text( $code )
+			|| ( null !== $flow_raw && ! flosc_submitted_value_is_text( $flow_raw ) )
+			|| ( null !== $offer_raw && ! flosc_submitted_value_is_text( $offer_raw ) ) ) {
+			return new WP_Error( 'missing_code', __( 'No access code provided', 'flosc' ), array( 'status' => 400 ) );
+		}
+		$flow_id        = sanitize_text_field( (string) $flow_raw );
+		$offer_id_param = sanitize_text_field( (string) $offer_raw );
 
 		if ( empty( $code ) ) {
 			return new WP_Error( 'missing_code', __( 'No access code provided', 'flosc' ), array( 'status' => 400 ) );
@@ -9154,11 +9161,23 @@ Example good response:
 			flosc_log( '[FLOSC-PAYPAL] activate-subscription HIT user=' . get_current_user_id() );
 		}
 
-		$subscription_id = sanitize_text_field( (string) $request->get_param( 'subscription_id' ) );
-		$flow_id         = sanitize_key( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
-		$client_offer    = sanitize_text_field( (string) ( $request->get_param( 'offer_id' ) ?? '' ) );
-		$binding_token   = sanitize_text_field( (string) $request->get_param( 'binding_token' ) );
-		$binding_session = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
+		$subscription_raw = $request->get_param( 'subscription_id' );
+		$flow_raw         = $request->get_param( 'flow_id' );
+		$offer_raw        = $request->get_param( 'offer_id' );
+		$token_raw        = $request->get_param( 'binding_token' );
+		$session_raw      = $request->get_param( 'session_id' );
+		if ( ! flosc_submitted_value_is_text( $subscription_raw )
+			|| ( null !== $flow_raw && ! flosc_submitted_value_is_text( $flow_raw ) )
+			|| ( null !== $offer_raw && ! flosc_submitted_value_is_text( $offer_raw ) )
+			|| ( null !== $token_raw && ! flosc_submitted_value_is_text( $token_raw ) )
+			|| ( null !== $session_raw && ! flosc_submitted_value_is_text( $session_raw ) ) ) {
+			return new WP_Error( 'missing_params', __( 'Missing subscription_id', 'flosc' ), array( 'status' => 400 ) );
+		}
+		$subscription_id = sanitize_text_field( (string) $subscription_raw );
+		$flow_id         = sanitize_key( (string) $flow_raw );
+		$client_offer    = sanitize_text_field( (string) $offer_raw );
+		$binding_token   = sanitize_text_field( (string) $token_raw );
+		$binding_session = sanitize_text_field( (string) $session_raw );
 
 		if ( '' === $subscription_id ) {
 			return new WP_Error( 'missing_params', __( 'Missing subscription_id', 'flosc' ), array( 'status' => 400 ) );
@@ -12196,9 +12215,12 @@ Example good response:
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-		$api_key  = '';
+		$provider = '';
+		if ( isset( $_POST['provider'] ) && ( is_string( $_POST['provider'] ) || is_numeric( $_POST['provider'] ) ) ) {
+			$provider = sanitize_key( wp_unslash( $_POST['provider'] ) );
+		}
+		$ivr     = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$api_key = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
 			$api_key = filter_var(
 				wp_unslash( (string) $_POST['api_key'] ),
@@ -12235,9 +12257,15 @@ Example good response:
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
+		$provider = '';
+		if ( isset( $_POST['provider'] ) && ( is_string( $_POST['provider'] ) || is_numeric( $_POST['provider'] ) ) ) {
+			$provider = sanitize_key( wp_unslash( $_POST['provider'] ) );
+		}
+		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model = '';
+		if ( isset( $_POST['model'] ) && ( is_string( $_POST['model'] ) || is_numeric( $_POST['model'] ) ) ) {
+			$model = sanitize_text_field( wp_unslash( $_POST['model'] ) );
+		}
 
 		$stored = flosc_store_provider_model( $ivr, $provider, $model );
 

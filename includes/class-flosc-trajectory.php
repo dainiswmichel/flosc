@@ -202,13 +202,6 @@ class FLOSC_Trajectory {
 	 * @param mixed $post_id Post ID.
 	 */
 	public static function save_meta_box( $post_id ) {
-		if ( ! isset( $_POST['flosc_trajectory_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ), 'flosc_trajectory_meta' ) ) {
-			return;
-		}
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
-			return;
-		}
-
 		$map = array(
 			'flow'               => 'flosc_trj_flow',
 			'keywords'           => 'flosc_trj_keywords',
@@ -217,6 +210,24 @@ class FLOSC_Trajectory {
 			'off_ramp_phrases'   => 'flosc_trj_off_ramp_phrases',
 			'off_ramp_exactness' => 'flosc_trj_off_ramp_exactness',
 		);
+
+		// One bad field refuses the whole save. A later field must not be
+		// written after an earlier field arrived as a list.
+		$flosc_posted     = wp_unslash( $_POST );
+		$flosc_shape_keys = array( 'flosc_trajectory_nonce' );
+		foreach ( $map as $flosc_field ) {
+			$flosc_shape_keys[] = $flosc_field;
+		}
+		if ( ! is_array( $flosc_posted ) || ! flosc_submitted_fields_are_text( $flosc_posted, $flosc_shape_keys ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['flosc_trajectory_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ), 'flosc_trajectory_meta' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
 
 		foreach ( $map as $key => $field ) {
 			if ( ! isset( $_POST[ $field ] ) ) {

@@ -1171,9 +1171,23 @@ trait FLOSC_Magic_Link_Trait {
 	 * @return mixed
 	 */
 	public function handle_email_registration( $request ) {
-		$email           = sanitize_email( $request->get_param( 'email' ) );
-		$flow_id         = sanitize_key( (string) $request->get_param( 'flow_id' ) );
-		$redirect_to_raw = esc_url_raw( (string) $request->get_param( 'redirect_to' ) );
+		$email_raw    = $request->get_param( 'email' );
+		$flow_raw     = $request->get_param( 'flow_id' );
+		$redirect_raw = $request->get_param( 'redirect_to' );
+		if ( ! flosc_submitted_value_is_text( $email_raw )
+			|| ( null !== $flow_raw && ! flosc_submitted_value_is_text( $flow_raw ) )
+			|| ( null !== $redirect_raw && ! flosc_submitted_value_is_text( $redirect_raw ) ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => 'Please enter a valid email address.',
+				),
+				400
+			);
+		}
+		$email           = sanitize_email( $email_raw );
+		$flow_id         = sanitize_key( (string) $flow_raw );
+		$redirect_to_raw = esc_url_raw( (string) $redirect_raw );
 		$redirect_to     = wp_http_validate_url( $redirect_to_raw ) ? $redirect_to_raw : '';
 
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1973,7 +1987,11 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post    = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'flow_id' ) ) ) {
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
+			exit;
+		}
 		$email   = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
 		$actor   = get_current_user_id();

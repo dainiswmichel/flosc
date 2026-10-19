@@ -458,8 +458,13 @@ trait FLOSC_REST_Trait {
 	 * @return WP_REST_Response
 	 */
 	public function handle_oembed( $request ) {
-		$url   = esc_url_raw( (string) $request->get_param( 'url' ) );
-		$retry = '1' === sanitize_text_field( (string) $request->get_param( 'retry' ) );
+		$url_raw   = $request->get_param( 'url' );
+		$retry_raw = $request->get_param( 'retry' );
+		if ( ! flosc_submitted_value_is_text( $url_raw ) || ( null !== $retry_raw && ! flosc_submitted_value_is_text( $retry_raw ) ) ) {
+			return new WP_REST_Response( array( 'success' => false ), 400 );
+		}
+		$url   = esc_url_raw( (string) $url_raw );
+		$retry = '1' === sanitize_text_field( (string) $retry_raw );
 		if ( '' === $url || ! wp_http_validate_url( $url ) ) {
 			return new WP_REST_Response( array( 'success' => false ), 400 );
 		}

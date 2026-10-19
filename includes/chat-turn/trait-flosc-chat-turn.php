@@ -479,6 +479,19 @@ trait FLOSC_Chat_Turn_Trait {
 					400
 				);
 			}
+			if ( ! flosc_submitted_fields_are_text(
+				$contact_form,
+				array( 'first_name', 'last_name', 'email', 'phone', 'message', 'company', 'rendered_at' )
+			) ) {
+				return new WP_REST_Response(
+					array(
+						'success'    => false,
+						'error'      => __( 'Please check the request fields and try again.', 'flosc' ),
+						'error_code' => 'contact_form_rejected',
+					),
+					400
+				);
+			}
 
 			$contact_email = sanitize_email( (string) ( $contact_form['email'] ?? '' ) );
 			if ( '' !== $contact_email && is_email( $contact_email ) && $this->is_guest_request_email_blocked( $contact_email ) ) {

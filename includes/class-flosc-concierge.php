@@ -738,13 +738,6 @@ class FLOSC_Concierge {
 	 * @return void
 	 */
 	public static function save_meta_box( $post_id ) {
-		if ( ! isset( $_POST['flosc_concierge_nonce'] )
-			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_concierge_nonce'] ) ), 'flosc_concierge_meta' ) ) {
-			return;
-		}
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
-			return;
-		}
 		$map = array(
 			'flow'               => 'flosc_cncrg_flow',
 			'keyword'            => 'flosc_cncrg_keyword',
@@ -761,6 +754,25 @@ class FLOSC_Concierge {
 			'params'             => 'flosc_cncrg_parameters',
 			'instruct'           => 'flosc_cncrg_instruction_template',
 		);
+
+		// One bad field refuses the whole save. A later field must not be
+		// written after an earlier field arrived as a list.
+		$flosc_posted     = wp_unslash( $_POST );
+		$flosc_shape_keys = array( 'flosc_concierge_nonce' );
+		foreach ( $map as $flosc_field ) {
+			$flosc_shape_keys[] = $flosc_field;
+		}
+		if ( ! is_array( $flosc_posted ) || ! flosc_submitted_fields_are_text( $flosc_posted, $flosc_shape_keys ) ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['flosc_concierge_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_concierge_nonce'] ) ), 'flosc_concierge_meta' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
 		foreach ( $map as $key => $field ) {
 			if ( ! isset( $_POST[ $field ] ) ) {
 				continue;

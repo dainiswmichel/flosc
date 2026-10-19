@@ -334,8 +334,17 @@ class FLOSC_Session_Rest {
 	 * @param mixed $request Request.
 	 */
 	public function rename_session( $request ) {
-		$session_id = absint( $request->get_param( 'id' ) );
-		$title      = sanitize_text_field( (string) ( $request->get_param( 'title' ) ?? '' ) );
+		$id_raw    = $request->get_param( 'id' );
+		$title_raw = $request->get_param( 'title' );
+		if ( ! flosc_submitted_value_is_text( $id_raw ) || ! flosc_submitted_value_is_text( $title_raw ) ) {
+			return new WP_Error(
+				'flosc_title_required',
+				__( 'Title is required.', 'flosc' ),
+				array( 'status' => 400 )
+			);
+		}
+		$session_id = absint( $id_raw );
+		$title      = sanitize_text_field( (string) $title_raw );
 		$user_id    = get_current_user_id();
 		if ( ! $user_id ) {
 			return new WP_Error(

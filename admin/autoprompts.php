@@ -109,26 +109,50 @@ function flosc_handle_autoprompts_save() {
 	$states      = array( 'visitor', 'guest', 'member' );
 	$autoprompts = array();
 
-	// Save panel header text per state.
+	// Save panel header text per state. A list is not a header.
 	$flosc_panel_headers = array();
 	foreach ( $states as $state ) {
-		$flosc_panel_headers[ $state ] = sanitize_text_field( $flosc_post[ 'panel_header_' . $state ] ?? 'Try these AutoPrompts!' );
+		$flosc_header_raw = $flosc_post[ 'panel_header_' . $state ] ?? null;
+		if ( is_array( $flosc_header_raw ) || is_object( $flosc_header_raw ) ) {
+			return;
+		}
+		$flosc_panel_headers[ $state ] = sanitize_text_field( null === $flosc_header_raw ? 'Try these AutoPrompts!' : $flosc_header_raw );
 	}
 
 	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0).
+	// A list is not a checked box. isset() of a list is true and would store 1.
 	$flosc_panel_enabled = array();
 	foreach ( $states as $state ) {
-		$flosc_panel_enabled[ $state ] = isset( $flosc_post[ 'panel_enabled_' . $state ] ) ? 1 : 0;
+		$flosc_enabled_raw = $flosc_post[ 'panel_enabled_' . $state ] ?? null;
+		if ( is_array( $flosc_enabled_raw ) || is_object( $flosc_enabled_raw ) ) {
+			return;
+		}
+		$flosc_panel_enabled[ $state ] = ( is_string( $flosc_enabled_raw ) || is_numeric( $flosc_enabled_raw ) ) ? 1 : 0;
 	}
 
 	// Companion Mode panel visibility (ship default: off).
-	$flosc_companion_panel_enabled = isset( $flosc_post['panel_enabled_companion'] ) ? 1 : 0;
+	$flosc_companion_raw = $flosc_post['panel_enabled_companion'] ?? null;
+	if ( is_array( $flosc_companion_raw ) || is_object( $flosc_companion_raw ) ) {
+		return;
+	}
+	$flosc_companion_panel_enabled = ( is_string( $flosc_companion_raw ) || is_numeric( $flosc_companion_raw ) ) ? 1 : 0;
 
 	foreach ( $states as $state ) {
 		foreach ( array( '_pill_icon', '_pill_label', '_pill_user_input', '_pill_trigger_type', '_pill_trigger_value', '_pill_conditions', '_pill_style' ) as $flosc_pill_field ) {
 			$flosc_pill_key = $state . $flosc_pill_field;
-			if ( isset( $flosc_post[ $flosc_pill_key ] ) && ! is_array( $flosc_post[ $flosc_pill_key ] ) ) {
-				$flosc_post[ $flosc_pill_key ] = array();
+			if ( ! isset( $flosc_post[ $flosc_pill_key ] ) ) {
+				continue;
+			}
+			// A string is not a pill list. Replacing the stored pills with an
+			// empty list would wipe them. A cell that is itself a list must
+			// not be stored either.
+			if ( ! is_array( $flosc_post[ $flosc_pill_key ] ) ) {
+				return;
+			}
+			foreach ( $flosc_post[ $flosc_pill_key ] as $flosc_pill_cell ) {
+				if ( is_array( $flosc_pill_cell ) || is_object( $flosc_pill_cell ) ) {
+					return;
+				}
 			}
 		}
 		$icons            = $flosc_post[ $state . '_pill_icon' ] ?? array();
@@ -179,13 +203,18 @@ function flosc_handle_autoprompts_save() {
 		$autoprompts[ $state ] = $flosc_pills;
 	}
 
+	$flosc_ivr_raw = $flosc_post['flosc_ivr'] ?? '';
+	if ( is_array( $flosc_ivr_raw ) || is_object( $flosc_ivr_raw ) ) {
+		return;
+	}
+
 	$flosc_fs['autoprompts']                  = $autoprompts;
 	$flosc_fs['autoprompt_headers']           = $flosc_panel_headers;
 	$flosc_fs['autoprompt_panel_enabled']     = $flosc_panel_enabled;
 	$flosc_fs['autoprompt_companion_enabled'] = $flosc_companion_panel_enabled;
 	update_option( $fk, $flosc_fs );
 
-	$ivr = sanitize_file_name( $flosc_post['flosc_ivr'] ?? '' );
+	$ivr = sanitize_file_name( $flosc_ivr_raw );
 	wp_safe_redirect( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $ivr ) . '&tab=autoprompts&saved=1' ) );
 	exit;
 }
