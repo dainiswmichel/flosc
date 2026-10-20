@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once FLOSC_PLUGIN_DIR . 'includes/class-bridge-data-manager.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-bridge-data-manager.php';
 
 /**
  * Count users matching a meta_query (admin analytics).
@@ -55,7 +55,7 @@ $flosc_weakness_user_ids = function_exists( 'flosc_get_user_ids_for_meta' )
 $flosc_weakness_counts   = array();
 foreach ( (array) $flosc_weakness_user_ids as $flosc_uid ) {
 	$flosc_category = sanitize_text_field( (string) get_user_meta( (int) $flosc_uid, '_flosc_weakest_category', true ) );
-	if ( $flosc_category === '' ) {
+	if ( '' === $flosc_category ) {
 		continue;
 	}
 	if ( ! isset( $flosc_weakness_counts[ $flosc_category ] ) ) {

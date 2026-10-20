@@ -1,7 +1,10 @@
 <?php
 /**
  * FLOSC Flows Overview Page
- * v1.2.5: Simple list of flows with quick actions
+ * Simple list of flows with quick actions
+ *
+ * @package FLOSC
+ * @since 1.2.5
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,16 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $flosc_flows    = flosc_flows()->get_user_flows();
 $flosc_is_admin = current_user_can( 'manage_options' );
-$flosc_get      = wp_unslash( $_GET );
+$flosc_get      = flosc_nav_params();
 
-// Handle delete
-if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ), 'flosc_delete_flow' ) ) {
-	$flosc_result = flosc_flows()->delete_flow( sanitize_key( $flosc_get['delete_flow'] ) );
-	if ( ! is_wp_error( $flosc_result ) ) {
-		wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&deleted=1' ) );
-		exit;
-	}
-}
 ?>
 
 <div class="wrap">
@@ -32,6 +27,7 @@ if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get[
 	<?php if ( isset( $_GET['deleted'] ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p>Flow deleted.</p></div>
 	<?php endif; ?>
+	<?php settings_errors( 'flosc' ); ?>
 	
 	<p class="description flosc-flows-description">
 		Quick overview of your flows. Click <strong>Configure</strong> to edit all settings for a flow.
@@ -88,7 +84,7 @@ if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get[
 						<code class="flosc-flows-ivr-code"><?php echo esc_html( $flosc_flow['ivr_file'] ?? 'default' ); ?></code>
 					</td>
 					<td>
-						<?php if ( $flosc_flow['status'] === 'active' ) : ?>
+						<?php if ( 'active' === $flosc_flow['status'] ) : ?>
 							<span class="flosc-flows-status flosc-flows-status--active">● Active</span>
 						<?php else : ?>
 							<span class="flosc-flows-status flosc-flows-status--draft">○ Draft</span>
@@ -98,13 +94,13 @@ if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get[
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&flow=' . rawurlencode( $flosc_flow['id'] ) ) ); ?>" 
 							class="button button-primary button-small">Configure</a>
 						
-						<?php if ( $flosc_flow_url && $flosc_flow['status'] === 'active' ) : ?>
+						<?php if ( $flosc_flow_url && 'active' === $flosc_flow['status'] ) : ?>
 							<a href="<?php echo esc_url( $flosc_flow_url ); ?>" target="_blank" 
 								class="button button-small">View ↗</a>
 						<?php endif; ?>
 						
 						<?php if ( $flosc_is_admin && count( $flosc_flows ) > 1 ) : ?>
-									<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=flosc-flows&delete_flow=' . rawurlencode( $flosc_flow['id'] ) ), 'flosc_delete_flow' ) ); ?>" 
+									<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=flosc_delete_flow&flow_id=' . rawurlencode( $flosc_flow['id'] ) ), 'flosc_delete_flow' ) ); ?>" 
 								class="button button-small flosc-flows-delete-btn"
 								data-confirm-message="Delete this flow? This cannot be undone.">Delete</a>
 						<?php endif; ?>

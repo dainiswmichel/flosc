@@ -9,20 +9,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Companion mode.
+ */
 class FLOSC_Companion_Mode {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * Construct.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
-	 * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+	 * Enqueue companion widget on non-app WordPress pages.
 	 * Only loads if companion mode is enabled for the current flow.
 	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
 	 * v8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
+	 *
+	 * @since 1.6.1
 	 */
 	public function enqueue_companion() {
 		// Outer chrome is for normal WP host pages only.
@@ -32,8 +46,10 @@ class FLOSC_Companion_Mode {
 			return;
 		}
 
-		// Public handoff flag from full-page dock (not a form POST — no nonce applies).
-		$handoff_request = ( '1' === sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_companion_handoff' ) ) );
+		// Public handoff flag from the full-page dock. A display switch on a public
+		// page: it decides whether the companion widget renders, and nothing else.
+		// Closed to the single value that means anything.
+		$handoff_request = ( '1' === flosc_nav_param( 'flosc_companion_handoff', array( '1' ) ) );
 
 		// Cross-domain knowledge hub: pick the owning flow before reading settings.
 		$this->resolve_companion_flow_context( $handoff_request );
@@ -41,7 +57,7 @@ class FLOSC_Companion_Mode {
 		$defaults       = $this->get_companion_defaults();
 		$numeric_limits = $this->get_companion_numeric_limits();
 
-		// Read from per-flow settings (flat keys, not overrides)
+		// Read from per-flow settings (flat keys, not overrides).
 		$enabled = filter_var( $this->flosc->get_setting( 'companion_enabled', $defaults['enabled'] ), FILTER_VALIDATE_BOOLEAN );
 		if ( ! $enabled ) {
 			return;
@@ -102,11 +118,11 @@ class FLOSC_Companion_Mode {
 		$product_name = function_exists( 'flosc_personality_name' )
 			? sanitize_text_field( flosc_personality_name() )
 			: ( function_exists( 'flosc_visitor_assistant_name' ) ? sanitize_text_field( flosc_visitor_assistant_name() ) : '' );
-		if ( $product_name === '' ) {
+		if ( '' === $product_name ) {
 			$product_name = sanitize_text_field( (string) flosc_get_setting( 'product_name', 'FLOSC' ) );
 		}
-		if ( $title === '' ) {
-			$title = $product_name !== ''
+		if ( '' === $title ) {
+			$title = '' !== $product_name
 				? sprintf(
 					/* translators: %s: product / flow name */
 					__( '%s Companion', 'flosc' ),
@@ -116,17 +132,17 @@ class FLOSC_Companion_Mode {
 		}
 		// Header icon: optional companion override → this flow’s Chat Logo → bundled default only if none.
 		$header_icon_url = esc_url_raw( (string) $this->flosc->get_setting( 'companion_header_icon_url', '' ) );
-		if ( $header_icon_url === '' ) {
+		if ( '' === $header_icon_url ) {
 			// Prefer identity from resolved current flow (hub + app).
 			if ( ! empty( $identity['chatlogo_url'] ) ) {
 				$header_icon_url = esc_url_raw( (string) $identity['chatlogo_url'] );
 			}
 		}
-		if ( $header_icon_url === '' && function_exists( 'flosc_resolve_chatlogo_url' ) ) {
+		if ( '' === $header_icon_url && function_exists( 'flosc_resolve_chatlogo_url' ) ) {
 			// Pass full flow array so flat/nested chatlogo_url both work.
 			$flow_for_logo   = $this->flosc->get_current_flow();
 			$header_icon_url = flosc_resolve_chatlogo_url( is_array( $flow_for_logo ) ? $flow_for_logo : null, true );
-		} elseif ( $header_icon_url === '' && function_exists( 'flosc_get_chatlogo_url' ) ) {
+		} elseif ( '' === $header_icon_url && function_exists( 'flosc_get_chatlogo_url' ) ) {
 			$header_icon_url = esc_url_raw( (string) flosc_get_chatlogo_url() );
 		}
 
@@ -139,7 +155,7 @@ class FLOSC_Companion_Mode {
 		$launcher_icon = sanitize_key( (string) $this->flosc->get_setting( 'companion_launcher_icon', $defaults['launcher_icon'] ) );
 		$launcher_svgs = $this->get_companion_launcher_svg_paths();
 		// product_logo = use Chat Logo / header icon image for FAB (not a path SVG).
-		$launcher_uses_product_logo = ( $launcher_icon === 'product_logo' );
+		$launcher_uses_product_logo = ( 'product_logo' === $launcher_icon );
 		if ( ! $launcher_uses_product_logo && ! isset( $launcher_svgs[ $launcher_icon ] ) ) {
 			$launcher_icon = $defaults['launcher_icon'];
 		}
@@ -212,11 +228,11 @@ class FLOSC_Companion_Mode {
 			$keyboard_shortcut_key = 'k';
 		}
 		$launcher_aria_label = sanitize_text_field( (string) $this->flosc->get_setting( 'companion_launcher_aria_label', $defaults['launcher_aria_label'] ) );
-		if ( $launcher_aria_label === '' ) {
+		if ( '' === $launcher_aria_label ) {
 			$launcher_aria_label = esc_html__( 'Open Chat', 'flosc' );
 		}
 		$close_aria_label = sanitize_text_field( (string) $this->flosc->get_setting( 'companion_close_aria_label', $defaults['close_aria_label'] ) );
-		if ( $close_aria_label === '' ) {
+		if ( '' === $close_aria_label ) {
 			$close_aria_label = esc_html__( 'Collapse Chat', 'flosc' );
 		}
 		$remember_open_state = filter_var(
@@ -239,7 +255,7 @@ class FLOSC_Companion_Mode {
 		// Mirror FLOSC_Framework visitor wallet baseline (trait method is private).
 		$visitor_wallet_initial = 0;
 		$flow_stem              = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-		if ( $flow_stem !== '' ) {
+		if ( '' !== $flow_stem ) {
 			$flow_settings = get_option( 'flosc_flow_' . $flow_stem, array() );
 			if ( is_array( $flow_settings ) && isset( $flow_settings['tokens_communication_tokens_per_message'] ) ) {
 				$visitor_wallet_initial = max( 0, intval( $flow_settings['tokens_communication_tokens_per_message'] ) );
@@ -307,11 +323,11 @@ class FLOSC_Companion_Mode {
 
 		// Expand destination: must also be a FLOSC app route (same invariant as iframe).
 		$full_page_url = esc_url_raw( (string) $this->flosc->get_setting( 'companion_hub_fullscreen_url', '' ), array( 'http', 'https' ) );
-		if ( $full_page_url === '' || ! $this->is_flosc_app_route_url( $full_page_url ) ) {
+		if ( '' === $full_page_url || ! $this->is_flosc_app_route_url( $full_page_url ) ) {
 			$full_page_url = $app_url;
 		}
 
-		$assistant_title = $product_name !== ''
+		$assistant_title = '' !== $product_name
 			? $product_name
 			: sanitize_text_field( (string) __( 'Assistant', 'flosc' ) );
 
@@ -333,7 +349,7 @@ class FLOSC_Companion_Mode {
 			// Parameterized brand icon (Chat Logo / companion_header_icon_url). No emoji default.
 			'headerIconUrl'                 => $header_icon_url,
 			'avatar'                        => '',
-			'accentColor'                   => $accent ?: $defaults['accent_color'],
+			'accentColor'                   => $accent ? $accent : $defaults['accent_color'],
 			'position'                      => $position,
 			'mode'                          => $mode,
 			'width'                         => $panel_width . 'px',
@@ -383,7 +399,7 @@ class FLOSC_Companion_Mode {
 		// Filters cannot smuggle a non-app URL into the iframe.
 		$companion_config['appUrl'] = esc_url_raw( (string) ( $companion_config['appUrl'] ?? $app_url ), array( 'http', 'https' ) );
 		$filtered_app               = (string) $companion_config['appUrl'];
-		if ( $filtered_app === '' || ! $this->is_flosc_app_route_url( $filtered_app ) ) {
+		if ( '' === $filtered_app || ! $this->is_flosc_app_route_url( $filtered_app ) ) {
 			return;
 		}
 		$companion_config['appUrl']                    = $filtered_app;
@@ -438,7 +454,7 @@ class FLOSC_Companion_Mode {
 	private function get_host_auth_config( $flow_id ) {
 		$flow_id       = sanitize_key( (string) $flow_id );
 		$sso_providers = array();
-		if ( class_exists( '\FLOSC\SSO\SSO_Manager' ) && $flow_id !== '' ) {
+		if ( class_exists( '\FLOSC\SSO\SSO_Manager' ) && '' !== $flow_id ) {
 			$sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
 			$bag         = get_option( 'flosc_flow_' . $flow_id, array() );
 			if ( ! is_array( $bag ) ) {
@@ -452,14 +468,14 @@ class FLOSC_Companion_Mode {
 				$enabled       = ! empty( $bag[ 'sso_' . $pid . '_enabled' ] );
 				$client_id     = (string) ( $bag[ 'sso_' . $pid . '_client_id' ] ?? '' );
 				$client_secret = (string) ( $bag[ 'sso_' . $pid . '_client_secret' ] ?? '' );
-				if ( ! $enabled || $client_id === '' || $client_secret === '' ) {
+				if ( ! $enabled || '' === $client_id || '' === $client_secret ) {
 					continue;
 				}
 				$provider = $sso_manager->get_provider( $pid );
 				if ( ! $provider ) {
 					continue;
 				}
-				if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE && $host !== '' ) {
+				if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE && '' !== $host ) {
 					$auth_url = $scheme . $host . '/' . rest_get_url_prefix() . '/flosc/v1/sso/authorize/' . $pid;
 				} else {
 					$auth_url = rest_url( 'flosc/v1/sso/authorize/' . $pid );
@@ -480,7 +496,7 @@ class FLOSC_Companion_Mode {
 			$host = isset( $_SERVER['HTTP_HOST'] )
 				? sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) )
 				: '';
-			if ( $host !== '' ) {
+			if ( '' !== $host ) {
 				$scheme    = is_ssl() ? 'https://' : 'http://';
 				$rest_base = $scheme . $host . '/' . rest_get_url_prefix() . '/flosc/v1';
 			}
@@ -519,21 +535,23 @@ class FLOSC_Companion_Mode {
 		// Normalize so site-root "/" is not collapsed to "" (WP untrailingslashit('/')).
 		$req_path = $this->companion_normalize_url_path( $request_path );
 
-		// Optional dock hint from full-page chat (public query string, not a form).
-		$hint = sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_flow_id' ) );
-		if ( $hint === '' ) {
-			$hint = sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_ivr' ) );
+		// Optional dock hint from full-page chat: which flow the visitor came from.
+		// Used only to look up an existing flow's display settings; a hint naming
+		// no known flow falls through to the normal resolution below.
+		$hint = flosc_nav_param( 'flosc_flow_id' );
+		if ( '' === $hint ) {
+			$hint = flosc_nav_param( 'flosc_ivr', array(), '', 'sanitize_file_name' );
 		}
 		$hint = sanitize_key( preg_replace( '/\.md$/i', '', (string) $hint ) );
 
 		$matches        = $this->find_companion_flows_for_request( $req_path, $category_slugs );
 		$hub_match      = $matches['hub'] ?? null;
 		$category_match = $matches['category'] ?? null;
-		$page_owner     = $hub_match ?: $category_match;
+		$page_owner     = $hub_match ? $hub_match : $category_match;
 
 		// Hint may only select a companion-enabled flow that either owns this page
 		// or is an explicit handoff to a real flow (dock from full-page chat).
-		if ( $hint !== '' ) {
+		if ( '' !== $hint ) {
 			$hint_flow = $this->flosc->build_flow_from_ivr_file( $hint . '.md' );
 			if ( ! is_array( $hint_flow ) ) {
 				$hint_flow = $this->flosc->build_flow_from_ivr_file( $hint );
@@ -576,7 +594,7 @@ class FLOSC_Companion_Mode {
 
 		$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 		foreach ( $ivr_files as $filename ) {
-			if ( strpos( $filename, 'backup' ) !== false ) {
+			if ( false !== strpos( $filename, 'backup' ) ) {
 				continue;
 			}
 			$flow = $this->flosc->build_flow_from_ivr_file( $filename );
@@ -594,17 +612,17 @@ class FLOSC_Companion_Mode {
 			// Hub companion URL path match — prefer longest (most specific) path.
 			// Site-root hubs (https://dainis.net/) must match path "/" — never drop to "".
 			$hub = esc_url_raw( (string) ( $flow['companion_hub_companion_url'] ?? '' ) );
-			if ( $hub !== '' && $req_path !== '' ) {
+			if ( '' !== $hub && '' !== $req_path ) {
 				$hub_path_raw = wp_parse_url( $hub, PHP_URL_PATH );
 				$hub_path     = is_string( $hub_path_raw ) ? $this->companion_normalize_url_path( $hub_path_raw ) : '';
-				if ( $hub_path !== '' ) {
+				if ( '' !== $hub_path ) {
 					// Site-root hub ("/") is a low-priority sitewide owner (e.g. dainis.net).
-					// Longer hub paths always win (e.g. /category/lesaep/).
-					$matches_hub = ( $hub_path === '/' )
+					// Longer hub paths always win (e.g. /category/lessons/).
+					$matches_hub = ( '/' === $hub_path )
 						|| $req_path === $hub_path
-						|| strpos( $req_path . '/', $hub_path . '/' ) === 0;
+						|| 0 === strpos( $req_path . '/', $hub_path . '/' );
 					if ( $matches_hub ) {
-						$len = ( $hub_path === '/' ) ? 1 : strlen( $hub_path );
+						$len = ( '/' === $hub_path ) ? 1 : strlen( $hub_path );
 						if ( $len > $hub_match_len ) {
 							$hub_match_len = $len;
 							$hub_match     = $flow_id;
@@ -614,7 +632,7 @@ class FLOSC_Companion_Mode {
 			}
 
 			// Lessons category / content group → knowledge hub archive or lesson posts.
-			if ( $category_match === null && ! empty( $category_slugs ) ) {
+			if ( null === $category_match && ! empty( $category_slugs ) ) {
 				$flow_cats = array();
 				if ( ! empty( $flow['content_item_category'] ) ) {
 					$flow_cats[] = sanitize_title( (string) $flow['content_item_category'] );
@@ -678,7 +696,7 @@ class FLOSC_Companion_Mode {
 	private function companion_normalize_url_path( $url ) {
 		$path = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
 		$path = untrailingslashit( $path );
-		return ( $path === '' || $path === false ) ? '/' : $path;
+		return ( '' === $path || false === $path ) ? '/' : $path;
 	}
 
 	/**
@@ -694,13 +712,13 @@ class FLOSC_Companion_Mode {
 	 */
 	private function is_flosc_app_route_url( $url ) {
 		$url = esc_url_raw( (string) $url, array( 'http', 'https' ) );
-		if ( $url === '' ) {
+		if ( '' === $url ) {
 			return false;
 		}
 
 		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
 		$path = $this->companion_normalize_url_path( $url );
-		if ( $host === '' ) {
+		if ( '' === $host ) {
 			return false;
 		}
 
@@ -709,27 +727,27 @@ class FLOSC_Companion_Mode {
 		if ( function_exists( 'flosc_config_glob' ) ) {
 			$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 			foreach ( $ivr_files as $filename ) {
-				if ( strpos( (string) $filename, 'backup' ) !== false ) {
+				if ( false !== strpos( (string) $filename, 'backup' ) ) {
 					continue;
 				}
 				$flow = $this->flosc->build_flow_from_ivr_file( $filename );
-				if ( ! $flow || ( ( $flow['status'] ?? 'active' ) !== 'active' ) ) {
+				if ( ! $flow || ( 'active' !== ( $flow['status'] ?? 'active' ) ) ) {
 					continue;
 				}
 
 				if ( ! empty( $flow['custom_domain'] ) ) {
 					$domain = strtolower( preg_replace( '#^https?://#', '', trim( (string) $flow['custom_domain'] ) ) );
 					$domain = rtrim( $domain, '/' );
-					if ( $domain !== '' && $this->companion_hosts_match( $host, $domain ) ) {
+					if ( '' !== $domain && $this->companion_hosts_match( $host, $domain ) ) {
 						// Custom-domain flows serve the SPA for that host.
 						return true;
 					}
 				}
 
-				if ( ! empty( $flow['slug'] ) && $home_host !== '' ) {
+				if ( ! empty( $flow['slug'] ) && '' !== $home_host ) {
 					$slug = sanitize_title( (string) $flow['slug'] );
 					if (
-						$slug !== ''
+						'' !== $slug
 						&& $this->companion_hosts_match( $host, $home_host )
 						&& $this->companion_path_is_flow_slug( $path, $slug )
 					) {
@@ -742,8 +760,8 @@ class FLOSC_Companion_Mode {
 		// Legacy global app slug / custom domain (pre multi-flow fallbacks).
 		$global_slug = sanitize_title( (string) get_option( 'flosc_app_slug', 'flosc' ) );
 		if (
-			$global_slug !== ''
-			&& $home_host !== ''
+			'' !== $global_slug
+			&& '' !== $home_host
 			&& $this->companion_hosts_match( $host, $home_host )
 			&& $this->companion_path_is_flow_slug( $path, $global_slug )
 		) {
@@ -752,7 +770,7 @@ class FLOSC_Companion_Mode {
 
 		$global_domain = strtolower( preg_replace( '#^https?://#', '', trim( (string) get_option( 'flosc_custom_domain', '' ) ) ) );
 		$global_domain = rtrim( $global_domain, '/' );
-		if ( $global_domain !== '' && $this->companion_hosts_match( $host, $global_domain ) ) {
+		if ( '' !== $global_domain && $this->companion_hosts_match( $host, $global_domain ) ) {
 			return true;
 		}
 
@@ -764,14 +782,14 @@ class FLOSC_Companion_Mode {
 			if ( ! empty( $flow['custom_domain'] ) ) {
 				$domain = strtolower( preg_replace( '#^https?://#', '', trim( (string) $flow['custom_domain'] ) ) );
 				$domain = rtrim( $domain, '/' );
-				if ( $domain !== '' && $this->companion_hosts_match( $host, $domain ) ) {
+				if ( '' !== $domain && $this->companion_hosts_match( $host, $domain ) ) {
 					return true;
 				}
 			}
-			if ( ! empty( $flow['slug'] ) && $home_host !== '' ) {
+			if ( ! empty( $flow['slug'] ) && '' !== $home_host ) {
 				$slug = sanitize_title( (string) $flow['slug'] );
 				if (
-					$slug !== ''
+					'' !== $slug
 					&& $this->companion_hosts_match( $host, $home_host )
 					&& $this->companion_path_is_flow_slug( $path, $slug )
 				) {
@@ -781,7 +799,7 @@ class FLOSC_Companion_Mode {
 		}
 
 		$resolved_app = esc_url_raw( (string) $this->flosc->get_app_url(), array( 'http', 'https' ) );
-		if ( $resolved_app !== '' && $this->companion_app_routes_match( $url, $resolved_app ) ) {
+		if ( '' !== $resolved_app && $this->companion_app_routes_match( $url, $resolved_app ) ) {
 			return true;
 		}
 
@@ -799,18 +817,20 @@ class FLOSC_Companion_Mode {
 	private function companion_app_routes_match( $url_a, $url_b ) {
 		$url_a = (string) $url_a;
 		$url_b = (string) $url_b;
-		if ( $url_a === '' || $url_b === '' ) {
+		if ( '' === $url_a || '' === $url_b ) {
 			return false;
 		}
 		$host_a = strtolower( (string) wp_parse_url( $url_a, PHP_URL_HOST ) );
 		$host_b = strtolower( (string) wp_parse_url( $url_b, PHP_URL_HOST ) );
-		if ( $host_a === '' || $host_b === '' || ! $this->companion_hosts_match( $host_a, $host_b ) ) {
+		if ( '' === $host_a || '' === $host_b || ! $this->companion_hosts_match( $host_a, $host_b ) ) {
 			return false;
 		}
 		return $this->companion_normalize_url_path( $url_a ) === $this->companion_normalize_url_path( $url_b );
 	}
 
 	/**
+	 * Companion hosts match.
+	 *
 	 * @param string $host_a Host A.
 	 * @param string $host_b Host B.
 	 * @return bool
@@ -818,13 +838,13 @@ class FLOSC_Companion_Mode {
 	private function companion_hosts_match( $host_a, $host_b ) {
 		$host_a = strtolower( (string) $host_a );
 		$host_b = strtolower( (string) $host_b );
-		if ( $host_a === '' || $host_b === '' ) {
+		if ( '' === $host_a || '' === $host_b ) {
 			return false;
 		}
 		if ( $host_a === $host_b ) {
 			return true;
 		}
-		return $host_a === 'www.' . $host_b || $host_b === 'www.' . $host_a;
+		return 'www.' . $host_b === $host_a || 'www.' . $host_a === $host_b;
 	}
 
 	/**
@@ -836,20 +856,20 @@ class FLOSC_Companion_Mode {
 	 */
 	private function companion_path_is_flow_slug( $path, $slug ) {
 		$slug = sanitize_title( (string) $slug );
-		if ( $slug === '' ) {
+		if ( '' === $slug ) {
 			return false;
 		}
 		$path = (string) $path;
-		if ( $path === '' || $path[0] !== '/' ) {
+		if ( '' === $path || '/' !== $path[0] ) {
 			$path = $this->companion_normalize_url_path( $path );
 		} else {
 			$path = untrailingslashit( $path );
-			if ( $path === '' ) {
+			if ( '' === $path ) {
 				$path = '/';
 			}
 		}
 		$prefix = '/' . $slug;
-		return $path === $prefix || strpos( $path . '/', $prefix . '/' ) === 0;
+		return $path === $prefix || 0 === strpos( $path . '/', $prefix . '/' );
 	}
 
 	/**
@@ -868,7 +888,7 @@ class FLOSC_Companion_Mode {
 		$candidates = array();
 
 		$configured = esc_url_raw( (string) $this->flosc->get_setting( 'companion_chat_app_url', '' ), array( 'http', 'https' ) );
-		if ( $configured !== '' ) {
+		if ( '' !== $configured ) {
 			$candidates[] = $configured;
 		}
 
@@ -879,16 +899,16 @@ class FLOSC_Companion_Mode {
 			// chat_app only — same as HEAD. Do not prefer fullscreen for the iframe
 			// (wrong surface can drop guest/member continuity onto another route).
 			$from_defaults = esc_url_raw( (string) ( $defaults['chat_app'] ?? '' ), array( 'http', 'https' ) );
-			if ( $from_defaults !== '' ) {
+			if ( '' !== $from_defaults ) {
 				$candidates[] = $from_defaults;
 			}
 		}
 
 		$slug = sanitize_title( (string) $this->flosc->get_setting( 'companion_flow_slug', '' ) );
-		if ( $slug === '' && is_array( $flow ) && ! empty( $flow['slug'] ) ) {
+		if ( '' === $slug && is_array( $flow ) && ! empty( $flow['slug'] ) ) {
 			$slug = sanitize_title( (string) $flow['slug'] );
 		}
-		if ( $slug !== '' ) {
+		if ( '' !== $slug ) {
 			$candidates[] = esc_url_raw( home_url( '/' . $slug . '/' ), array( 'http', 'https' ) );
 		}
 
@@ -898,7 +918,7 @@ class FLOSC_Companion_Mode {
 		}
 
 		foreach ( $candidates as $candidate ) {
-			if ( $candidate !== '' && $this->is_flosc_app_route_url( $candidate ) ) {
+			if ( '' !== $candidate && $this->is_flosc_app_route_url( $candidate ) ) {
 				return $candidate;
 			}
 		}
@@ -908,16 +928,18 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Find active flow by slug for companion URL hardening.
+	 *
+	 * @param mixed $slug Slug.
 	 */
 	private function get_flow_by_slug_for_companion( $slug ) {
 		$slug = sanitize_title( (string) $slug );
-		if ( $slug === '' ) {
+		if ( '' === $slug ) {
 			return null;
 		}
 
 		$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 		foreach ( $ivr_files as $filename ) {
-			if ( strpos( $filename, 'backup' ) !== false ) {
+			if ( false !== strpos( $filename, 'backup' ) ) {
 				continue;
 			}
 
@@ -926,7 +948,7 @@ class FLOSC_Companion_Mode {
 				continue;
 			}
 
-			if ( ( $flow['status'] ?? 'active' ) !== 'active' ) {
+			if ( 'active' !== ( $flow['status'] ?? 'active' ) ) {
 				continue;
 			}
 
@@ -946,12 +968,12 @@ class FLOSC_Companion_Mode {
 		$path        = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
 		$query       = (string) wp_parse_url( $request_uri, PHP_URL_QUERY );
 
-		if ( $path === '' ) {
+		if ( '' === $path ) {
 			$path = '/';
 		}
 
 		$url = home_url( $path );
-		if ( $query !== '' ) {
+		if ( '' !== $query ) {
 			$url = $url . '?' . $query;
 		}
 
@@ -1147,6 +1169,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Build context parameters passed into companion iframe URL.
+	 *
+	 * @param mixed $scope Scope.
 	 */
 	private function build_companion_context_params( $scope ) {
 		global $wp;
@@ -1155,13 +1179,13 @@ class FLOSC_Companion_Mode {
 		$page_url  = '';
 		if ( $object_id > 0 && is_numeric( $object_id ) ) {
 			$permalink = get_permalink( $object_id );
-			if ( is_string( $permalink ) && $permalink !== '' ) {
+			if ( is_string( $permalink ) && '' !== $permalink ) {
 				$page_url = $permalink;
 			}
 		}
-		if ( $page_url === '' ) {
+		if ( '' === $page_url ) {
 			$request_path = is_object( $wp ) ? trim( (string) ( $wp->request ?? '' ), '/' ) : '';
-			$page_url     = $request_path !== '' ? home_url( '/' . $request_path . '/' ) : home_url( '/' );
+			$page_url     = '' !== $request_path ? home_url( '/' . $request_path . '/' ) : home_url( '/' );
 		}
 
 		$params = array(
@@ -1174,7 +1198,7 @@ class FLOSC_Companion_Mode {
 			$params['flosc_context_title']   = sanitize_text_field( (string) get_the_title( $object_id ) );
 		}
 
-		if ( $scope === 'extended' && is_singular() ) {
+		if ( 'extended' === $scope && is_singular() ) {
 			$post = get_post( $object_id );
 			if ( $post ) {
 				$params['flosc_context_post_type'] = sanitize_key( (string) $post->post_type );
@@ -1186,6 +1210,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Parse path-pattern textarea into normalized prefix list.
+	 *
+	 * @param mixed $raw_patterns Raw patterns.
 	 */
 	private function parse_companion_path_patterns( $raw_patterns ) {
 		$patterns = array();
@@ -1196,7 +1222,7 @@ class FLOSC_Companion_Mode {
 
 		foreach ( $chunks as $chunk ) {
 			$chunk = trim( (string) $chunk );
-			if ( $chunk === '' ) {
+			if ( '' === $chunk ) {
 				continue;
 			}
 			$patterns[] = '/' . ltrim( $chunk, '/' );
@@ -1240,6 +1266,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Parse multiline/csv companion targeting input into normalized rule objects.
+	 *
+	 * @param mixed $raw_rules Raw rules.
 	 */
 	private function parse_companion_target_rules( $raw_rules ) {
 		$rules  = array();
@@ -1250,11 +1278,11 @@ class FLOSC_Companion_Mode {
 
 		foreach ( $chunks as $raw_rule ) {
 			$raw_rule = trim( (string) $raw_rule );
-			if ( $raw_rule === '' ) {
+			if ( '' === $raw_rule ) {
 				continue;
 			}
 
-			if ( strpos( $raw_rule, ':' ) === false ) {
+			if ( false === strpos( $raw_rule, ':' ) ) {
 				$rules[] = array(
 					'type'  => 'path',
 					'value' => '/' . ltrim( $raw_rule, '/' ),
@@ -1265,7 +1293,7 @@ class FLOSC_Companion_Mode {
 			list($type, $value) = array_map( 'trim', explode( ':', $raw_rule, 2 ) );
 			$type               = strtolower( $type );
 			$value              = (string) $value;
-			if ( $value === '' ) {
+			if ( '' === $value ) {
 				continue;
 			}
 
@@ -1273,7 +1301,7 @@ class FLOSC_Companion_Mode {
 				continue;
 			}
 
-			if ( $type === 'path' ) {
+			if ( 'path' === $type ) {
 				$value = '/' . ltrim( $value, '/' );
 			}
 
@@ -1288,6 +1316,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Determine whether any targeting rule matches the current request context.
+	 *
+	 * @param mixed $rules Rules.
 	 */
 	private function companion_target_matches_any_rule( $rules ) {
 		if ( empty( $rules ) ) {
@@ -1299,7 +1329,7 @@ class FLOSC_Companion_Mode {
 		foreach ( $rules as $rule ) {
 			$type  = (string) ( $rule['type'] ?? '' );
 			$value = (string) ( $rule['value'] ?? '' );
-			if ( $type === '' || $value === '' ) {
+			if ( '' === $type || '' === $value ) {
 				continue;
 			}
 
@@ -1319,13 +1349,13 @@ class FLOSC_Companion_Mode {
 				continue;
 			}
 
-			if ( $type === 'path' ) {
+			if ( 'path' === $type ) {
 				$normalized_path = untrailingslashit( '/' . ltrim( $request_path, '/' ) );
 				$normalized_rule = untrailingslashit( '/' . ltrim( $value, '/' ) );
-				if ( $normalized_rule === '' ) {
+				if ( '' === $normalized_rule ) {
 					$normalized_rule = '/';
 				}
-				if ( $normalized_path === $normalized_rule || strpos( $normalized_path . '/', $normalized_rule . '/' ) === 0 ) {
+				if ( $normalized_path === $normalized_rule || 0 === strpos( $normalized_path . '/', $normalized_rule . '/' ) ) {
 					return true;
 				}
 				continue;
@@ -1333,24 +1363,24 @@ class FLOSC_Companion_Mode {
 
 			if ( is_singular() ) {
 				$post_id = (int) get_queried_object_id();
-				if ( $type === 'page' && is_page() && ( (int) $value === $post_id ) ) {
+				if ( 'page' === $type && is_page() && ( (int) $value === $post_id ) ) {
 					return true;
 				}
-				if ( $type === 'post' && is_single() && ( (int) $value === $post_id ) ) {
+				if ( 'post' === $type && is_single() && ( (int) $value === $post_id ) ) {
 					return true;
 				}
-				if ( $type === 'category' && has_category( $value, $post_id ) ) {
+				if ( 'category' === $type && has_category( $value, $post_id ) ) {
 					return true;
 				}
-				if ( $type === 'tag' && has_tag( $value, $post_id ) ) {
+				if ( 'tag' === $type && has_tag( $value, $post_id ) ) {
 					return true;
 				}
 			}
 
-			if ( $type === 'category' && is_category( $value ) ) {
+			if ( 'category' === $type && is_category( $value ) ) {
 				return true;
 			}
-			if ( $type === 'tag' && is_tag( $value ) ) {
+			if ( 'tag' === $type && is_tag( $value ) ) {
 				return true;
 			}
 		}
@@ -1364,7 +1394,7 @@ class FLOSC_Companion_Mode {
 	private function get_companion_request_path() {
 		$raw  = sanitize_text_field( (string) wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) );
 		$path = (string) wp_parse_url( $raw, PHP_URL_PATH );
-		if ( $path === '' ) {
+		if ( '' === $path ) {
 			$path = '/';
 		}
 		return '/' . ltrim( $path, '/' );

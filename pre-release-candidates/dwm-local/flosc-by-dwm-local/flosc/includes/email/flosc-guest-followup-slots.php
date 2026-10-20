@@ -13,7 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * @return array<string, array<string, mixed>>
+ * The follow-up slots a guest can be emailed into, keyed by slot id.
+ *
+ * Computed once per request and held in a static, because the list is derived
+ * from settings that cannot change mid-request and several callers ask for it
+ * on the same page load.
+ *
+ * @return array<string, array<string, mixed>> Slot id => slot definition.
  */
 function flosc_guest_followup_slots() {
 	static $slots = null;
@@ -61,37 +67,37 @@ function flosc_guest_followup_slots() {
  * Read a follow-up setting with legacy key fallback.
  *
  * @param array  $settings Flow settings.
- * @param string $slot_id  guest_followup_1|2|3
- * @param string $suffix   subject|body|min_day|max_day
- * @param mixed  $default  Default if neither key set.
+ * @param string $slot_id  guest_followup_1|2|3.
+ * @param string $suffix   subject|body|min_day|max_day.
+ * @param mixed  $fallback Returned when neither the current nor the legacy key is set.
  * @return mixed
  */
-function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $default = '' ) {
+function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $fallback = '' ) {
 	$slot_id = sanitize_key( (string) $slot_id );
 	$suffix  = sanitize_key( (string) $suffix );
 	$slots   = flosc_guest_followup_slots();
 	if ( ! isset( $slots[ $slot_id ] ) ) {
-		return $default;
+		return $fallback;
 	}
 	$new_key = $slot_id . '_' . $suffix;
-	if ( array_key_exists( $new_key, $settings ) && $settings[ $new_key ] !== '' && $settings[ $new_key ] !== null ) {
+	if ( array_key_exists( $new_key, $settings ) && '' !== $settings[ $new_key ] && null !== $settings[ $new_key ] ) {
 		return $settings[ $new_key ];
 	}
 	$legacy = (string) ( $slots[ $slot_id ]['legacy_prefix'] ?? '' );
-	if ( $legacy !== '' ) {
+	if ( '' !== $legacy ) {
 		$old_key = $legacy . '_' . $suffix;
-		if ( array_key_exists( $old_key, $settings ) && $settings[ $old_key ] !== '' && $settings[ $old_key ] !== null ) {
+		if ( array_key_exists( $old_key, $settings ) && '' !== $settings[ $old_key ] && null !== $settings[ $old_key ] ) {
 			return $settings[ $old_key ];
 		}
 	}
-	return $default;
+	return $fallback;
 }
 
 /**
  * Whether this follow-up was already sent (new or legacy sent-meta key).
  *
  * @param array  $sent    Values from user meta _flosc_guest_emails_sent.
- * @param string $slot_id guest_followup_N
+ * @param string $slot_id guest_followup_N.
  * @return bool
  */
 function flosc_guest_followup_was_sent( array $sent, $slot_id ) {
@@ -101,12 +107,12 @@ function flosc_guest_followup_was_sent( array $sent, $slot_id ) {
 	}
 	$slots  = flosc_guest_followup_slots();
 	$legacy = (string) ( $slots[ $slot_id ]['legacy_sent_key'] ?? '' );
-	if ( $legacy !== '' && in_array( $legacy, $sent, true ) ) {
+	if ( '' !== $legacy && in_array( $legacy, $sent, true ) ) {
 		return true;
 	}
 	// Also accept legacy full prefix without underscore day token.
 	$legacy_prefix = (string) ( $slots[ $slot_id ]['legacy_prefix'] ?? '' );
-	if ( $legacy_prefix !== '' && in_array( $legacy_prefix, $sent, true ) ) {
+	if ( '' !== $legacy_prefix && in_array( $legacy_prefix, $sent, true ) ) {
 		return true;
 	}
 	return false;
@@ -122,7 +128,7 @@ function flosc_guest_followup_textarea_keys() {
 	foreach ( flosc_guest_followup_slots() as $slot_id => $meta ) {
 		$keys[] = $slot_id . '_body';
 		$legacy = (string) ( $meta['legacy_prefix'] ?? '' );
-		if ( $legacy !== '' ) {
+		if ( '' !== $legacy ) {
 			$keys[] = $legacy . '_body';
 		}
 	}
@@ -139,7 +145,7 @@ function flosc_guest_followup_template_ids() {
 	foreach ( flosc_guest_followup_slots() as $slot_id => $meta ) {
 		$ids[]  = $slot_id;
 		$legacy = (string) ( $meta['legacy_prefix'] ?? '' );
-		if ( $legacy !== '' ) {
+		if ( '' !== $legacy ) {
 			$ids[] = $legacy;
 		}
 	}

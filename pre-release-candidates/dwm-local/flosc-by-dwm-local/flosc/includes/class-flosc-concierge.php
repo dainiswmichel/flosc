@@ -27,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Concierge.
+ */
 class FLOSC_Concierge {
 
 	/** The IVR message type that marks a concierge message. */
@@ -197,24 +200,24 @@ class FLOSC_Concierge {
 	 *
 	 * @param array  $msg     IVR message.
 	 * @param string $key     Field key.
-	 * @param string $default Fallback text.
+	 * @param string $fallback Fallback text.
 	 * @return string
 	 */
-	protected static function text( $msg, $key, $default ) {
+	protected static function text( $msg, $key, $fallback ) {
 		$value = trim( (string) ( $msg[ $key ] ?? '' ) );
-		return '' !== $value ? $value : $default;
+		return '' !== $value ? $value : $fallback;
 	}
 
 	/**
 	 * Substitute {try} and {max} into a retry line.
 	 *
 	 * @param string $text Retry text.
-	 * @param int    $try  Which attempt this was.
+	 * @param int    $attempt  Which attempt this was.
 	 * @param int    $max  Allowed attempts.
 	 * @return string
 	 */
-	protected static function fill_counts( $text, $try, $max ) {
-		return str_replace( array( '{try}', '{max}' ), array( (string) $try, (string) $max ), (string) $text );
+	protected static function fill_counts( $text, $attempt, $max ) {
+		return str_replace( array( '{try}', '{max}' ), array( (string) $attempt, (string) $max ), (string) $text );
 	}
 
 	/**
@@ -225,11 +228,11 @@ class FLOSC_Concierge {
 	 * in. The final line is typically the "reach out to me directly" escape note.
 	 *
 	 * @param array $msg IVR message.
-	 * @param int   $try Which miss this is (1-based).
+	 * @param int   $attempt Which miss this is (1-based).
 	 * @param int   $max Allowed attempts.
 	 * @return string
 	 */
-	protected static function retry_line( $msg, $try, $max ) {
+	protected static function retry_line( $msg, $attempt, $max ) {
 		$list = array();
 		if ( isset( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
 			foreach ( $msg['password_retry_messages'] as $line ) {
@@ -242,8 +245,8 @@ class FLOSC_Concierge {
 		if ( empty( $list ) ) {
 			$list = array( 'Hmm, not quite — that’s try {try} of {max}.' );
 		}
-		$idx = min( $try - 1, count( $list ) - 1 );
-		return self::fill_counts( $list[ $idx ], $try, $max );
+		$idx = min( $attempt - 1, count( $list ) - 1 );
+		return self::fill_counts( $list[ $idx ], $attempt, $max );
 	}
 
 	/**
@@ -297,8 +300,12 @@ class FLOSC_Concierge {
 	 *
 	 * Concierge gates are a friendly handoff, not a security boundary, so a guest
 	 * shouldn't be tripped up by capitalization. Both sides are lower-cased and
-	 * trimmed before a constant-time compare. A blank stored password never matches —
-	 * that's the "no gate" case, handled before we reach here.
+	 * trimmed, then matched with mb_stripos(), so the guest's reply only has to
+	 * CONTAIN the password: "monki", "Monki" and "the password is monki" all pass.
+	 * That leniency is deliberate for a conversational gate. It is not an equality
+	 * check and it is not constant-time, so never reuse this for a credential.
+	 * A blank stored password never matches -- that's the "no gate" case, handled
+	 * before we reach here.
 	 *
 	 * @param string $given    What the guest typed.
 	 * @param string $expected The message's password.
@@ -377,9 +384,14 @@ class FLOSC_Concierge {
 	 * open, appends it to the AI's system prompt. handle() itself returns null on
 	 * unlock so the message flows on into the normal AI path (which also means the
 	 * exchange is logged like any other turn, instead of being short-circuited).
-	 * ======================================================================== */
+	 * ========================================================================
+	 */
 
-	/** Per-session transient key for an open desk. */
+	/**
+	 * Per-session transient key for an open desk.
+	 *
+	 * @param mixed $session_key Session key.
+	 */
 	protected static function open_key( $session_key ) {
 		return 'flosc_concierge_open_' . md5( (string) $session_key );
 	}
@@ -417,7 +429,11 @@ class FLOSC_Concierge {
 		);
 	}
 
-	/** Is a concierge desk currently open for this guest's session? */
+	/**
+	 * Is a concierge desk currently open for this guest's session?
+	 *
+	 * @param mixed $session_key Session key.
+	 */
 	public static function has_active_session( $session_key ) {
 		$data = get_transient( self::open_key( $session_key ) );
 		return is_array( $data ) && '' !== trim( (string) ( $data['brief'] ?? '' ) );
@@ -498,7 +514,8 @@ class FLOSC_Concierge {
 	 * the integrity hook then mirrors to the .md. There is no authoring surface to
 	 * build: the WordPress post IS the surface. On the post, admins see a read-only
 	 * "what FLOSC understands" confirmation so they can check the setup landed.
-	 * ======================================================================== */
+	 * ========================================================================
+	 */
 
 	/** Default category that marks a concierge post. */
 	const CATEGORY                      = 'concierge';
@@ -578,7 +595,7 @@ class FLOSC_Concierge {
 		// Tried in order of how a person would name it:
 		// 1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
 		// 2. the flow's NAME in floscFlow/Flow/FlowName (flow identity name)
-		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai")
+		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai").
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );
 		}
@@ -721,10 +738,6 @@ class FLOSC_Concierge {
 	 * @return void
 	 */
 	public static function save_meta_box( $post_id ) {
-		if ( ! isset( $_POST['flosc_concierge_nonce'] )
-			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_concierge_nonce'] ) ), 'flosc_concierge_meta' ) ) {
-			return;
-		}
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
@@ -744,21 +757,30 @@ class FLOSC_Concierge {
 			'params'             => 'flosc_cncrg_parameters',
 			'instruct'           => 'flosc_cncrg_instruction_template',
 		);
+		$posted     = wp_unslash( $_POST );
+		$shape_keys = array_merge( array( 'flosc_concierge_nonce' ), array_values( $map ) );
+		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text( $posted, $shape_keys ) ) {
+			return;
+		}
+		$nonce = isset( $posted['flosc_concierge_nonce'] ) ? sanitize_text_field( $posted['flosc_concierge_nonce'] ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'flosc_concierge_meta' ) ) {
+			return;
+		}
 		foreach ( $map as $key => $field ) {
-			if ( ! isset( $_POST[ $field ] ) ) {
+			if ( ! isset( $posted[ $field ] ) ) {
 				continue;
 			}
 			// Sanitize at the point of access, per field type.
 			if ( 'retry' === $key || 'delivery' === $key || 'params' === $key || 'instruct' === $key || 'off_ramp_phrases' === $key ) {
-				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
+				$value = sanitize_textarea_field( $posted[ $field ] );
 			} elseif ( 'max_tries' === $key ) {
-				$value = (string) max( 1, absint( wp_unslash( $_POST[ $field ] ) ) );
+				$value = (string) max( 1, absint( $posted[ $field ] ) );
 			} elseif ( 'off_ramp_exactness' === $key ) {
-				$value = self::off_ramp_exactness( sanitize_key( wp_unslash( $_POST[ $field ] ) ) );
+				$value = self::off_ramp_exactness( sanitize_key( $posted[ $field ] ) );
 			} elseif ( 'start' === $key || 'end' === $key || 'expires' === $key ) {
-				$value = self::normalize_utc_mts( sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) );
+				$value = self::normalize_utc_mts( sanitize_text_field( $posted[ $field ] ) );
 			} else {
-				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				$value = sanitize_text_field( $posted[ $field ] );
 			}
 			update_post_meta( $post_id, self::META[ $key ], $value );
 		}
@@ -775,9 +797,9 @@ class FLOSC_Concierge {
 		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
 			return;
 		}
-		if ( in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
-			// Keep syncing only from statuses that are intended to be live.
-		} else {
+		// Only a status meant to be live keeps its sync; anything else is
+		// removed from the index rather than left there stale.
+		if ( ! in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
 			self::unsync_post( $post );
 			return;
 		}
@@ -904,7 +926,11 @@ class FLOSC_Concierge {
 		return $content . wp_kses_post( $html );
 	}
 
-	/** Is this post in the concierge category? */
+	/**
+	 * Is this post in the concierge category?
+	 *
+	 * @param mixed $post Post.
+	 */
 	public static function is_concierge_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -936,13 +962,21 @@ class FLOSC_Concierge {
 		return false;
 	}
 
-	/** Stable, slug-derived message id for a post-sourced concierge message. */
+	/**
+	 * Stable, slug-derived message id for a post-sourced concierge message.
+	 *
+	 * @param mixed $post Post.
+	 */
 	protected static function post_message_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . $post->ID );
 		return 'concierge_' . sanitize_key( $slug );
 	}
 
-	/** Resolve a flow option key from a flow file ('flow_ivr.md' -> 'flosc_flow_flow_ivr'). */
+	/**
+	 * Resolve a flow option key from a flow file ('flow_ivr.md' -> 'flosc_flow_flow_ivr').
+	 *
+	 * @param mixed $flow_file Flow file.
+	 */
 	protected static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -951,7 +985,11 @@ class FLOSC_Concierge {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-	/** Pull a '*.md' flow file out of a floscFlow value ('assistant (flow_ivr.md)' -> 'flow_ivr.md'). */
+	/**
+	 * Pull a '*.md' flow file out of a floscFlow value ('assistant (flow_ivr.md)' -> 'flow_ivr.md').
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -1002,17 +1040,17 @@ class FLOSC_Concierge {
 		if ( '' === $host ) {
 			return '';
 		}
-		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme
-		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment
+		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme.
+		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment.
 		$host = preg_replace( '#^www\.#', '', $host );                 // drop www.
-		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow
+		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow.
 		if ( '' === $stem ) {
 			return '';
 		}
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
-			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr
+			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr.
 			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;
@@ -1022,7 +1060,12 @@ class FLOSC_Concierge {
 		return '';
 	}
 
-	/** Read a single-line "Label: value", quotes preserved, returning the trimmed value. */
+	/**
+	 * Read a single-line "Label: value", quotes preserved, returning the trimmed value.
+	 *
+	 * @param mixed $body  Body.
+	 * @param mixed $label Label.
+	 */
 	protected static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
 		return preg_match( $pattern, (string) $body, $m ) ? trim( $m[1] ) : '';
@@ -1053,7 +1096,11 @@ class FLOSC_Concierge {
 		return trim( (string) $stripped );
 	}
 
-	/** Parse parameters text (key=value per line) into an associative array. */
+	/**
+	 * Parse parameters text (key=value per line) into an associative array.
+	 *
+	 * @param mixed $text Text.
+	 */
 	protected static function parse_parameters_text( $text ) {
 		$params = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) {
@@ -1071,7 +1118,13 @@ class FLOSC_Concierge {
 		return $params;
 	}
 
-	/** Replace {parameter_name} placeholders in a template. */
+	/**
+	 * Replace {parameter_name} placeholders in a template.
+	 *
+	 * @param mixed  $text            Text.
+	 * @param mixed  $params          Params.
+	 * @param string $expires_utc_mts Expires utc mts.
+	 */
 	protected static function apply_template_parameters( $text, $params, $expires_utc_mts = '' ) {
 		$text = (string) $text;
 		if ( '' === $text ) {
@@ -1094,7 +1147,11 @@ class FLOSC_Concierge {
 		return gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
 	}
 
-	/** Normalize accepted UTC MTS variants to canonical format; returns '' when invalid. */
+	/**
+	 * Normalize accepted UTC MTS variants to canonical format; returns '' when invalid.
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function normalize_utc_mts( $value ) {
 		$ts = self::utc_mts_to_unix( (string) $value );
 		if ( null === $ts ) {
@@ -1103,7 +1160,11 @@ class FLOSC_Concierge {
 		return gmdate( 'Y', $ts ) . '-' . gmdate( 'm', $ts ) . 'm-' . gmdate( 'd', $ts ) . 'd-T' . gmdate( 'H', $ts ) . 'h:' . gmdate( 'i', $ts ) . 'm:' . gmdate( 's', $ts ) . 's';
 	}
 
-	/** Convert UTC MTS to unix timestamp. Supports date-only and date-time forms. */
+	/**
+	 * Convert UTC MTS to unix timestamp. Supports date-only and date-time forms.
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function utc_mts_to_unix( $value ) {
 		$value = trim( (string) $value );
 		if ( '' === $value ) {
@@ -1136,7 +1197,11 @@ class FLOSC_Concierge {
 		return null;
 	}
 
-	/** Is this concierge message expired for UTC now? */
+	/**
+	 * Is this concierge message expired for UTC now?
+	 *
+	 * @param mixed $msg Msg.
+	 */
 	protected static function is_expired( $msg ) {
 		$expires = trim( (string) ( $msg['end_utc_mts'] ?? ( $msg['expires_utc_mts'] ?? '' ) ) );
 		if ( '' === $expires ) {
@@ -1149,7 +1214,11 @@ class FLOSC_Concierge {
 		return time() > $ts;
 	}
 
-	/** Is this concierge message currently active within its optional UTC window? */
+	/**
+	 * Is this concierge message currently active within its optional UTC window?
+	 *
+	 * @param mixed $msg Msg.
+	 */
 	protected static function is_active_now( $msg ) {
 		$start = trim( (string) ( $msg['start_utc_mts'] ?? '' ) );
 		if ( '' !== $start ) {
@@ -1166,7 +1235,12 @@ class FLOSC_Concierge {
 		return true;
 	}
 
-	/** Read everything from a "Label:" to the end of the body. */
+	/**
+	 * Read everything from a "Label:" to the end of the body.
+	 *
+	 * @param mixed $body  Body.
+	 * @param mixed $label Label.
+	 */
 	protected static function content_block( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*/mi';
 		if ( preg_match( $pattern, (string) $body, $m, PREG_OFFSET_CAPTURE ) ) {
@@ -1175,7 +1249,11 @@ class FLOSC_Concierge {
 		return '';
 	}
 
-	/** Strip one pair of matching surrounding quotes. */
+	/**
+	 * Strip one pair of matching surrounding quotes.
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function unquote( $value ) {
 		$value = trim( (string) $value );
 		if ( strlen( $value ) >= 2 ) {
@@ -1188,6 +1266,12 @@ class FLOSC_Concierge {
 		return $value;
 	}
 
+	/**
+	 * Off ramp exactness.
+	 *
+	 * @param mixed $mode Mode.
+	 * @return mixed
+	 */
 	private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
@@ -1196,6 +1280,13 @@ class FLOSC_Concierge {
 		return $mode;
 	}
 
+	/**
+	 * Off ramp guidance.
+	 *
+	 * @param mixed $phrases_text Phrases text.
+	 * @param mixed $exactness    Exactness.
+	 * @return mixed
+	 */
 	private static function off_ramp_guidance( $phrases_text, $exactness ) {
 		$phrases = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $phrases_text ) as $line ) {

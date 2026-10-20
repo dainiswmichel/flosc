@@ -1,6 +1,6 @@
 <?php
 /**
- * floscAvailableProviders — install-scoped AI credentials available to any floscFlow.
+ * FloscAvailableProviders — install-scoped AI credentials available to any floscFlow.
  *
  * Product model:
  * - Keys configured here (or promoted from a flow save) are AVAILABLE install-wide.
@@ -18,6 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_option_key' ) ) {
 	/**
+	 * Available providers option key.
+	 *
 	 * @return string
 	 */
 	function flosc_available_providers_option_key() {
@@ -83,7 +85,7 @@ if ( ! function_exists( 'flosc_install_provider_catalog' ) ) {
 			'assemblyai' => array(
 				'label' => __( 'AssemblyAI', 'flosc' ),
 				'kind'  => 'stt',
-				'hint'  => __( 'Speech-to-text only (audio quizzes — not a chat personality).', 'flosc' ),
+				'hint'  => __( 'Speech-to-text for voice input and audio quizzes; not a chat personality.', 'flosc' ),
 				'url'   => 'https://www.assemblyai.com/app/account',
 			),
 		);
@@ -182,6 +184,8 @@ if ( ! function_exists( 'flosc_personality_pack_catalog' ) ) {
 
 if ( ! function_exists( 'flosc_personality_pack_label_list' ) ) {
 	/**
+	 * Personality pack label list.
+	 *
 	 * @return string
 	 */
 	function flosc_personality_pack_label_list() {
@@ -218,25 +222,25 @@ if ( ! function_exists( 'flosc_provider_intricacies' ) ) {
 					'label'  => __( 'Anthropic Claude', 'flosc' ),
 					'wants'  => __( 'Top-level system string. Not a message. Messages are only user/assistant (and tool). max_tokens is required. FLOSC does not send temperature on this hop — Claude then uses its default. Prompt cache likes a stable system block; keep the compiled profile identical across turns.', 'flosc' ),
 					'path'   => __( 'POST /v1/messages · personality → system', 'flosc' ),
-					'models' => __( 'FLOSC default claude-sonnet-4-5-20250929. Vendor line as of this MTS also includes Claude Opus 5 / Fable 5 families — pick a current ID if a slug 404s.', 'flosc' ),
+					'models' => __( 'FLOSC default claude-sonnet-5. Fetch models this key can use lists what your key and the installed provider plugin both carry.', 'flosc' ),
 				),
 				'openai'    => array(
 					'label'  => __( 'OpenAI', 'flosc' ),
 					'wants'  => __( 'Chat Completions: first messages item with role system. Responses API (off in FLOSC unless enabled): top-level instructions. previous_response_id does not carry instructions — resend the profile on each Responses call, or stay on Chat Completions (FLOSC default). Sampling belongs beside the soul, not inside it.', 'flosc' ),
 					'path'   => __( 'POST /v1/chat/completions · personality → messages.system (Responses path uses instructions)', 'flosc' ),
-					'models' => __( 'FLOSC default gpt-4o-mini. Newer GPT-5-class IDs exist on some accounts; save a current ID if the default is retired.', 'flosc' ),
+					'models' => __( 'FLOSC default gpt-5.4-mini. Fetch models this key can use lists what your key and the installed provider plugin both carry.', 'flosc' ),
 				),
 				'xai'       => array(
 					'label'  => __( 'xAI Grok', 'flosc' ),
 					'wants'  => __( 'Chat Completions (OpenAI-shaped): messages role system. Vendor docs also show a Responses-style input system item — FLOSC talks Chat Completions. Retired Grok-2 slugs 404; remap to a live ID.', 'flosc' ),
 					'path'   => __( 'POST /v1/chat/completions · personality → messages.system', 'flosc' ),
-					'models' => __( 'FLOSC default grok-4.5. Vendor flagship on this MTS is grok-4.6 — switch on This flow if your key is on 4.6 only.', 'flosc' ),
+					'models' => __( 'FLOSC default grok-4.6. Fetch models this key can use reads /v1/language-models, so only chat models are offered.', 'flosc' ),
 				),
 				'gemini'    => array(
 					'label'  => __( 'Google Gemini', 'flosc' ),
 					'wants'  => __( 'REST generateContent: systemInstruction parts text (text only). Conversation is contents with roles user and model — never assistant. First content must be user. Key in x-goog-api-key. Temperature lives in generationConfig, not in the personality.', 'flosc' ),
 					'path'   => __( 'POST generateContent · personality → systemInstruction', 'flosc' ),
-					'models' => __( 'FLOSC default gemini-2.5-flash. 2.5 Pro / Flash-Lite also listed. Gemini 3.x uses thinking_level; do not stuff chain-of-thought into the soul to fake it.', 'flosc' ),
+					'models' => __( 'FLOSC default gemini-3.7-flash. Fetch models this key can use keeps only ids that support generateContent. Gemini 3.x uses thinking_level; do not stuff chain-of-thought into the soul to fake it.', 'flosc' ),
 				),
 				'ivr'       => array(
 					'label' => __( 'IVR (scripted)', 'flosc' ),
@@ -341,6 +345,8 @@ if ( ! function_exists( 'flosc_available_providers_flow_key_map' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 	/**
+	 * Available providers get all.
+	 *
 	 * @return array<string,array<string,mixed>>
 	 */
 	function flosc_available_providers_get_all() {
@@ -363,6 +369,8 @@ if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 	/**
+	 * Available providers save all.
+	 *
 	 * @param array<string,array<string,mixed>> $providers Full map.
 	 * @return void
 	 */
@@ -375,14 +383,14 @@ if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 			$row = isset( $providers[ $slug ] ) && is_array( $providers[ $slug ] ) ? $providers[ $slug ] : array();
 			$key = isset( $row['api_key'] ) ? (string) $row['api_key'] : '';
 			// Preserve existing secret when empty submit (password field blank).
-			if ( $key === '' && isset( $row['keep_existing'] ) && $row['keep_existing'] ) {
+			if ( '' === $key && isset( $row['keep_existing'] ) && $row['keep_existing'] ) {
 				$existing = flosc_available_providers_get_all();
 				$key      = (string) ( $existing[ $slug ]['api_key'] ?? '' );
 			}
 			$clean[ $slug ] = array(
 				'api_key'    => $key,
 				'label'      => isset( $row['label'] ) ? sanitize_text_field( (string) $row['label'] ) : '',
-				'updated_at' => $key !== '' ? current_time( 'mysql' ) : (string) ( $row['updated_at'] ?? '' ),
+				'updated_at' => '' !== $key ? current_time( 'mysql' ) : (string) ( $row['updated_at'] ?? '' ),
 			);
 		}
 		update_option( flosc_available_providers_option_key(), $clean, false );
@@ -391,6 +399,8 @@ if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 	/**
+	 * Available providers set key.
+	 *
 	 * @param string $provider Provider slug.
 	 * @param string $api_key  Secret (empty clears).
 	 * @return void
@@ -402,20 +412,22 @@ if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 		}
 		$all                            = flosc_available_providers_get_all();
 		$all[ $provider ]['api_key']    = (string) $api_key;
-		$all[ $provider ]['updated_at'] = $api_key !== '' ? current_time( 'mysql' ) : '';
+		$all[ $provider ]['updated_at'] = '' !== $api_key ? current_time( 'mysql' ) : '';
 		flosc_available_providers_save_all( $all );
 	}
 }
 
 if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 	/**
+	 * Available providers has key.
+	 *
 	 * @param string $provider Provider slug.
 	 * @return bool
 	 */
 	function flosc_available_providers_has_key( $provider ) {
 		$all      = flosc_available_providers_get_all();
 		$provider = sanitize_key( (string) $provider );
-		return $provider !== '' && ! empty( $all[ $provider ]['api_key'] );
+		return '' !== $provider && ! empty( $all[ $provider ]['api_key'] );
 	}
 }
 
@@ -434,7 +446,7 @@ if ( ! function_exists( 'flosc_available_providers_promote_from_flow' ) ) {
 		$map = flosc_available_providers_flow_key_map();
 		foreach ( $map as $provider => $flow_key ) {
 			$val = isset( $flow_settings[ $flow_key ] ) ? trim( (string) $flow_settings[ $flow_key ] ) : '';
-			if ( $val !== '' ) {
+			if ( '' !== $val ) {
 				flosc_available_providers_set_key( $provider, $val );
 			}
 		}
@@ -454,10 +466,10 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 		$map       = flosc_available_providers_flow_key_map();
 		$flow_key  = $map[ $provider ] ?? '';
 		$from_flow = '';
-		if ( $flow_key !== '' && function_exists( 'flosc_get_setting' ) ) {
+		if ( '' !== $flow_key && function_exists( 'flosc_get_setting' ) ) {
 			$from_flow = trim( (string) flosc_get_setting( $flow_key, '', $flow_id ) );
 		}
-		if ( $from_flow !== '' ) {
+		if ( '' !== $from_flow ) {
 			return $from_flow;
 		}
 		$all = flosc_available_providers_get_all();
@@ -467,7 +479,7 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 
 if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 	/**
-	 * admin-post.php?action=flosc_save_available_providers
+	 * Admin-post.php?action=flosc_save_available_providers
 	 *
 	 * @return void
 	 */
@@ -476,14 +488,21 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage AI providers.', 'flosc' ) );
 		}
 		check_admin_referer( 'flosc_save_available_providers' );
+		$posted_request = wp_unslash( $_POST );
+		if ( ! is_array( $posted_request )
+			|| ( isset( $posted_request['avail_api_key'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_api_key'] ) )
+			|| ( isset( $posted_request['avail_clear'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_clear'] ) )
+			|| ! flosc_submitted_fields_are_text( $posted_request, array( 'flosc_return_ivr' ) ) ) {
+			wp_die( esc_html__( 'Invalid provider settings request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
 
 		$posted = array();
-		if ( isset( $_POST['avail_api_key'] ) && is_array( $_POST['avail_api_key'] ) ) {
-			$posted = array_map( 'sanitize_text_field', wp_unslash( $_POST['avail_api_key'] ) );
+		if ( isset( $posted_request['avail_api_key'] ) ) {
+			$posted = array_map( 'sanitize_text_field', $posted_request['avail_api_key'] );
 		}
 		$clear = array();
-		if ( isset( $_POST['avail_clear'] ) && is_array( $_POST['avail_clear'] ) ) {
-			$clear = array_map( 'sanitize_text_field', wp_unslash( $_POST['avail_clear'] ) );
+		if ( isset( $posted_request['avail_clear'] ) ) {
+			$clear = array_map( 'sanitize_text_field', $posted_request['avail_clear'] );
 		}
 
 		$all = flosc_available_providers_get_all();
@@ -494,11 +513,11 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 				continue;
 			}
 			$new = isset( $posted[ $slug ] ) ? trim( (string) $posted[ $slug ] ) : '';
-			if ( $new !== '' ) {
+			if ( '' !== $new ) {
 				$all[ $slug ]['api_key']    = $new;
 				$all[ $slug ]['updated_at'] = current_time( 'mysql' );
 			}
-			// blank password field = keep existing
+			// blank password field = keep existing.
 		}
 		flosc_available_providers_save_all( $all );
 
@@ -511,8 +530,11 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			60
 		);
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer( 'flosc_save_available_providers' ) at the top of this save handler.
-		$ivr = isset( $_POST['flosc_return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['flosc_return_ivr'] ) ) : '';
+		// Redirect target after the save above, which verified its own nonce and
+		// capability before writing. Only picks a tab on this site's admin.php.
+		$ivr = isset( $posted_request['flosc_return_ivr'] )
+			? sanitize_file_name( $posted_request['flosc_return_ivr'] )
+			: '';
 		wp_safe_redirect(
 			add_query_arg(
 				array(

@@ -1,19 +1,52 @@
 {
-  "agent": {
-    "name": "Dainis W. Michel",
-    "slug": "dwm-local"
+ "plugin": "flosc",
+ "version": "8.0.0",
+ "internal_iteration": "v167",
+ "agent": "Grok",
+ "folder": "pre-release-candidates/dwm-local",
+ "baseline": {
+  "iteration": "v166",
+  "commit": "61dc75ebf2c729a7948200302b2a2aa3b5d68be8",
+  "agent": "ClaudeCode"
+ },
+ "artifact": {
+  "name": "flosc.zip",
+  "sha256": "56b2dd9c1bab77ff069c2dc1c80f0fc1ac2a9bcca57fc358919c3a13e0977b4e",
+  "bytes": 2839867,
+  "entries": 283,
+  "shipped_files": 243,
+  "built_with": "./build-dist-zip.sh",
+  "digest_note": "Zip digest includes timestamps. Compare the 243 file hashes, not a rebuild digest from another machine."
+ },
+ "changed_from_baseline": [
+  {
+   "path": "flosc.php",
+   "change": "Internal Iteration v166 -> v167. Github HashID left as none yet."
   },
-  "candidate": "v89.1",
-  "plugin_version": "8.0.0",
-  "source": "mvp_sprint/flosc_8_0_0/flosc",
-  "requires_at_least": "7.1",
-  "tested_up_to": "7.1",
-  "artifact": {
-    "filename": "flosc.zip",
-    "sha256": "4b0d5311ea012b6f508f45334241f0a93fb62d41f601024869934068da86eb7e",
-    "size_bytes": 2128003,
-    "file_count": 241,
-    "top_level_dirs": ["flosc"],
-    "tests_entries": 0
+  {
+   "path": "readme.txt",
+   "change": "Added the Screenshots section, 36 captions."
+  },
+  {
+   "path": "admin/flow.php",
+   "change": "Data set and personality tables sit in a scroll container so they stay inside the card."
+  },
+  {
+   "path": "assets/css/flosc-portability-admin.css",
+   "change": "Scroll container rules for those two tables. No inline styles."
+  },
+  {
+   "path": "admin/ai-configuration.php",
+   "change": "Section titles and hints on the AI tab."
+  },
+  {
+   "path": "includes/flosc-available-providers.php",
+   "change": "AssemblyAI hint text."
   }
+ ],
+ "verification": {
+  "php_lint": "flow.php, ai-configuration.php, flosc-available-providers.php, flosc.php: no syntax errors",
+  "unzip_test": "no errors",
+  "plugin_check": "not run"
+ }
 }

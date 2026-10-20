@@ -9,13 +9,32 @@
  * - Font family
  * - Text scaling
  * - CSS variables generated from structured controls
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// v8.0.1: Output tab header
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
+}
+
+// v8.0.1: Output tab header.
 flosc_tab_header( '🎨', 'Style & Nav' );
 
 $flosc_current_ivr    = $GLOBALS['flosc_current_ivr'] ?? '';
@@ -51,23 +70,16 @@ $flosc_style_docs_url = add_query_arg(
 
 <?php
 
-// Handle reset action (runs inside the parent settings form)
-$flosc_reset_nonce = isset( $_POST['flosc_reset_chat_style_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['flosc_reset_chat_style_nonce'] ) ) : '';
-if ( isset( $_POST['flosc_reset_chat_style'] ) && wp_verify_nonce( $flosc_reset_nonce, 'flosc_reset_chat_style_nonce' ) ) {
-	if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
-		wp_die( esc_html__( 'You do not have permission to reset chat styling for this flow.', 'flosc' ) );
-	}
-	$flosc_reset_key = $GLOBALS['flosc_settings_key'] ?? '';
-	if ( $flosc_reset_key ) {
-		$flosc_fs = get_option( $flosc_reset_key, array() );
-		unset( $flosc_fs['chat_style_preset'], $flosc_fs['chat_style_bubble'], $flosc_fs['chat_style_accent'], $flosc_fs['chat_style_font'], $flosc_fs['chat_style_scale'] );
-		update_option( $flosc_reset_key, $flosc_fs );
-		$GLOBALS['flosc_current_settings'] = $flosc_fs;
-	}
-	echo '<div class="notice notice-success"><p>✓ Chat styling reset to defaults.</p></div>';
-}
+settings_errors( 'flosc' );
+$flosc_reset_style_url = add_query_arg(
+	array(
+		'action' => 'flosc_reset_chat_style',
+		'ivr'    => $flosc_selected_ivr,
+	),
+	admin_url( 'admin-post.php' )
+);
 
-// Get current values (defaults match enqueue_chat_style)
+// Get current values (defaults match enqueue_chat_style).
 $flosc_flow_settings  = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_current_preset = $flosc_flow_settings['chat_style_preset'] ?? 'light';
 $flosc_current_bubble = $flosc_flow_settings['chat_style_bubble'] ?? 'subtle-notch';
@@ -75,7 +87,7 @@ $flosc_current_accent = $flosc_flow_settings['chat_style_accent'] ?? '#2563eb';
 $flosc_current_font   = $flosc_flow_settings['chat_style_font'] ?? 'system';
 $flosc_current_scale  = $flosc_flow_settings['chat_style_scale'] ?? 100;
 
-// Bubble style presets
+// Bubble style presets.
 $flosc_bubble_styles = array(
 	'subtle-notch' => array(
 		'name'      => 'Subtle Notch',
@@ -113,7 +125,7 @@ $flosc_bubble_styles = array(
 <!-- Reset Button (uses parent settings form) -->
 <div class="flosc-chat-style-reset-form">
 	<?php wp_nonce_field( 'flosc_reset_chat_style_nonce', 'flosc_reset_chat_style_nonce' ); ?>
-	<button type="submit" name="flosc_reset_chat_style" class="button flosc-chat-style-reset-btn" data-confirm-message="Reset all styling to defaults?">
+	<button type="submit" name="flosc_reset_chat_style" class="button flosc-chat-style-reset-btn" formaction="<?php echo esc_url( $flosc_reset_style_url ); ?>" data-confirm-message="Reset all styling to defaults?">
 		↺ Reset to Default
 	</button>
 </div>
@@ -247,7 +259,12 @@ $flosc_bubble_styles = array(
 	</div>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_bubble_styles ) {
+			?>
 jQuery(document).ready(function($) {
 	// Bubble style data
 	var bubbleStyles = <?php echo wp_json_encode( $flosc_bubble_styles ); ?>;
@@ -292,4 +309,6 @@ jQuery(document).ready(function($) {
 	// Initialize
 	updateBubblePreview();
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

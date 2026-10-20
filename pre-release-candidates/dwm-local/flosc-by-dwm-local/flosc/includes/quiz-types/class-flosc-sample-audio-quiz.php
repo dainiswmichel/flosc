@@ -13,46 +13,100 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Sample audio quiz.
+ */
 class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'flosc_sample_audio_quiz';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'FLOSC Sample Audio Quiz';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Read the following series of numbers in order: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '🎤';
 	}
 
+	/**
+	 * Needs audio.
+	 *
+	 * @return mixed
+	 */
 	public function needs_audio() {
 		return true;
 	}
 
+	/**
+	 * Needs STT.
+	 *
+	 * @return mixed
+	 */
 	public function needs_stt() {
 		return true;
 	}
 
+	/**
+	 * Needs AI analysis.
+	 *
+	 * @return mixed
+	 */
 	public function needs_ai_analysis() {
-		return false; // Uses phoneme analysis, not AI
+		return false; // Uses phoneme analysis, not AI.
 	}
 
+	/**
+	 * Get instructions.
+	 *
+	 * @return mixed
+	 */
 	public function get_instructions() {
 		return "Read the following series of numbers in order:\n\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10";
 	}
 
+	/**
+	 * Get default content.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_content() {
 		return '1,2,3,4,5,6,7,8,9,10';
 	}
 
+	/**
+	 * Validate input.
+	 *
+	 * @param mixed $input Input.
+	 * @return mixed
+	 */
 	public function validate_input( $input ) {
-		// Input is audio file path or STT transcript
+		// Input is audio file path or STT transcript.
 		if ( empty( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'No audio input received.', 'flosc' ) );
 		}
@@ -60,22 +114,29 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
+	/**
+	 * Analyze.
+	 *
+	 * @param mixed $input            Input.
+	 * @param mixed $expected_content Expected content.
+	 * @param mixed $context          Context.
+	 */
 	public function analyze( $input, $expected_content, $context = array() ) {
 		// If input is already a transcript (from STT), use it
-		// Otherwise, input would be audio file path (handled by main plugin)
+		// Otherwise, input would be audio file path (handled by main plugin).
 		$transcript = is_string( $input ) ? $input : '';
 
-		// Use existing pronunciation analyzer
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-pronunciation-analyzer.php';
+		// Use existing pronunciation analyzer.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-pronunciation-analyzer.php';
 		$analyzer        = new FLOSC_Pronunciation_Analyzer();
 		$analysis_result = $analyzer->analyze( $transcript, $expected_content );
 
-		// Convert to standard format
+		// Convert to standard format.
 		$correct   = $analysis_result['correct_items'];
 		$incorrect = $analysis_result['missed_items'];
 		$score     = $analysis_result['score'];
 
-		// Map to lessons
+		// Map to lessons.
 		$lessons = array();
 		if ( ! empty( $analysis_result['suggested_lessons'] ) ) {
 			foreach ( $analysis_result['suggested_lessons'] as $item => $lesson_data ) {
@@ -105,11 +166,22 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Map to lessons.
+	 *
+	 * @param mixed $analysis Analysis.
+	 * @return mixed
+	 */
 	public function map_to_lessons( $analysis ) {
-		// Already done in analyze()
+		// Already done in analyze().
 		return $analysis['lessons'] ?? array();
 	}
 
+	/**
+	 * Get settings fields.
+	 *
+	 * @return mixed
+	 */
 	public function get_settings_fields() {
 		return array(
 			'language'      => array(
@@ -141,6 +213,11 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Get default response templates.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_response_templates() {
 		return array(
 			'0-30'   => "**Pronunciation Score: {score}%**\n\nYou need significant practice with these sounds.\n\n{lesson_recommendations}",
@@ -150,34 +227,41 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Format results.
+	 *
+	 * @param mixed $analysis           Analysis.
+	 * @param mixed $lessons            Lessons.
+	 * @param mixed $response_templates Response templates.
+	 */
 	public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
 		$details      = $analysis['details'];
 
-		// Get template
+		// Get template.
 		$template = $response_templates[ $response_key ] ?? $response_templates['31-60'] ?? 'Score: {score}%';
 
-		// Build lesson text
+		// Build lesson text.
 		$lesson_text = '';
 
-		// Show what they said
+		// Show what they said.
 		if ( ! empty( $details['transcript'] ) ) {
 			$lesson_text .= "**You said:** {$details['transcript']}\n";
 			$lesson_text .= "**Expected:** {$details['expected']}\n\n";
 		}
 
-		// Show correct items
+		// Show correct items.
 		if ( ! empty( $analysis['correct'] ) ) {
 			$lesson_text .= '✅ **Correct:** ' . implode( ', ', $analysis['correct'] ) . "\n\n";
 		}
 
-		// Show missed items
+		// Show missed items.
 		if ( ! empty( $analysis['incorrect'] ) ) {
 			$lesson_text .= '❌ **Needs Practice:** ' . implode( ', ', $analysis['incorrect'] ) . "\n\n";
 		}
 
-		// Lesson recommendations
+		// Lesson recommendations.
 		if ( ! empty( $lessons ) ) {
 			$free_lesson  = $lessons[0];
 			$paid_lessons = array_slice( $lessons, 1 );
@@ -194,7 +278,7 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Replace placeholders
+		// Replace placeholders.
 		$message = str_replace(
 			array( '{score}', '{lesson_recommendations}' ),
 			array( $score, $lesson_text ),

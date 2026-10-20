@@ -13,11 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Visitor menu
+// Visitor menu.
 $flosc_visitor_menu_raw = get_option( 'flosc_visitor_menu_items', array() );
 $flosc_visitor_menu     = array();
 if ( ! empty( $flosc_visitor_menu_raw ) ) {
-	// Backward compatibility: old associative format (signup/login/quiz)
+	// Backward compatibility: old associative format (signup/login/quiz).
 	if ( isset( $flosc_visitor_menu_raw['signup'] ) || isset( $flosc_visitor_menu_raw['login'] ) || isset( $flosc_visitor_menu_raw['quiz'] ) ) {
 		$flosc_action_map = array(
 			'signup' => 'open_registration',
@@ -63,7 +63,7 @@ $flosc_guest_menu = array_values(
 		$flosc_guest_menu,
 		static function ( $item ) {
 			$action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
-			return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
+			return 'open_sandbox_purchase' !== $action && 0 !== strpos( $action, 'show_offer' );
 		}
 	)
 );
@@ -228,7 +228,12 @@ $flosc_member_levels_chat_url  = add_query_arg(
 	</p>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_available_actions ) {
+			?>
 (function() {
 	const tbody = document.getElementById('flosc-menu-items-body');
 	const addBtn = document.getElementById('flosc-add-menu-item');
@@ -274,7 +279,11 @@ $flosc_member_levels_chat_url  = add_query_arg(
 		}
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <h3 class="flosc-ui-section-title">Guest Dropdown Menu</h3>
 <p class="description">Menu items for logged-in users who have not purchased. <strong>Upgrade</strong> is not a menu row — it is the profile-bar feature button (Profile Bar tab → Guest → Show Upgrade).</p>
@@ -320,7 +329,12 @@ $flosc_member_levels_chat_url  = add_query_arg(
 	</p>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_available_actions ) {
+			?>
 (function() {
 	const tbody = document.getElementById('flosc-guest-menu-items-body');
 	const addBtn = document.getElementById('flosc-guest-add-menu-item');
@@ -366,7 +380,11 @@ $flosc_member_levels_chat_url  = add_query_arg(
 		}
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <h3 class="flosc-ui-section-title">Member Dropdown Menu</h3>
 <p class="description">Menu items for logged-in users who have purchased.</p>
@@ -412,7 +430,12 @@ $flosc_member_levels_chat_url  = add_query_arg(
 	</p>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_available_actions ) {
+			?>
 (function() {
 	const tbody = document.getElementById('flosc-member-menu-items-body');
 	const addBtn = document.getElementById('flosc-member-add-menu-item');
@@ -458,7 +481,11 @@ $flosc_member_levels_chat_url  = add_query_arg(
 		}
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <h2 class="title">Login Destination</h2>
 <p class="description">Where should users land after logging in from the FLOSC chat?</p>

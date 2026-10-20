@@ -4,24 +4,44 @@
  *
  * @package FLOSC
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Email.
+ */
 class FLOSC_Email {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * FLOSC.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
-	/** @var int Emails sent in current cron/run (rate limit). */
+	/**
+	 * Construct.
+	 *
+	 * @var int Emails sent in current cron/run (rate limit).
+	 */
 	private $flosc_email_sent_this_run = 0;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
 	 * Send quiz score email with OTO
+	 *
+	 * @param mixed $user       User.
+	 * @param mixed $score_data Score data.
 	 */
 	public function send_score_email( $user, $score_data ) {
 		$context       = $this->get_guest_email_context( '', (int) $user->ID );
@@ -38,7 +58,7 @@ class FLOSC_Email {
 		}
 
 		$product_name = trim( (string) ( $flow_settings['name'] ?? $context['app_name'] ?? '' ) );
-		if ( $product_name === '' ) {
+		if ( '' === $product_name ) {
 			$product_name = get_option( 'flosc_product_name', 'FLOSC App' );
 		}
 
@@ -46,23 +66,26 @@ class FLOSC_Email {
 		$correct   = $score_data['correct'] ?? array();
 		$incorrect = $score_data['incorrect'] ?? array();
 
-		// Get OTO offer
+		// Get OTO offer.
 		$oto_offer_id = sanitize_text_field( (string) ( $flow_settings['oto_offer_id'] ?? get_option( 'flosc_oto_offer_id', '' ) ) );
 		$oto_offer    = null;
-		$oto_link     = $context['chat_url'] ?: home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
+		$oto_link     = $context['chat_url'];
+		if ( ! $oto_link ) {
+			$oto_link = home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
+		}
 
 		if ( $oto_offer_id ) {
 			$sale = method_exists( $this->flosc, 'sale' ) ? $this->flosc->sale() : null;
 			if ( $sale && method_exists( $sale, 'offers' ) ) {
-				$oto_offer = $sale->offers()->get_offer( $oto_offer_id, $flow_id ?: null );
+				$oto_offer = $sale->offers()->get_offer( $oto_offer_id, $flow_id ? $flow_id : null );
 			}
 		}
 
-		// Build email
+		// Build email.
 		$subject = (string) ( $flow_settings['email_subject'] ?? get_option( 'flosc_email_subject', "Your {$product_name} Quiz Results: {$score}%" ) );
 		$subject = str_replace( array( '{score}', '{product_name}' ), array( $score, $product_name ), $subject );
 
-		// Email body
+		// Email body.
 		$body_template = (string) ( $flow_settings['email_body'] ?? get_option( 'flosc_email_body', $this->get_default_email_template() ) );
 
 		$correct_list   = ! empty( $correct ) ? implode( ', ', $correct ) : 'None';
@@ -82,19 +105,22 @@ class FLOSC_Email {
 			$body_template
 		);
 
-		// Send
+		// Send.
 		$headers = array_merge(
 			array( 'Content-Type: text/plain; charset=UTF-8' ),
 			$this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false )
 		);
 		wp_mail( $user->user_email, $subject, $body, $headers );
 
-		// Track
+		// Track.
 		do_action( 'flosc_score_email_sent', $user->ID, $score_data );
 	}
 
 	/**
 	 * Helper: resolve guest email identity for a flow.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int    $user_id User ID.
 	 */
 	public function get_guest_email_context( $flow_id = '', $user_id = 0 ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -112,17 +138,17 @@ class FLOSC_Email {
 
 		$identity = is_array( $settings['identity'] ?? null ) ? $settings['identity'] : array();
 		$app_name = trim( (string) ( $identity['name'] ?? ( $settings['name'] ?? '' ) ) );
-		if ( $app_name === '' ) {
+		if ( '' === $app_name ) {
 			$app_name = 'FLOSC';
 		}
 
 		$link_name = trim( (string) ( $settings['guest_link_name'] ?? '' ) );
-		if ( $link_name === '' ) {
+		if ( '' === $link_name ) {
 			$link_name = 'Guest Access Link';
 		}
 
 		$upgrade_url = trim( (string) ( $settings['guest_link_upgrade_url'] ?? '' ) );
-		if ( $upgrade_url !== '' ) {
+		if ( '' !== $upgrade_url ) {
 			$upgrade_url = esc_url_raw( $upgrade_url );
 			if ( ! wp_http_validate_url( $upgrade_url ) ) {
 				$upgrade_url = '';
@@ -142,6 +168,10 @@ class FLOSC_Email {
 
 	/**
 	 * Helper: replace guest email placeholders.
+	 *
+	 * @param mixed $text           Text.
+	 * @param mixed $user           User.
+	 * @param mixed $days_remaining Days remaining.
 	 */
 	public function replace_guest_email_placeholders( $text, $user, $days_remaining ) {
 		$context     = $this->get_guest_email_context( '', (int) $user->ID );
@@ -149,7 +179,10 @@ class FLOSC_Email {
 		$profile_url = function_exists( 'bp_core_get_user_domain' )
 			? bp_core_get_user_domain( $user->ID )
 			: home_url( '/members/' . $user->user_login . '/' );
-		$upgrade_url = $context['upgrade_url'] ?: home_url();
+		$upgrade_url = $context['upgrade_url'];
+		if ( ! $upgrade_url ) {
+			$upgrade_url = home_url();
+		}
 		return str_replace(
 			array( '{name}', '{days_remaining}', '{chat_url}', '{profile_url}', '{upgrade_url}', '{app_name}', '{team_name}', '{link_name}' ),
 			array( $user->display_name, $days_remaining, $chat_url, $profile_url, $upgrade_url, $context['app_name'], $context['team_name'], $context['link_name'] ),
@@ -159,13 +192,16 @@ class FLOSC_Email {
 
 	/**
 	 * Resolve flow-aware sender identity for FLOSC emails.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int    $user_id User ID.
 	 */
 	public function get_flosc_mail_identity( $flow_id = '', $user_id = 0 ) {
 		$context  = $this->get_guest_email_context( $flow_id, (int) $user_id );
 		$settings = is_array( $context['settings'] ?? null ) ? $context['settings'] : array();
 
 		$from_name = trim( (string) ( $settings['email_from_name'] ?? ( $context['app_name'] ?? 'FLOSC' ) ) );
-		if ( $from_name === '' ) {
+		if ( '' === $from_name ) {
 			$from_name = 'FLOSC';
 		}
 		$from_name = trim( str_replace( array( "\r", "\n" ), '', $from_name ) );
@@ -189,6 +225,10 @@ class FLOSC_Email {
 
 	/**
 	 * Build standard FLOSC email headers for consistent sender identity.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int    $user_id User ID.
+	 * @param bool   $is_html Is HTML.
 	 */
 	public function get_flosc_mail_headers( $flow_id = '', $user_id = 0, $is_html = false ) {
 		$identity = $this->get_flosc_mail_identity( $flow_id, $user_id );
@@ -206,6 +246,9 @@ class FLOSC_Email {
 
 	/**
 	 * Build Reply-To header for FLOSC emails.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int    $user_id User ID.
 	 */
 	public function get_flosc_reply_to_header( $flow_id = '', $user_id = 0 ) {
 		$identity = $this->get_flosc_mail_identity( $flow_id, $user_id );
@@ -216,6 +259,10 @@ class FLOSC_Email {
 	 * SSO welcome email (no MagicLink).
 	 * Provider login already authenticated the user; MagicLink is admin/opt-in only.
 	 * Skips non-SSO registration methods (email pending flow, purchase, etc.).
+	 *
+	 * @param mixed $user_id     User ID.
+	 * @param mixed $provider_id Provider ID.
+	 * @param mixed $user_data   User data.
 	 */
 	public function send_sso_welcome_email( $user_id, $provider_id, $user_data = array() ) {
 		$user_id     = absint( $user_id );
@@ -227,7 +274,7 @@ class FLOSC_Email {
 
 		// Only SSO providers. Email registration uses verify → activate → welcome-with-magic.
 		$sso_providers = array( 'google', 'facebook', 'apple', 'microsoft', 'linkedin' );
-		$is_sso        = in_array( $provider_id, $sso_providers, true ) || strpos( $provider_id, 'sso_' ) === 0;
+		$is_sso        = in_array( $provider_id, $sso_providers, true ) || 0 === strpos( $provider_id, 'sso_' );
 		if ( ! $is_sso ) {
 			return;
 		}
@@ -292,7 +339,7 @@ class FLOSC_Email {
 		);
 		if ( $sent ) {
 			$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-			if ( $flow_stem !== '' ) {
+			if ( '' !== $flow_stem ) {
 				$sent_by_flow = get_user_meta( $user_id, '_flosc_sso_welcome_email_sent_flows', true );
 				if ( ! is_array( $sent_by_flow ) ) {
 					$sent_by_flow = array();
@@ -309,6 +356,8 @@ class FLOSC_Email {
 
 	/**
 	 * Send due guest follow-up emails for a single guest user (slot-based windows).
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function send_due_guest_followups_for_user( $user_id ) {
 		$user = get_userdata( $user_id );
@@ -328,7 +377,10 @@ class FLOSC_Email {
 		}
 
 		$days_elapsed = (int) floor( ( time() - strtotime( $user->user_registered ) ) / DAY_IN_SECONDS );
-		$sent         = get_user_meta( $user->ID, '_flosc_guest_emails_sent', true ) ?: array();
+		$sent         = get_user_meta( $user->ID, '_flosc_guest_emails_sent', true );
+		if ( ! $sent ) {
+			$sent = array();
+		}
 		if ( ! is_array( $sent ) ) {
 			$sent = array();
 		}
@@ -388,6 +440,11 @@ class FLOSC_Email {
 	 * daily run cannot burst the mail server. Welcome emails are event-driven and NOT throttled.
 	 * Cap is filterable via 'flosc_email_max_per_run' (0 = unlimited). Returns false when the cap
 	 * is reached so callers can stop and resume on the next run.
+	 *
+	 * @param mixed $to      To.
+	 * @param mixed $subject Subject.
+	 * @param mixed $body    Body.
+	 * @param mixed $headers Headers.
 	 */
 	public function send_email_throttled( $to, $subject, $body, $headers ) {
 		$max = (int) apply_filters( 'flosc_email_max_per_run', 50 );
@@ -400,6 +457,12 @@ class FLOSC_Email {
 
 	/**
 	 * Shared HTML email card (matches the guest/member welcome styling).
+	 *
+	 * @param mixed  $context      Context.
+	 * @param mixed  $user         User.
+	 * @param mixed  $body_text    Body text.
+	 * @param string $button_url   Button URL.
+	 * @param string $button_label Button label.
 	 */
 	public function flosc_email_html_card( $context, $user, $body_text, $button_url = '', $button_label = '' ) {
 		$safe_email = esc_html( $user->user_email );
@@ -408,9 +471,9 @@ class FLOSC_Email {
 			. '<div class="flosc-email-wrap">'
 			. '<div class="flosc-email-card">'
 			. '<p class="flosc-email-lead">' . $body_html . '</p>';
-		if ( $button_url !== '' ) {
+		if ( '' !== $button_url ) {
 			$safe_url = esc_url( $button_url );
-			$label    = esc_html( $button_label !== '' ? $button_label : (string) ( $context['link_name'] ?? 'Open' ) );
+			$label    = esc_html( '' !== $button_label ? $button_label : (string) ( $context['link_name'] ?? 'Open' ) );
 			$html    .= '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $label . '</a></p>'
 				. '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
 				. '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>';
@@ -420,6 +483,12 @@ class FLOSC_Email {
 		return $html;
 	}
 
+	/**
+	 * Dispatch member welcome email.
+	 *
+	 * @param mixed $user_id       User ID.
+	 * @param mixed $purchase_data Purchase data.
+	 */
 	public function dispatch_member_welcome_email( $user_id, $purchase_data = array() ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user || empty( $user->user_email ) ) {
@@ -431,7 +500,7 @@ class FLOSC_Email {
 
 		$flow_id = sanitize_key( (string) ( $purchase_data['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		$level   = sanitize_key( (string) ( $purchase_data['grants_level'] ?? get_user_meta( $user_id, '_flosc_member_level', true ) ) );
-		if ( $level === '' ) {
+		if ( '' === $level ) {
 			$level = 'member';
 		}
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
@@ -442,7 +511,7 @@ class FLOSC_Email {
 			$sent = array();
 		}
 		if ( ! empty( $sent[ $dedup_key ] ) ) {
-			return; // already welcomed for this flow+level
+			return; // already welcomed for this flow+level.
 		}
 
 		$context     = $this->get_guest_email_context( $flow_id, (int) $user_id );
@@ -468,13 +537,16 @@ class FLOSC_Email {
 
 	/**
 	 * Newsletter welcome — one per user per flow. Records send time (anchors newsletter follow-ups).
+	 *
+	 * @param mixed  $user_id User ID.
+	 * @param string $flow_id Flow ID.
 	 */
 	public function dispatch_newsletter_welcome_email( $user_id, $flow_id = '' ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user || empty( $user->user_email ) ) {
 			return;
 		}
-		$flow_id   = sanitize_key( (string) ( $flow_id ?: get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
+		$flow_id   = sanitize_key( (string) ( $flow_id ? $flow_id : get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
 
 		$sent = get_user_meta( $user_id, '_flosc_newsletter_welcome_sent', true );
@@ -504,13 +576,19 @@ class FLOSC_Email {
 		}
 	}
 
+	/**
+	 * Subscribe to newsletter.
+	 *
+	 * @param mixed  $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 */
 	public function subscribe_to_newsletter( $user_id, $flow_id = '' ) {
 		$user_id = (int) $user_id;
 		if ( $user_id <= 0 ) {
 			return;
 		}
 		if ( get_user_meta( $user_id, 'flosc_newsletter_optin', true ) ) {
-			return; // already subscribed
+			return; // already subscribed.
 		}
 		update_user_meta( $user_id, 'flosc_newsletter_optin', time() );
 		$this->dispatch_newsletter_welcome_email( $user_id, $flow_id );
@@ -518,6 +596,8 @@ class FLOSC_Email {
 
 	/**
 	 * Render the optional newsletter opt-in checkbox on the WP user profile.
+	 *
+	 * @param mixed $user User.
 	 */
 	public function render_newsletter_profile_field( $user ) {
 		$checked = get_user_meta( $user->ID, 'flosc_newsletter_optin', true ) ? 'checked' : '';
@@ -530,14 +610,25 @@ class FLOSC_Email {
 
 	/**
 	 * Save the newsletter opt-in checkbox; sends the welcome on first opt-in.
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function save_newsletter_profile_field( $user_id ) {
 		if ( ! current_user_can( 'edit_user', $user_id ) ) {
 			return;
 		}
-		// WP core verifies the profile-update nonce before these hooks fire.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- personal_options_update and edit_user_profile_update run only after core verifies the profile-update nonce.
-		$opted = isset( $_POST['flosc_newsletter_optin'] ) && $_POST['flosc_newsletter_optin'] !== '';
+
+		/*
+		 * Core already verified this nonce -- personal_options_update and
+		 * edit_user_profile_update only fire after core's own
+		 * check_admin_referer( 'update-user_' . $user_id ). Verifying it again
+		 * here costs a hash comparison and buys two things: the guarantee stops
+		 * depending on a caller no reader of this method can see, and the method
+		 * stays correct if it is ever called from anywhere else.
+		 */
+		check_admin_referer( 'update-user_' . $user_id );
+
+		$opted = (bool) filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_VALIDATE_BOOLEAN );
 		if ( $opted ) {
 			$this->subscribe_to_newsletter( $user_id );
 		} else {
@@ -549,6 +640,12 @@ class FLOSC_Email {
 	 * Generic per-series follow-up sender. Reads <prefix>_followups (repeater rows: day/subject/body)
 	 * and sends those whose day offset has elapsed since $anchor_ts (the welcome-email send time)
 	 * and were not already sent. Idempotent; flow- and series-aware sent-state.
+	 *
+	 * @param mixed $user          User.
+	 * @param mixed $prefix        Prefix.
+	 * @param mixed $anchor_ts     Anchor ts.
+	 * @param mixed $sent_meta_key Sent meta key.
+	 * @param mixed $flow_id       Flow ID.
 	 */
 	public function send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id ) {
 		if ( ! $user || empty( $user->user_email ) ) {
@@ -556,7 +653,7 @@ class FLOSC_Email {
 		}
 		$anchor_ts = (int) $anchor_ts;
 		if ( $anchor_ts <= 0 ) {
-			return; // follow-ups only start once the welcome has been sent
+			return; // follow-ups only start once the welcome has been sent.
 		}
 
 		$context   = $this->get_guest_email_context( $flow_id, (int) $user->ID );
@@ -582,9 +679,9 @@ class FLOSC_Email {
 			if ( $days_elapsed >= $day && ! in_array( $i, $done, true ) ) {
 				$subject = $this->replace_guest_email_placeholders( (string) ( $fu['subject'] ?? '' ), $user, 0 );
 				$body    = $this->replace_guest_email_placeholders( (string) ( $fu['body'] ?? '' ), $user, 0 );
-				if ( $subject !== '' || $body !== '' ) {
+				if ( '' !== $subject || '' !== $body ) {
 					$ok = $this->send_email_throttled( $user->user_email, $subject, $body, $this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false ) );
-					if ( $ok === false ) {
+					if ( false === $ok ) {
 						break; } // per-run send cap reached — resume on the next cron run
 				}
 				$done[]  = $i;
@@ -623,7 +720,10 @@ class FLOSC_Email {
 			if ( ! $user ) {
 				continue;
 			}
-			$level     = sanitize_key( (string) get_user_meta( $user->ID, '_flosc_member_level', true ) ) ?: 'member';
+			$level = sanitize_key( (string) get_user_meta( $user->ID, '_flosc_member_level', true ) );
+			if ( ! $level ) {
+				$level = 'member';
+			}
 			$flow_id   = (string) get_user_meta( $user->ID, '_flosc_registration_flow', true );
 			$flow_stem = sanitize_key( pathinfo( basename( $flow_id ), PATHINFO_FILENAME ) );
 			$wsent     = get_user_meta( $user->ID, '_flosc_member_welcome_sent', true );
@@ -673,6 +773,8 @@ The {product_name} Team';
 	 * Reliability guard for SSO email sequence.
 	 * - Ensures welcome email exists once for SSO-created users
 	 * - Sends any due guest follow-up emails (slot windows)
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function maybe_run_sso_email_sequence_for_user( $user_id ) {
 		$user_id = (int) $user_id;
@@ -695,6 +797,10 @@ The {product_name} Team';
 	/**
 	 * Process SSO flow email sequence on SSO entry events.
 	 * Fires on successful SSO login/auto-link and sends welcome only when user is new to that flow.
+	 *
+	 * @param mixed $user_id     User ID.
+	 * @param mixed $provider_id Provider ID.
+	 * @param mixed $user_data   User data.
 	 */
 	public function maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data ) {
 		$user_id = (int) $user_id;
@@ -703,7 +809,7 @@ The {product_name} Team';
 		}
 
 		$flow_id = sanitize_key( (string) ( $user_data['flow_id'] ?? '' ) );
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			update_user_meta( $user_id, '_flosc_registration_flow', $flow_id );
 		}
 

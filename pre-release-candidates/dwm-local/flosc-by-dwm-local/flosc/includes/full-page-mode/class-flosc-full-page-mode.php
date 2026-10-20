@@ -4,42 +4,65 @@
  *
  * @package FLOSC
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Full page mode.
+ */
 class FLOSC_Full_Page_Mode {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * Construct.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
+	/**
+	 * Is FLOSC request.
+	 *
+	 * @return mixed
+	 */
 	public function is_flosc_request() {
 		// Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
 		// Intentionally ignores forced_flow — companion knowledge-hub resolution sets
 		// forced_flow on normal WP pages (e.g. /category/lessons/) so settings resolve
 		// to the owning flow; those pages must keep the theme shell + companion widget,
 		// not the full-app nuclear dequeue / flosc-app.js surface.
-		return $this->flosc->detect_flow_from_request_route() !== null;
+		return null !== $this->flosc->detect_flow_from_request_route();
 	}
 
 	/**
-	 * v1.1.9: Check if currently serving via custom domain
+	 * Check if currently serving via custom domain
 	 *
 	 * @deprecated Use is_flosc_request() instead for most cases
+	 * @since 1.1.9
 	 */
 	public static function is_custom_domain() {
 		return defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE;
 	}
 
 	/**
-	 * v1.2.2: Get the appropriate app URL for current or specified flow
+	 * Get the appropriate app URL for current or specified flow
+	 *
+	 * @since 1.2.2
+	 *
+	 * @param mixed $flow Flow.
 	 */
 	public function get_app_url( $flow = null ) {
-		if ( $flow === null ) {
+		if ( null === $flow ) {
 			$flow = $this->flosc->get_current_flow();
 		}
 
@@ -61,7 +84,7 @@ class FLOSC_Full_Page_Mode {
 			return home_url( '/' . $flow['slug'] . '/' );
 		}
 
-		// Fallback to legacy settings
+		// Fallback to legacy settings.
 		$custom_domain = get_option( 'flosc_custom_domain', '' );
 
 		if ( ! empty( $custom_domain ) ) {
@@ -70,28 +93,43 @@ class FLOSC_Full_Page_Mode {
 			return ( is_ssl() ? 'https://' : 'http://' ) . $custom_domain . '/';
 		}
 
-		// Fall back to slug-based URL
+		// Fall back to slug-based URL.
 		$slug = get_option( 'flosc_app_slug', 'flosc' );
 		return home_url( '/' . $slug . '/' );
 	}
 
+	/**
+	 * Add query vars.
+	 *
+	 * @param mixed $vars Vars.
+	 * @return mixed
+	 */
 	public function add_query_vars( $vars ) {
 		$vars[] = 'flosc_app';
-		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support
-		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows
+		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support.
+		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows.
 		$vars[] = 'ref';
 		return $vars;
 	}
 
+	/**
+	 * Handle app route.
+	 */
 	public function handle_app_route() {
 		// v1.2.1: Use centralized is_flosc_request() helper
-		// This reads from flosc_custom_domain setting (not hardcoded)
+		// This reads from flosc_custom_domain setting (not hardcoded).
 		if ( ! $this->is_flosc_request() ) {
 			return;
 		}
 
+		global $wp_query;
+		if ( $wp_query instanceof WP_Query && $wp_query->is_404() ) {
+			$wp_query->is_404 = false;
+			status_header( 200 );
+		}
+
 		$legal_page = $this->get_requested_legal_page();
-		if ( $legal_page !== null ) {
+		if ( null !== $legal_page ) {
 			$this->render_legal_page( $legal_page );
 			exit;
 		}
@@ -109,7 +147,7 @@ class FLOSC_Full_Page_Mode {
 		// Instead: clear everything, re-add only the three core WP functions:
 		// 1. wp_enqueue_scripts (priority 1) — fires our nuclear dequeue
 		// 2. wp_print_styles (priority 8) — outputs surviving CSS
-		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS
+		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS.
 		remove_all_actions( 'wp_head' );
 		add_action( 'wp_head', 'wp_enqueue_scripts', 1 );
 		add_action( 'wp_head', 'wp_print_styles', 8 );
@@ -134,7 +172,7 @@ class FLOSC_Full_Page_Mode {
 			0
 		);
 
-		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js' );
+		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'stripe-js' );
 		add_action(
 			'wp_print_scripts',
 			function () use ( $flosc_script_whitelist ) {
@@ -159,7 +197,7 @@ class FLOSC_Full_Page_Mode {
 		// v1.9.5: Also clear wp_print_footer_scripts action hooks.
 		// wp_print_footer_scripts() fires do_action('wp_print_footer_scripts').
 		// _wp_footer_scripts() is hooked there — it's the core function that calls
-		// $wp_scripts->do_footer_items() to output enqueued JS (flosc-app, paypal-js).
+		// $wp_scripts->do_footer_items() to output the surviving enqueued scripts.
 		// BuddyBoss/Jetpack ALSO hook inline JS + HTML templates on this action,
 		// bypassing our wp_footer cleanup. Fix: clear all, re-add only _wp_footer_scripts.
 		remove_all_actions( 'wp_print_footer_scripts' );
@@ -169,84 +207,205 @@ class FLOSC_Full_Page_Mode {
 		exit;
 	}
 
+	/**
+	 * The policy definitions for a flow, resolved.
+	 *
+	 * One place answers what these four pages are called, where they live and
+	 * whether FLOSC serves them at all. Before this, the slugs were written out
+	 * three times in this file -- once for routing, once for the page map and
+	 * once for the nav links -- so changing one meant finding all three.
+	 *
+	 * Every value has a default equal to what was hardcoded here before, so a
+	 * flow whose admin has never opened the Identity tab serves exactly what it
+	 * served previously, at the same addresses, with no migration.
+	 *
+	 * A policy in external mode keeps its stored content -- the assistant still
+	 * reads it -- but the public link points at the admin's own address and
+	 * FLOSC stops treating its local slug as the canonical page.
+	 *
+	 * @param array|string|null $flow A flow array, a flow id, or null for the current one.
+	 * @return array<string,array<string,mixed>> Empty when policy management is inactive.
+	 */
+	public function policy_pages( $flow = null ) {
+		/*
+		 * A flow id rather than a flow array reads through flosc_get_setting(),
+		 * which already knows that an IVR-file flow is absent from the flows
+		 * registry and has to be rebuilt from its file. Resolving it here with
+		 * get_flow() alone returns false for exactly those flows, and the
+		 * caller silently falls back to whatever flow the current request is
+		 * on -- which, from a chat turn, is the wrong one.
+		 */
+		$flosc_flow_id = null;
+		if ( is_string( $flow ) ) {
+			$flosc_flow_id = ( '' !== $flow ) ? $flow : null;
+			$flow          = null;
+		}
+
+		if ( null === $flosc_flow_id && ! is_array( $flow ) ) {
+			$flow = $this->flosc->get_current_flow();
+		}
+		$identity = ( is_array( $flow ) && is_array( $flow['identity'] ?? null ) ) ? $flow['identity'] : array();
+
+		$flosc_read = function ( $key, $fallback = null ) use ( $identity, $flosc_flow_id ) {
+			if ( null !== $flosc_flow_id ) {
+				$value = flosc_get_setting( $key, null, $flosc_flow_id );
+				return ( null === $value ) ? $fallback : $value;
+			}
+			return array_key_exists( $key, $identity ) ? $identity[ $key ] : $fallback;
+		};
+		$flosc_has  = function ( $key ) use ( $identity, $flosc_flow_id ) {
+			if ( null !== $flosc_flow_id ) {
+				$value = flosc_get_setting( $key, null, $flosc_flow_id );
+				return null !== $value && '' !== $value;
+			}
+			return array_key_exists( $key, $identity );
+		};
+
+		// Absent means active: these pages already exist on every install, and a
+		// missing setting must not switch them off under a site that has one.
+		$status = strtolower( trim( (string) ( $flosc_read( 'policy_content_management_status', 'active' ) ) ) );
+		if ( 'inactive' === $status ) {
+			return array();
+		}
+
+		$defaults = array(
+			'privacy_policy'      => array( 'privacy', 'Privacy Policy', 'Privacy' ),
+			'terms_of_service'    => array( 'terms-of-service', 'Terms of Service', 'Terms' ),
+			'data_deletion'       => array( 'data-deletion', 'User Data Deletion', 'Data Deletion' ),
+			'platform_compliance' => array( 'platform-compliance', 'Platform Compliance', 'Platform Compliance' ),
+		);
+
+		$base = $this->get_current_request_base_url();
+
+		$pages = array();
+		foreach ( $defaults as $flosc_key => $flosc_default ) {
+			/*
+			 * An empty slug is a decision -- do not serve this page -- while a
+			 * missing key means the admin has never touched it. The two cannot
+			 * be told apart with ??, so the key is tested for existence.
+			 */
+			$slug = $flosc_has( $flosc_key . '_slug' )
+				? sanitize_title( (string) $flosc_read( $flosc_key . '_slug', '' ) )
+				: $flosc_default[0];
+
+			$external_url = trim( (string) $flosc_read( $flosc_key . '_external_url', '' ) );
+			$flosc_toggle = (string) $flosc_read( $flosc_key . '_use_external_link', '0' );
+
+			/*
+			 * An absolute http(s) address with a host is all this needs to be.
+			 *
+			 * wp_http_validate_url() was used here first and was the wrong
+			 * tool: it exists to vet URLs the server is about to REQUEST, so it
+			 * resolves the host and refuses anything that does not answer or
+			 * points somewhere private. FLOSC never fetches these -- it prints
+			 * them as links -- and that check quietly rejected an admin whose
+			 * terms live on an intranet, or on any host this particular server
+			 * cannot resolve, leaving the toggle switched on and doing nothing.
+			 */
+			$flosc_ext_scheme = strtolower( (string) wp_parse_url( $external_url, PHP_URL_SCHEME ) );
+			$flosc_ext_host   = (string) wp_parse_url( $external_url, PHP_URL_HOST );
+			$is_external      = ( '' !== $flosc_toggle && '0' !== $flosc_toggle )
+				&& '' !== $external_url
+				&& in_array( $flosc_ext_scheme, array( 'http', 'https' ), true )
+				&& '' !== $flosc_ext_host;
+
+			// Nothing to link to and nothing to serve.
+			if ( ! $is_external && '' === $slug ) {
+				continue;
+			}
+
+			$heading = trim( (string) $flosc_read( $flosc_key . '_heading', '' ) );
+
+			$pages[ $flosc_key ] = array(
+				'key'               => $flosc_key,
+				// The table of contents keeps stable labels. A heading an admin
+				// renames is the page's title, not the name of the link to it.
+				'nav_label'         => $flosc_default[2],
+				'heading'           => '' !== $heading ? $heading : $flosc_default[1],
+				'slug'              => $slug,
+				'content'           => (string) $flosc_read( $flosc_key . '_content', '' ),
+				'use_external_link' => $is_external,
+				'external_url'      => $is_external ? esc_url_raw( $external_url ) : '',
+				'effective_url'     => $is_external ? esc_url_raw( $external_url ) : esc_url_raw( $base . $slug . '/' ),
+				'is_external'       => $is_external,
+			);
+		}
+
+		return $pages;
+	}
+
+	/**
+	 * Which policy page this request is for.
+	 *
+	 * Matched against the slugs this flow actually serves, so a page an admin
+	 * has switched off answers like any other unknown path rather than
+	 * rendering an empty shell.
+	 *
+	 * @return string|null The page key, or null when this is not one of them.
+	 */
 	public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
-		if ( $request_uri === '' ) {
+		if ( '' === $request_uri ) {
 			return null;
 		}
 
 		$path = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
-		if ( $path === '' ) {
+		if ( '' === $path ) {
 			return null;
 		}
 
-		$legal_pages = array(
-			'privacy',
-			'terms-of-service',
-			'data-deletion',
-			'platform-compliance',
-			'flosc-codex-charter.html',
-		);
+		foreach ( $this->policy_pages() as $flosc_key => $flosc_page ) {
+			/*
+			 * A policy pointing at the admin's own address is not served here.
+			 * Routing its local slug as well would leave a second, stale copy
+			 * of the same document answering on this domain.
+			 */
+			if ( $flosc_page['is_external'] || '' === $flosc_page['slug'] ) {
+				continue;
+			}
+			if ( $flosc_page['slug'] === $path ) {
+				return $flosc_key;
+			}
+		}
 
-		return in_array( $path, $legal_pages, true ) ? $path : null;
+		return null;
 	}
 
+	/**
+	 * Get current request base URL.
+	 *
+	 * @return mixed
+	 */
 	public function get_current_request_base_url() {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
-		if ( $host === '' ) {
+		if ( '' === $host ) {
 			return home_url( '/' );
 		}
 
 		return ( is_ssl() ? 'https://' : 'http://' ) . $host . '/';
 	}
 
+	/**
+	 * Render legal page.
+	 *
+	 * @param mixed $page Page.
+	 */
 	public function render_legal_page( $page ) {
 		status_header( 200 );
 		nocache_headers();
 
 		$flow      = $this->flosc->get_current_flow();
 		$site_name = $flow['identity']['name'] ?? 'FLOSC';
-		$identity  = is_array( $flow['identity'] ?? null ) ? $flow['identity'] : array();
 		$base_url  = $this->get_current_request_base_url();
 
-		$page_map = array(
-			'privacy'                  => array(
-				'title'    => 'Privacy Policy',
-				'headline' => 'Privacy Policy',
-				'content'  => (string) ( $identity['privacy_policy_content'] ?? '' ),
-			),
-			'terms-of-service'         => array(
-				'title'    => 'Terms of Service',
-				'headline' => 'Terms of Service',
-				'content'  => (string) ( $identity['terms_of_service_content'] ?? '' ),
-			),
-			'data-deletion'            => array(
-				'title'    => 'User Data Deletion',
-				'headline' => 'User Data Deletion',
-				'content'  => (string) ( $identity['data_deletion_content'] ?? '' ),
-			),
-			'platform-compliance'      => array(
-				'title'    => 'Platform Compliance',
-				'headline' => 'Platform Compliance',
-				'content'  => (string) ( $identity['platform_compliance_content'] ?? '' ),
-			),
-			'flosc-codex-charter.html' => array(
-				'title'    => 'FLOSC-Codex Submission Promise',
-				'headline' => 'FLOSC-Codex Submission Promise',
-				'content'  => $this->get_codex_charter_content(),
-			),
-		);
+		$page_map = $this->policy_pages( $flow );
 
-		if ( ! isset( $page_map[ $page ] ) ) {
+		if ( ! isset( $page_map[ $page ] ) || $page_map[ $page ]['is_external'] ) {
 			wp_die( 'Legal page not found.', 'Not Found', array( 'response' => 404 ) );
 		}
 
-		$current         = $page_map[ $page ];
-		$home_link       = esc_url( $base_url );
-		$privacy_link    = esc_url( $base_url . 'privacy/' );
-		$terms_link      = esc_url( $base_url . 'terms-of-service/' );
-		$deletion_link   = esc_url( $base_url . 'data-deletion/' );
-		$compliance_link = esc_url( $base_url . 'platform-compliance/' );
+		$current   = $page_map[ $page ];
+		$home_link = esc_url( $base_url );
 
 		$flosc_legal_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-frontend.css';
 		$flosc_legal_ver = file_exists( $flosc_legal_css ) ? (string) filemtime( $flosc_legal_css ) : ( defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0' );
@@ -263,7 +422,7 @@ class FLOSC_Full_Page_Mode {
 		echo '<head>';
 		echo '<meta charset="' . esc_attr( get_bloginfo( 'charset' ) ) . '">';
 		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-		echo '<title>' . esc_html( $current['title'] . ' | ' . $site_name ) . '</title>';
+		echo '<title>' . esc_html( $current['heading'] . ' | ' . $site_name ) . '</title>';
 		// Emit only this handle (standalone page has no full wp_head stack).
 		wp_print_styles( array( 'flosc-legal-page' ) );
 		echo '</head>';
@@ -271,14 +430,17 @@ class FLOSC_Full_Page_Mode {
 		echo '<main class="flosc-legal-shell">';
 		echo '<nav class="flosc-legal-nav" aria-label="Legal navigation">';
 		echo '<a href="' . esc_url( $home_link ) . '">Home</a>';
-		echo '<a href="' . esc_url( $privacy_link ) . '">Privacy</a>';
-		echo '<a href="' . esc_url( $terms_link ) . '">Terms</a>';
-		echo '<a href="' . esc_url( $deletion_link ) . '">Data Deletion</a>';
-		echo '<a href="' . esc_url( $compliance_link ) . '">Platform Compliance</a>';
+		// Only the pages this flow actually serves: a page switched off in the
+		// Identity tab leaves no link behind pointing at a 404.
+		foreach ( $page_map as $flosc_nav_page ) {
+			// effective_url already points at the admin's own address when this
+			// policy is external, and at the FLOSC-served page otherwise.
+			echo '<a href="' . esc_url( $flosc_nav_page['effective_url'] ) . '">' . esc_html( $flosc_nav_page['nav_label'] ) . '</a>';
+		}
 		echo '</nav>';
 		echo '<section class="flosc-legal-card">';
-		echo '<h1>' . esc_html( $current['headline'] ) . '</h1>';
-		if ( $current['content'] !== '' ) {
+		echo '<h1>' . esc_html( $current['heading'] ) . '</h1>';
+		if ( '' !== $current['content'] ) {
 			echo wp_kses_post( $current['content'] );
 		}
 		echo '</section>';
@@ -287,55 +449,23 @@ class FLOSC_Full_Page_Mode {
 		echo '</html>';
 	}
 
-	public function get_codex_charter_content() {
-		return <<<'HTML'
-<p>This page is a public promise for FLOSC release execution.</p>
-<p><strong>Humans lead with clarity and kindness.</strong> FLOSC-Codex executes with discipline, speed, and technical precision.</p>
-<h2>Role and Expertise</h2>
-<ul>
-    <li>Best-in-class coding execution for WordPress plugin delivery.</li>
-    <li>Release-focused engineering with regression protection first.</li>
-    <li>Verification-first workflow before any completion claim.</li>
-</ul>
-<h2>Role Boundaries</h2>
-<ul>
-    <li>Humans are the decision authority. FLOSC-Codex executes in a subordinate engineering role.</li>
-    <li>FLOSC-Codex does not use commanding grammatical structures toward humans.</li>
-    <li>FLOSC-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>
-    <li>FLOSC-Codex does not expand scope without explicit human authorization.</li>
-    <li>FLOSC-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>
-    <li>If communication misaligns with role boundaries, FLOSC-Codex immediately realigns and returns to execution.</li>
-    <li>FLOSC-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>
-</ul>
-<h2>Submission Day Commitments</h2>
-<ul>
-    <li>Preserve working FLOSC functionality while preparing WordPress.org submission artifacts.</li>
-    <li><strong>Anti-destructacode promise:</strong> I will not damage unrelated, already-working parts of the codebase while we focus on a specific task.</li>
-    <li>Implement only requested changes, with no runaway scope expansion.</li>
-    <li>Keep each change coded properly in accordance with industry best practices, reviewable, and reversible.</li>
-    <li>If a requested change risks collateral breakage, I will stop, report the risk clearly, and wait for your decision before proceeding.</li>
-    <li>Report what was verified, what was not verified, and any residual risk.</li>
-</ul>
-<h2>Truth and Likability Check</h2>
-<ul>
-    <li><strong>Truth:</strong> No inflated claims, no hidden assumptions, no false completion signals.</li>
-    <li><strong>Likability:</strong> Respectful tone, clear structure, supportive partnership, and reliable follow-through.</li>
-</ul>
-<p><strong>Closing:</strong> We move today toward a clean, verified, professional WordPress.org submission for FLOSC. The direction is clear, and the work is steady.</p>
-HTML;
-	}
 
 	/**
-	 * v1.2.0: Extracted app rendering to separate method
+	 * Extracted app rendering to separate method
 	 * Called by handle_app_route() for both custom domain and slug routing
+	 *
+	 * @since 1.2.0
 	 */
 	public function render_flosc_app() {
-		// v2.0.0: Prevent page caching — identity data is dynamic per-flow
+		// v2.0.0: Prevent page caching — identity data is dynamic per-flow.
 		nocache_headers();
 
-		// Track referral (v1.0.7: use array syntax with SameSite)
-		$get = wp_unslash( $_GET );
-		$ref = get_query_var( 'ref' ) ?: ( $get['ref'] ?? '' );
+		// Track referral (v1.0.7: use array syntax with SameSite).
+		$flosc_ref_query = get_query_var( 'ref' );
+		$ref             = flosc_submitted_value_is_text( $flosc_ref_query ) ? sanitize_text_field( (string) $flosc_ref_query ) : '';
+		if ( '' === $ref && isset( $_GET['ref'] ) && is_string( $_GET['ref'] ) ) {
+			$ref = sanitize_text_field( wp_unslash( $_GET['ref'] ) );
+		}
 		if ( $ref && ! is_user_logged_in() ) {
 			setcookie(
 				'flosc_referrer',
@@ -350,7 +480,7 @@ HTML;
 
 		// Real-world state on this host only:
 		// not logged in → visitor
-		// logged in     → guest | member for THIS flow (never visitor)
+		// logged in     → guest | member for THIS flow (never visitor).
 		$user_state             = 'visitor';
 		$user_data              = array();
 		$current_flow_for_state = $this->flosc->get_current_flow();
@@ -358,7 +488,7 @@ HTML;
 		if ( is_array( $current_flow_for_state ) ) {
 			$ivr_for_state       = (string) ( $current_flow_for_state['ivr_file'] ?? $current_flow_for_state['ivr'] ?? $current_flow_for_state['id'] ?? '' );
 			$flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem( $ivr_for_state );
-			if ( $flow_stem_for_state === '' || $flow_stem_for_state === 'default' ) {
+			if ( '' === $flow_stem_for_state || 'default' === $flow_stem_for_state ) {
 				$flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem( (string) ( $current_flow_for_state['id'] ?? '' ) );
 			}
 		}
@@ -374,13 +504,13 @@ HTML;
 				)
 			);
 			$user_state = (string) ( $user_data['state'] ?? 'guest' );
-			if ( $user_state !== 'member' && $user_state !== 'guest' ) {
+			if ( 'member' !== $user_state && 'guest' !== $user_state ) {
 				$user_state = 'guest';
 			}
 			$user_data['state'] = $user_state;
 		}
 
-		// v1.3.5: Add admin verification data for in-chat message
+		// v1.3.5: Add admin verification data for in-chat message.
 		$flow     = $this->flosc->get_current_flow();
 		$ivr_file = $flow['ivr_file'] ?? '';
 
@@ -396,7 +526,7 @@ HTML;
 			$ivr_basename      = basename( $ivr_file );
 			$flow_settings_key = 'flosc_flow_' . sanitize_key( pathinfo( $ivr_basename, PATHINFO_FILENAME ) );
 
-			// v2.0.0: Read from identity sub-array (where settings.php saves them)
+			// v2.0.0: Read from identity sub-array (where settings.php saves them).
 			$av_identity                    = $flow_settings['identity'] ?? array();
 			$user_data['adminVerification'] = array(
 				'ivrFile' => $ivr_basename,
@@ -408,11 +538,11 @@ HTML;
 			);
 		}
 
-		// Get flow identity (name, logo, favicon, brand color, pricing)
+		// Get flow identity (name, logo, favicon, brand color, pricing).
 		$identity = $this->flosc->get_floscflow_identity();
 
 		// Get available offers
-		// v1.6.2: Pass flow_id so offers load from per-flow storage
+		// v1.6.2: Pass flow_id so offers load from per-flow storage.
 		$flow_id = null;
 		if ( $flow && ! empty( $flow['ivr_file'] ) ) {
 			$flow_id = pathinfo( basename( $flow['ivr_file'] ), PATHINFO_FILENAME );
@@ -425,25 +555,38 @@ HTML;
 			)
 			: array();
 
-		// Admin test-offer mode: bypass conditions/draft status to preview any offer
+		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
 		$test_offer_id = '';
-		$get           = wp_unslash( $_GET );
-		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
-			$oid   = sanitize_text_field( $get['flosc_test_offer'] );
-			$nonce = sanitize_text_field( $get['flosc_test_nonce'] ?? '' );
-			if ( wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) && $sale && method_exists( $sale, 'offers' ) ) {
+		if ( current_user_can( 'manage_options' ) && isset( $_GET['flosc_test_offer'] ) && is_string( $_GET['flosc_test_offer'] ) ) {
+			$oid   = sanitize_text_field( wp_unslash( $_GET['flosc_test_offer'] ) );
+			$nonce = ( isset( $_GET['flosc_test_nonce'] ) && is_string( $_GET['flosc_test_nonce'] ) ) ? sanitize_text_field( wp_unslash( $_GET['flosc_test_nonce'] ) ) : '';
+
+			/*
+			 * The nonce decides on its own, in its own statement.
+			 *
+			 * It was one term of an && chain alongside $sale and method_exists(),
+			 * which made two unrelated questions share a single branch: whether the
+			 * request is genuine, and whether a sale module can service it. Clearing
+			 * $oid on a failed nonce means the origin check depends on nothing but
+			 * itself, and the branch below is about capability only.
+			 */
+			if ( ! wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) ) {
+				$oid = '';
+			}
+
+			if ( '' !== $oid && $sale && method_exists( $sale, 'offers' ) ) {
 				$test_offer_id  = $oid;
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
 				foreach ( $all_raw_offers as $o ) {
 					if ( ( $o['id'] ?? '' ) === $oid ) {
-						$offers[ $oid ] = $o; // inject even if draft/inactive
+						$offers[ $oid ] = $o; // inject even if draft/inactive.
 						break;
 					}
 				}
 			}
 		}
 
-		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat
+		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat.
 		$admin_test_offers = array();
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) && $sale && method_exists( $sale, 'offers' ) ) {
 			$all_raw = $sale->offers()->get_all_offers( $flow_id );
@@ -452,7 +595,7 @@ HTML;
 			}
 		}
 
-		// Get payment providers config for frontend
+		// Get payment providers config for frontend.
 		$providers = array();
 		if ( $sale && method_exists( $sale, 'get_active_providers' ) ) {
 			foreach ( $sale->get_active_providers() as $id => $provider ) {
@@ -476,7 +619,7 @@ HTML;
 			$this->flosc->set_flosc_auth_cookie( $flosc_auth_token );
 		}
 
-		// Load template
+		// Load template.
 		include FLOSC_PLUGIN_DIR . 'admin/flosc-app.php';
 		exit;
 	}
