@@ -35,19 +35,19 @@ function flosc_optin_check( $ok, $message ) {
 }
 
 flosc_optin_check(
-	'subscribe' === flosc_newsletter_optin_decision( '1' ),
+	'subscribe' === FLOSC_Email::newsletter_optin_decision( '1' ),
 	'A checked box did not subscribe.'
 );
 flosc_optin_check(
-	'unsubscribe' === flosc_newsletter_optin_decision( null ),
+	'unsubscribe' === FLOSC_Email::newsletter_optin_decision( null ),
 	'A missing checkbox did not unsubscribe.'
 );
 flosc_optin_check(
-	'unchanged' === flosc_newsletter_optin_decision( array( '1' ) ),
+	'unchanged' === FLOSC_Email::newsletter_optin_decision( array( '1' ) ),
 	'A posted list changed the subscription decision.'
 );
 flosc_optin_check(
-	'unchanged' === flosc_newsletter_optin_decision( (object) array( 'value' => '1' ) ),
+	'unchanged' === FLOSC_Email::newsletter_optin_decision( (object) array( 'value' => '1' ) ),
 	'A posted object changed the subscription decision.'
 );
 

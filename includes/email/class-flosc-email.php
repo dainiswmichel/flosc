@@ -10,28 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Decide a newsletter checkbox save.
- *
- * A missing field is an unticked box. A text value of 1 is subscribed.
- * A list or object is refused, and the stored subscription stays as it is.
- *
- * @param mixed $submitted Posted value, or null when the field is absent.
- * @return string subscribe, unsubscribe, or unchanged.
- */
-function flosc_newsletter_optin_decision( $submitted ) {
-	if ( null === $submitted ) {
-		return 'unsubscribe';
-	}
-	if ( ! is_string( $submitted ) ) {
-		return 'unchanged';
-	}
-	if ( filter_var( $submitted, FILTER_VALIDATE_BOOLEAN ) ) {
-		return 'subscribe';
-	}
-	return 'unsubscribe';
-}
-
-/**
  * Email.
  */
 class FLOSC_Email {
@@ -651,21 +629,53 @@ class FLOSC_Email {
 		check_admin_referer( 'update-user_' . $user_id );
 
 		$flosc_optin = null;
-		if ( isset( $_POST['flosc_newsletter_optin'] ) ) {
-			$flosc_posted = wp_unslash( $_POST['flosc_newsletter_optin'] );
-			if ( is_string( $flosc_posted ) ) {
-				$flosc_optin = sanitize_text_field( $flosc_posted );
-			} else {
-				$flosc_optin = $flosc_posted;
+		if ( filter_has_var( INPUT_POST, 'flosc_newsletter_optin' ) ) {
+			$flosc_optin = filter_input(
+				INPUT_POST,
+				'flosc_newsletter_optin',
+				FILTER_CALLBACK,
+				array(
+					'options' => static function ( $flosc_value ) {
+						if ( ! is_string( $flosc_value ) ) {
+							return '';
+						}
+						return sanitize_text_field( $flosc_value );
+					},
+				)
+			);
+			if ( ! is_string( $flosc_optin ) ) {
+				return;
 			}
 		}
 
-		$flosc_decision = flosc_newsletter_optin_decision( $flosc_optin );
+		$flosc_decision = self::newsletter_optin_decision( $flosc_optin );
 		if ( 'subscribe' === $flosc_decision ) {
 			$this->subscribe_to_newsletter( $user_id );
 		} elseif ( 'unsubscribe' === $flosc_decision ) {
 			delete_user_meta( $user_id, 'flosc_newsletter_optin' );
 		}
+	}
+
+	/**
+	 * Decide a newsletter checkbox save.
+	 *
+	 * A missing field is an unticked box. A text value of 1 is subscribed.
+	 * A list or object is refused, and the stored subscription stays as it is.
+	 *
+	 * @param mixed $submitted Posted text, or null when the field is absent.
+	 * @return string subscribe, unsubscribe, or unchanged.
+	 */
+	public static function newsletter_optin_decision( $submitted ) {
+		if ( null === $submitted ) {
+			return 'unsubscribe';
+		}
+		if ( ! is_string( $submitted ) ) {
+			return 'unchanged';
+		}
+		if ( filter_var( $submitted, FILTER_VALIDATE_BOOLEAN ) ) {
+			return 'subscribe';
+		}
+		return 'unsubscribe';
 	}
 
 	/**
