@@ -35,7 +35,7 @@ were not edited for v180.
 
 - GitHub baseline and header `Github HashID`:
   `004f6e74eb039b0be3adc4d6209d9dec5fce80ab`
-- Candidate artifact commit: `PENDING_PUBLICATION`
+- Candidate artifact commit: `7420207987ea0ab595b129e14047285784cc7bda`
 - Required commit subject: `Home run candidate v180 coded by Codex.`
 - Michel date: `2026-10m-21d`
 

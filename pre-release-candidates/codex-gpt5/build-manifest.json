@@ -5,7 +5,7 @@
   "owner": "Codex (OpenAI)",
   "created_michel_date": "2026-10m-21d",
   "base_commit": "004f6e74eb039b0be3adc4d6209d9dec5fce80ab",
-  "candidate_artifact_commit": "PENDING_PUBLICATION",
+  "candidate_artifact_commit": "7420207987ea0ab595b129e14047285784cc7bda",
   "code_commit_subject": "Home run candidate v180 coded by Codex.",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
