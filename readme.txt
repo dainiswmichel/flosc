@@ -109,6 +109,8 @@ Four packs ship with FLOSC:
 * **DA1 Catalog Sales Journey** - Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.
 * **Vegan Latvian Kitchen** - Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.
 
+The DA1 Catalog Sales Journey and the Vegan Latvian Kitchen each include a `catalog.txt` file. A catalog is the site owner's list of lessons, compositions, works of art, poems, products, services, projects, or case studies. The VGM column marks who may receive that row. Visitor is public. Guest is a person with a WordPress account. Member is a member level, including a complimentary membership. The installer copies `catalog.txt` out of the plugin into the site's FLOSC catalog folder as a tab-separated `.tsv` file. The copy inside the plugin is the example the installer reads. Replace the rows with your own list and keep the columns.
+
 Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
 
 All four are example content. Delete them, or take them apart and replace the subject with your own.
@@ -147,7 +149,7 @@ Current per-provider pocket rules are dated MTS 26_08m_20d on the Personality De
 
 = What are DA1 Catalogs? =
 
-DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Catalogs are stored as TSV datasets in the WordPress uploads directory and can be assigned to specific flows.
+DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Visitor is public. Guest is a logged-in WordPress account. Member is a member level, including a complimentary membership. The starter packs ship the example rows as `catalog.txt`. Installing a pack stores that list as a tab-separated `.tsv` file in the WordPress uploads directory, and a flow can use that catalog.
 
 = Where does visitor data get stored? =
 
@@ -299,11 +301,11 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 * Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
 * Included admin documentation updates for WordPress.org submission
 
-= Code standard =
+== Code standard ==
 
 FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
 
-= Support & Contribution =
+== Support & Contribution ==
 
 For support, feature requests, or bug reports, visit:
 * [FLOSC.ai](https://flosc.ai)
@@ -311,7 +313,7 @@ For support, feature requests, or bug reports, visit:
 
 FLOSC is an open-source project. Contributions welcome!
 
-= Stay Connected =
+== Stay Connected ==
 
 * Author: [solopreneur Dainis W. Michel](https://dainis.net)
 * Project: [FLOSC.ai](https://flosc.ai)
