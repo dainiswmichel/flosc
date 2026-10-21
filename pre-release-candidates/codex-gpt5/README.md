@@ -1,54 +1,59 @@
-# FLOSC 8.0.0 — Codex home-run candidate v160
+# FLOSC 8.0.0 — Codex candidate v175
 
-This is the complete v160 review candidate built from the local v159 source.
-The public plugin version and stable tag remain 8.0.0.
+Source tree: `flosc-by-codex-gpt5/flosc`. Installable artifact: `flosc.zip`.
+The public plugin version and stable tag remain 8.0.0. The internal iteration is
+v175.
 
 ## Scope
 
-v160 changes PayPal SDK delivery only:
+This candidate fully remediates WordPress.org review Issue 06 without changing
+purchased member-level assignment or login behavior:
 
-- removes the PayPal JavaScript SDK from the initial `/chat/` page dependencies;
-- loads the SDK asynchronously when a PayPal checkout modal opens;
-- reuses one loader promise so repeated clicks do not inject duplicate scripts;
-- preserves capture and subscription SDK parameters; and
-- shows a loading state and a retry control if the SDK cannot load.
+- every FLOSC account-creation path supplies an explicitly validated role to
+  `wp_insert_user()`;
+- SSO once again starts with `subscriber`, then applies the existing SSO role
+  and user-data filters before final role validation;
+- roles with user, plugin, theme, core, network, options, file-editing, or
+  unfiltered-HTML administration capabilities cannot be assigned at account
+  creation;
+- an unavailable or privileged fallback `subscriber` role stops account
+  creation instead of silently creating an account; and
+- the regression test executes the resolver and verifies all five account-
+  creation paths, rather than certifying source strings.
 
-Stripe and the server-side payment endpoints are unchanged.
+## Provenance
 
-## Verification performed
+- Base v174 commit: `5afca498bb60ea4b042c2673845f39fddc41b576`
+- v175 code commit: `6b16801ba85bc91a483bbc6e99a12c35ca77fa91`
+- Commit name: `Home run candidate v175 coded by Codex.`
+- Michel date: `2026-10m-21d`
 
-- PHP syntax passed for every PHP file in the local source.
-- PHPCompatibilityWP for PHP 7.4 passed.
-- 52 PHP regression scripts and 6 JavaScript regression scripts passed.
-- The PayPal lazy-load assertions in `check_companion_surface_contract.js` passed.
-- `unzip -t` passed for the exact artifact.
-- Live deployment completed on 2026-10m-18d. The live plugin reports internal
-  iteration v160, the four changed runtime files match local SHA-256 values,
-  `/chat/` returns HTTP 200, and its initial HTML contains no PayPal SDK URL.
-- WP-CLI activation-status verification was blocked because the active Contact
-  Form 7 package requires PHP 8.3 while the server CLI is PHP 8.0. The public
-  web request remained HTTP 200.
-- Full WordPress PHPCS and the release gate retain existing v159 findings. The
-  release gate reported seven failed or unverified checks, including unavailable
-  Plugin Check. This candidate is not represented as WordPress.org submission-ready.
+## Verification
 
-## Artifact
+- Source PHP syntax: 213 files, 0 failures.
+- ZIP/live PHP syntax: 154 files, 0 failures.
+- `tests/check_registration_role_boundary.php`: passed all assertions.
+- `tests/check_login_action_boundary.php`: passed all 12 assertions.
+- PHPCompatibilityWP, PHP 7.4: passed on all changed shipping files.
+- WordPress PHPCS on changed shipping files: 0 errors; 23 inherited warnings
+  (15 nonce recommendations and 8 unrelated formatting warnings).
+- Exact ZIP release gate: all available metadata, security, review-defect,
+  disclosure, and syntax checks passed. Official Plugin Check is explicitly
+  unverified because this shell has no booting `WP_PATH`.
+- ZIP integrity: passed; one `flosc/` root; no tests, vendor, candidates, or
+  development tooling.
+- Live deployment: exact extracted ZIP synchronized to the FLOSC plugin
+  directory; checksum comparison found no differing or stale runtime files.
+- Live HTTP smoke check: `https://dainis.net/chat/` returned HTTP 200.
+
+## Exact artifact
 
 ```text
-0458c0eb4b25f54fa17709b175add8a88c15c8ad9619f7255a01966bb86cfc22  flosc.zip
+57a669602fceab73b19be584d1a7d87df67aaf51b276897fa95b0e3bca1926bd  flosc.zip
 ```
 
-- ZIP size: 2,829,326 bytes
+- ZIP size: 2,842,613 bytes
 - ZIP entries: 283
-- Shipping files: 243
-- Shipping PHP files: 154
-- Artifact root: `flosc/`
-- Tests in artifact: none
-
-## Repository identity
-
-- Internal iteration: v160
-- Baseline: local v159 source
-- GitHub parent before publication: `2e34f2a1b0b7059930502c4bc8be70691faf11c6`
-- Candidate owner: Codex
-- Candidate source commit: `3e7234be7903cf4c5b0c890b736eab70f88cf944`
+- Runtime files: 243
+- Runtime PHP files: 154
+- Runtime manifest SHA-256: `f72b7e8dcaaa180fe97d439282c425756f5ad10d0d438f62f8bbbce934db0c31`

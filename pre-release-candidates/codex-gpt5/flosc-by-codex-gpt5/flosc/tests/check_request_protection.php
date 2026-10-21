@@ -112,7 +112,7 @@ ok( 'and the page says the scope is the whole installation',
 
 echo "\nWhat the form posts is validated before it is stored\n";
 ok( 'the save clamps to a usable range',
-	strpos( flosc_nows( $save ), flosc_nows( 'min(10000, absint($flosc_post[\'flosc_public_request_protection\']'  )) !== false, true );
+	strpos( flosc_nows( $save ), flosc_nows( 'min( 10000, absint( $flosc_posted_protection[ $flosc_protection_key ] ?? $flosc_protection_default ) )' ) ) !== false, true );
 ok( '  and never to zero, which would refuse every visitor',
 	strpos( flosc_nows( $save ), flosc_nows( '$flosc_protection[ $flosc_protection_key ] = max(' ) ) !== false, true );
 ok( 'the option is written',

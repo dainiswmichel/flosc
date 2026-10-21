@@ -147,7 +147,7 @@ ok( 'the site-address toggle is rendered',
 // An unticked checkbox posts nothing, and both of these default to on when
 // the key is absent. Writing '0' explicitly is what makes "off" possible.
 ok( 'and both are written explicitly, so unticking sticks',
-	strpos( flosc_nows( $save ), flosc_nows( "\$flosc_identity[\$flosc_identity_key] = isset(\$flosc_post['flosc_provider_identity'][\$flosc_identity_key])"  )) !== false, true );
+	strpos( flosc_nows( $save ), flosc_nows( "if ( ! array_key_exists( \$flosc_identity_key, \$flosc_posted_identity ) ) {\n\t\t\t\t\t\t\$flosc_identity[ \$flosc_identity_key ] = '0';" ) ) !== false, true );
 
 // Plugin Check flags every literal LLM-provider hostname it finds and points
 // at wp_ai_client_prompt(). Five of ours are model DISCOVERY — listing what an

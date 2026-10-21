@@ -177,9 +177,11 @@ class User_Linker {
 			$user_data_wp['display_name'] = sanitize_text_field( (string) ( $user_data_wp['display_name'] ?? '' ) );
 			$user_data_wp['first_name']   = sanitize_text_field( (string) ( $user_data_wp['first_name'] ?? '' ) );
 			$user_data_wp['last_name']    = sanitize_text_field( (string) ( $user_data_wp['last_name'] ?? '' ) );
-			if ( isset( $user_data_wp['role'] ) ) {
-				$user_data_wp['role'] = sanitize_key( (string) $user_data_wp['role'] );
+			$registration_role            = flosc_registration_role( $user_data_wp['role'] ?? '' );
+			if ( is_wp_error( $registration_role ) ) {
+				return $registration_role;
 			}
+			$user_data_wp['role'] = $registration_role;
 			if ( empty( $user_data_wp['user_email'] ) || ! is_email( $user_data_wp['user_email'] ) ) {
 				return new \WP_Error( 'flosc_sso_invalid_email', 'Valid email required for SSO registration.' );
 			}

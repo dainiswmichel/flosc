@@ -762,7 +762,9 @@ if ( isset( $flosc_get['flosc_ivr_uploaded'] ) && '1' === (string) $flosc_get['f
 }
 
 // Handle explicit file import from IVR File Management (selected file -> FLOSC DB).
-if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_post['import_ivr_file'] ) ) {
+// Same shape rule as the handlers below: a list would reach sanitize_file_name()
+// and raise a TypeError, so nothing is imported.
+if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_post['import_ivr_file'] ) && flosc_submitted_fields_are_text( $flosc_post, array( 'import_ivr_file' ) ) ) {
 	check_admin_referer( 'flosc_import_selected_ivr_file' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to import IVR files.', 'flosc' ) );
@@ -800,7 +802,10 @@ if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_pos
 }
 
 // Handle changing active IVR file.
-if ( isset( $flosc_post['flosc_change_active_file'] ) && isset( $flosc_post['ivr_file_select'] ) ) {
+// A list posted as the file name would reach sanitize_file_name(), which opens
+// at remove_accents() and calls preg_match() -- a TypeError on PHP 8. The
+// handler does not run and the active file stays as it is.
+if ( isset( $flosc_post['flosc_change_active_file'] ) && isset( $flosc_post['ivr_file_select'] ) && flosc_submitted_fields_are_text( $flosc_post, array( 'ivr_file_select' ) ) ) {
 	check_admin_referer( 'flosc_change_active_file' );
 	if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 		wp_die( esc_html__( 'You do not have permission to change the active IVR file for this flow.', 'flosc' ) );
@@ -897,7 +902,9 @@ if ( isset( $flosc_get['flosc_download_ivr'] ) && isset( $flosc_get['_wpnonce'] 
 }
 
 // Handle IVR file duplication.
-if ( isset( $flosc_post['flosc_duplicate_ivr_file'] ) && isset( $flosc_post['duplicate_ivr_file'] ) ) {
+// Same shape rule as the active-file change: a list would reach
+// sanitize_file_name() and raise a TypeError, so nothing is duplicated.
+if ( isset( $flosc_post['flosc_duplicate_ivr_file'] ) && isset( $flosc_post['duplicate_ivr_file'] ) && flosc_submitted_fields_are_text( $flosc_post, array( 'duplicate_ivr_file' ) ) ) {
 	check_admin_referer( 'flosc_duplicate_ivr_file' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to duplicate IVR files.', 'flosc' ) );
@@ -933,7 +940,9 @@ if ( isset( $flosc_post['flosc_duplicate_ivr_file'] ) && isset( $flosc_post['dup
 }
 
 // Handle file deletion from IVR Management.
-if ( isset( $flosc_post['flosc_delete_ivr_file'] ) && isset( $flosc_post['delete_ivr_file'] ) ) {
+// Same shape rule. A list would reach sanitize_file_name() and raise a
+// TypeError before the capability check could refuse the delete.
+if ( isset( $flosc_post['flosc_delete_ivr_file'] ) && isset( $flosc_post['delete_ivr_file'] ) && flosc_submitted_fields_are_text( $flosc_post, array( 'delete_ivr_file' ) ) ) {
 	check_admin_referer( 'flosc_delete_ivr_file' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to delete IVR files.', 'flosc' ) );

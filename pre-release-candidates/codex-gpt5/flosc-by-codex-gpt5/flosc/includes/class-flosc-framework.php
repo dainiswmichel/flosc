@@ -2163,7 +2163,7 @@ class FLOSC_Framework {
 		// Chat Logs journey marks. These only observe -- they queue a note that the
 		// next logged turn turns into a row -- so no auth or purchase path changes.
 		// WordPress fires user_register from wp_insert_user(), which every FLOSC
-		// account-creation path goes through (wp_create_user() calls it), so one
+		// account-creation path calls, so one
 		// listener covers first-party registration, SSO linking, MagicLink and the
 		// purchase-driven creates without touching any of them.
 		add_action( 'user_register', array( $this, 'flosc_mark_journey_account_created' ), 20, 1 );
@@ -9448,7 +9448,18 @@ Example good response:
 			} else {
 				$username = $this->generate_username_from_email( $subscriber_email );
 				$password = wp_generate_password( 16, true, true );
-				$created  = wp_create_user( $username, $password, $subscriber_email );
+				$role     = flosc_registration_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
+				if ( is_wp_error( $role ) ) {
+					return $role;
+				}
+				$created = wp_insert_user(
+					array(
+						'user_login' => wp_slash( $username ),
+						'user_pass'  => $password,
+						'user_email' => wp_slash( $subscriber_email ),
+						'role'       => $role,
+					)
+				);
 				if ( is_wp_error( $created ) ) {
 					return new WP_Error(
 						'user_creation_failed',
@@ -9457,10 +9468,6 @@ Example good response:
 					);
 				}
 				$user_id = (int) $created;
-				$user    = get_user_by( 'id', $user_id );
-				if ( $user ) {
-					$user->set_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
-				}
 				if ( '' !== $subscriber_name ) {
 					$name_parts = explode( ' ', $subscriber_name, 2 );
 					wp_update_user(
@@ -9949,17 +9956,24 @@ Example good response:
 			if ( $existing_user ) {
 				$user_id = (int) $existing_user->ID;
 			} else {
-				$username   = $this->generate_username_from_email( $payer_email );
-				$password   = wp_generate_password( 16, true, true );
-				$created_id = wp_create_user( $username, $password, $payer_email );
+				$username = $this->generate_username_from_email( $payer_email );
+				$password = wp_generate_password( 16, true, true );
+				$role     = flosc_registration_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
+				if ( is_wp_error( $role ) ) {
+					return $role;
+				}
+				$created_id = wp_insert_user(
+					array(
+						'user_login' => wp_slash( $username ),
+						'user_pass'  => $password,
+						'user_email' => wp_slash( $payer_email ),
+						'role'       => $role,
+					)
+				);
 				if ( is_wp_error( $created_id ) ) {
 					return new WP_Error( 'user_creation_failed', 'Could not create account: ' . $created_id->get_error_message(), array( 'status' => 500 ) );
 				}
 				$user_id = (int) $created_id;
-				$user    = get_user_by( 'id', $user_id );
-				if ( $user ) {
-					$user->set_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
-				}
 				if ( '' !== $payer_name ) {
 					$name_parts = explode( ' ', $payer_name, 2 );
 					wp_update_user(

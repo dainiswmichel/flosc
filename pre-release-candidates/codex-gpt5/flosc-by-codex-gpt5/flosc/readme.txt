@@ -211,6 +211,80 @@ FLOSC does not fetch content from, call an API at, or transmit WordPress, profil
 
 Current citation hosts include Wikipedia (`en.wikipedia.org`), the Electronic Text Corpus of Sumerian Literature (`etcsl.orinst.ox.ac.uk`), the Stanford Encyclopedia of Philosophy (`plato.stanford.edu`), the Rudolf Steiner Archive (`rsarchive.org`), BDK America (`www.bdkamerica.org`), Bible Gateway (`www.biblegateway.com`), Project Gutenberg (`www.gutenberg.org`), Nobel Prize (`www.nobelprize.org`), and the Viktor Frankl Institute (`www.viktorfrankl.org`). These are references, not FLOSC service dependencies.
 
+== Screenshots ==
+
+1. Flow. Review and set the five stages of a journey: Freeline, Login, Offer, Sale and Content.
+
+2. Identity. Name a flow and give it a title, custom domain, tagline, color and policy pages.
+
+3. IVR Management. Manage the skeleton of your flows like an Interactive Voice Response phone messaging system. Access flow portability. Import and export entire flows. Edit the IVR message file for a flow and compare it against the FLOSC database.
+
+4. AutoPrompt Panel. Choose the prompts your audience can select in accordance with userState.
+
+5. Content. Set what content your audience can access in accordance with userState. Set what is visible to your freeline (site visitors), what is visible to guests (people with accounts who have not yet purchased), and what members can access after purchase.
+
+6. Knowledge Base. Attach reference files to a flow and allow AI APIs to access your site-specific information while communicating with your audience.
+
+7. Trajectories. Establish desired outcomes for your audience. Is it "become a member," "book a consultation," or "download a PDF"? Those are trajectories: design the paths you'd like your audience to follow using a post template and standard WordPress tools.
+
+8. Offers. Set what is for sale, with pricing across all offers.
+
+9. Register & Login. Set how your audience registers and signs in.
+
+10. Style & Nav. Set the chat surface and the companion display: full-page, companion, or hybrid modes. Select styling and navigation options.
+
+11. Profile Bar. Set the profile bar and in-chat menus for visitor, guest and member states.
+
+12. AI. Connect to AI providers and tune the model: API key, model tuning, connection test, response mode, context settings, phase-specific instructions and speech-to-text configuration.
+
+13. Attached Personality [personality name]. "Attach personality. Input Sticky Aspects. Enable Sticky for Users." Sticky aspects belong to the flow rather than to the personality. They stay put even when you attach a different personality. Sticky for User allows highly personalized profile-specific communication.
+
+14. DA1 AI Personality Builder. "Personality: [personality name] · Flow: [flow name]." The DA1 AI personality builder allows floscAdmins to design and save AI personalities using an Aspect palette to arrange aspects by density. A shape and color visualizer is included so you can gain a deeper sense for the character you've built.
+
+15. Provider, Keys, and Test. "This flow’s AI API. Fetch, describe, tune, and chain available AI models." Primary provider and model selection, flow-specific API keys, model parameters, token limits, optional provider chaining, and connection testing.
+
+16. Response, Context, and Phase Settings. "How this flow talks across Freeline, Login, Offer, Sale, Content." AI response mode settings, IVR context, content access, and phase-specific AI instructions with context-aware outcome parameters.
+
+17. Speech-to-text. "Speech input settings." AssemblyAI, OpenAI Whisper, and custom-endpoint configuration for ordinary recorded voice input.
+
+18. Site Content Index. "Index selected site content for access-aware retrieval in chat." FLOSC retrieves relevant, access-appropriate indexed content for the AI context. Features: selectable post types and BuddyBoss content, access-aware indexing, index rebuilding, keywords, exclusions, inclusion, and individual-content reindexing.
+
+19. Knowledge Base. "Review knowledge base files." Includes: the Markdown reference files attached to the flow, their Visitor/Guest/Member access, a link to manage them, and lesson-catalog status and regeneration.
+
+20. Provider Accuracy Test. "Use [personality name] to run template questions against this flow’s API." Includes: editable question templates and variables, expanded user-input previews, a multi-turn provider/personality test, AI responses, token usage, and pass/fail results.
+
+21. Token Management. Allocate tokens for your audience. Set how many chat tokens (V)isitors will receive while in your (F)reeline. Set how many tokens Guests and Members receive to continue chatting while logged in or after purchase.
+
+22. Concierge. On-the-fly AI API instructions for special live interactions. Meet someone with a unique name or need? Create a keyword and a password for immediate private content delivery.
+
+23. Quiz. Build the quizzes visitors take. Move them through FLOSC based on their quiz results.
+
+24. Email. Set the emails your audience receives: templates and automation, newsletter and quiz-results mail, guest access and member sequences.
+
+25. Contact Form. Internal FLOSC contact form parameters.
+
+26. Payments. Connect payment providers and view orders: Stripe, PayPal, manual payments and order management.
+
+27. SSO. Turn on social sign-in and set the flow redirects.
+
+28. Engagement. Set context-sensitive parameters for floscResponses, in-chat timing, and response conditions.
+
+29. Chat Logs. Read, archive, or delete chats. Provide feedback to AI agents regarding chat performance and preferred response patterns.
+
+30. Administration. Set debug display, user profile parameters, account management, configured purchased items, public request protection, what FLOSC tells your AI provider, and which floscEditors may edit the flow.
+
+31. Documentation. Read the in-plugin documentation.
+
+32. DA1. Work with DA1 catalogs. Select which catalog items are available for (V)isitors, (G)uests, and (M)embers.
+
+33. Starter Packs. Get to know the FLOSC ecosystem. Install starter packs of personalities and journeys.
+
+34. Full-page chat mode, as a visitor sees it in full-page format.
+
+35. Companion mode closed. Your audience sees a tasteful, configurable chat bubble.
+
+36. Companion mode open. Your audience chats with a traditional "bottom-right of the page" chatbot.
+
 == Upgrade Notice ==
 
 = 8.0.0 =
@@ -288,9 +362,9 @@ Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://developers.google.com/terms
 Privacy policy: https://policies.google.com/privacy
 
-5. AssemblyAI (for speech-to-text in audio quiz flows)
+5. AssemblyAI (for speech-to-text)
 Endpoint examples: https://api.assemblyai.com/v2/upload, https://api.assemblyai.com/v2/transcript
-Purpose: transcribe visitor audio so pronunciation and audio quiz logic can run.
+Purpose: transcribe recorded visitor audio for voice input, pronunciation, and audio quiz processing.
 Data sent: uploaded audio and transcription request metadata.
 Service terms: https://www.assemblyai.com/terms
 Privacy policy: https://www.assemblyai.com/privacy-policy
