@@ -405,6 +405,128 @@ function flosc_da1_normalize_vgm( $value ) {
 }
 
 /**
+ * Errors that keep an uploaded catalog from replacing the stored file.
+ *
+ * A missing control column is refused. This does not insert one.
+ *
+ * @param string $content           Uploaded file body.
+ * @param string $catalog_key       Catalog the upload would replace.
+ * @param array  $required_columns  Control columns the header must already contain.
+ * @param array  $known_flow_scopes Flow keys, including all.
+ * @return array Empty when the file may be stored.
+ */
+function flosc_da1_upload_format_errors( $content, $catalog_key, $required_columns, $known_flow_scopes ) {
+	$flosc_da1_parsed = flosc_da1_parse_tsv( (string) $content );
+	if ( ! is_array( $flosc_da1_parsed ) || count( $flosc_da1_parsed ) < 1 ) {
+		return array( 'The uploaded file has no header row.' );
+	}
+
+	$flosc_da1_header = array();
+	$flosc_da1_index  = array();
+	$flosc_da1_errors = array();
+	foreach ( (array) $flosc_da1_parsed[0] as $flosc_da1_col ) {
+		$flosc_da1_name = trim( (string) $flosc_da1_col );
+		if ( 'Record Type' === $flosc_da1_name ) {
+			$flosc_da1_name = 'Item Type';
+		}
+		if ( '' === $flosc_da1_name ) {
+			$flosc_da1_errors[] = 'The header has an empty column name.';
+			continue;
+		}
+		if ( isset( $flosc_da1_index[ $flosc_da1_name ] ) ) {
+			$flosc_da1_errors[] = 'Duplicate column: ' . $flosc_da1_name;
+			continue;
+		}
+		$flosc_da1_index[ $flosc_da1_name ] = count( $flosc_da1_header );
+		$flosc_da1_header[]                 = $flosc_da1_name;
+	}
+
+	foreach ( $required_columns as $flosc_da1_required ) {
+		if ( ! isset( $flosc_da1_index[ $flosc_da1_required ] ) ) {
+			$flosc_da1_errors[] = 'Missing required column: ' . $flosc_da1_required;
+		}
+	}
+	if ( ! empty( $flosc_da1_errors ) ) {
+		return $flosc_da1_errors;
+	}
+
+	$flosc_da1_value_columns = array(
+		'Row Key',
+		'Catalog Key',
+		'Item Type',
+		'Flow Scope',
+		'VGM',
+		'Delivery Instruction',
+		'Delivery Rule',
+		'Fallback Order',
+		'Status',
+	);
+	$flosc_da1_row_number    = 1;
+	foreach ( array_slice( $flosc_da1_parsed, 1 ) as $flosc_da1_row ) {
+		++$flosc_da1_row_number;
+		if ( ! is_array( $flosc_da1_row ) ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ' is not a catalog row.';
+			continue;
+		}
+
+		$flosc_da1_cells = array();
+		$flosc_da1_any   = false;
+		foreach ( $flosc_da1_header as $flosc_da1_name ) {
+			$flosc_da1_pos = $flosc_da1_index[ $flosc_da1_name ];
+			$flosc_da1_val = isset( $flosc_da1_row[ $flosc_da1_pos ] ) ? trim( (string) $flosc_da1_row[ $flosc_da1_pos ] ) : '';
+			if ( '' !== $flosc_da1_val ) {
+				$flosc_da1_any = true;
+			}
+			$flosc_da1_cells[ $flosc_da1_name ] = $flosc_da1_val;
+		}
+		if ( ! $flosc_da1_any ) {
+			continue;
+		}
+
+		foreach ( $flosc_da1_value_columns as $flosc_da1_required ) {
+			if ( '' === $flosc_da1_cells[ $flosc_da1_required ] ) {
+				$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': ' . $flosc_da1_required . ' is required.';
+			}
+		}
+
+		$flosc_da1_row_key    = $flosc_da1_cells['Row Key'];
+		$flosc_da1_parent_key = $flosc_da1_cells['Parent Key'];
+		if ( '' !== $flosc_da1_row_key && ! preg_match( '/^[0-9]+(\.[0-9]+)?$/', $flosc_da1_row_key ) ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': Row Key must use numeric format like 85 or 85.1.';
+		}
+		if ( '' !== $flosc_da1_parent_key && ! preg_match( '/^[0-9]+$/', $flosc_da1_parent_key ) ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': Parent Key must be numeric like 85.';
+		}
+		if ( '' !== $flosc_da1_parent_key && '' !== $flosc_da1_row_key && 0 !== strpos( $flosc_da1_row_key, $flosc_da1_parent_key . '.' ) ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': child Row Key must begin with Parent Key plus dot.';
+		}
+
+		$flosc_da1_status = strtolower( $flosc_da1_cells['Status'] );
+		if ( '' !== $flosc_da1_status && 'active' !== $flosc_da1_status && 'paused' !== $flosc_da1_status ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': Status must be active or paused.';
+		}
+
+		$flosc_da1_scope_parts = array_filter( array_map( 'trim', explode( ',', strtolower( $flosc_da1_cells['Flow Scope'] ) ) ) );
+		foreach ( $flosc_da1_scope_parts as $flosc_da1_scope_part ) {
+			if ( ! in_array( $flosc_da1_scope_part, $known_flow_scopes, true ) ) {
+				$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': Flow Scope value "' . $flosc_da1_scope_part . '" is not a known flow key.';
+			}
+		}
+
+		if ( '' !== $flosc_da1_cells['VGM'] && '' === flosc_da1_normalize_vgm( $flosc_da1_cells['VGM'] ) ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': VGM must include Visitor, Guest, Member, or a combination.';
+		}
+
+		$flosc_da1_posted_key = flosc_da1_normalize_key( $flosc_da1_cells['Catalog Key'] );
+		if ( '' !== $flosc_da1_posted_key && $flosc_da1_posted_key !== $catalog_key ) {
+			$flosc_da1_errors[] = 'Row ' . $flosc_da1_row_number . ': Catalog Key must be ' . $catalog_key . '.';
+		}
+	}
+
+	return $flosc_da1_errors;
+}
+
+/**
  * Apply defaults.
  *
  * @param mixed $flosc_da1_row     Row.
@@ -991,11 +1113,21 @@ if ( isset( $flosc_da1_post['flosc_da1_upload_catalog'] ) ) {
 		if ( false === $flosc_da1_content || '' === trim( (string) $flosc_da1_content ) ) {
 			$flosc_da1_notice_error = 'Uploaded DA1 catalog is empty or unreadable.';
 		} else {
-			$flosc_da1_write_result = flosc_da1_write_catalog_file( $flosc_da1_catalog_path, $flosc_da1_content, $flosc_catalog_dir );
-			if ( is_wp_error( $flosc_da1_write_result ) ) {
-				$flosc_da1_notice_error = $flosc_da1_write_result->get_error_message();
+			$flosc_da1_upload_errors = flosc_da1_upload_format_errors(
+				$flosc_da1_content,
+				$flosc_da1_requested_catalog_key,
+				$flosc_required_columns,
+				$flosc_known_flow_scopes
+			);
+			if ( ! empty( $flosc_da1_upload_errors ) ) {
+				$flosc_da1_notice_error = 'Catalog not uploaded. ' . implode( ' | ', array_slice( $flosc_da1_upload_errors, 0, 8 ) );
 			} else {
-				$flosc_da1_notice_success = 'Catalog uploaded.';
+				$flosc_da1_write_result = flosc_da1_write_catalog_file( $flosc_da1_catalog_path, $flosc_da1_content, $flosc_catalog_dir );
+				if ( is_wp_error( $flosc_da1_write_result ) ) {
+					$flosc_da1_notice_error = $flosc_da1_write_result->get_error_message();
+				} else {
+					$flosc_da1_notice_success = 'Catalog uploaded.';
+				}
 			}
 		}
 	}
