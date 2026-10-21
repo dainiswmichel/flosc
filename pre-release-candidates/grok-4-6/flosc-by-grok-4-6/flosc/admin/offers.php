@@ -138,10 +138,40 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
 
-	if ( ! isset( $flosc_post['save_offer'] ) || ! wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_save_offer_nonce'] ?? '' ), 'flosc_save_offer' ) ) {
+	/*
+	 * Two questions, two statements.
+	 *
+	 * These used to share one condition: "did this form post, and is the
+	 * request genuine?" Either answer returned silently, so a page load that
+	 * posted nothing and a forged save were indistinguishable. Whether this is
+	 * our submission is a routing question with no security meaning. Whether
+	 * the submission is genuine is the security question, and once the form
+	 * has posted a wrong answer is a refusal rather than a no-op --
+	 * check_admin_referer() says so instead of returning.
+	 */
+	if ( ! isset( $flosc_post['save_offer'] ) ) {
 		return;
 	}
+
+	check_admin_referer( 'flosc_save_offer', 'flosc_save_offer_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	// A list posted into a one-value field, or a one-value field posted where a
+	// coupon column must be a list, leaves the stored offer unchanged.
+	if ( ! flosc_submitted_request_is_text(
+		$flosc_post,
+		array(
+			'offer_coupon_code',
+			'offer_coupon_type',
+			'offer_coupon_value',
+			'offer_coupon_valid_from',
+			'offer_coupon_valid_until',
+			'offer_coupon_active',
+		),
+		array( 'save_offer', 'flosc_save_offer_nonce', '_wp_http_referer' )
+	) ) {
 		return;
 	}
 
@@ -480,9 +510,9 @@ foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
 				<td>
 					<select data-flosc-action="redirect-on-change">
 						<option value="">Set...</option>
-						<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_item['id'] ) . '&status=draft&_wpnonce=' . wp_create_nonce( 'flosc_set_status' ) ) ); ?>" <?php selected( $flosc_item['status'], 'draft' ); ?>>draft</option>
-						<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_item['id'] ) . '&status=inactive&_wpnonce=' . wp_create_nonce( 'flosc_set_status' ) ) ); ?>" <?php selected( $flosc_item['status'], 'inactive' ); ?>>inactive</option>
-						<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_item['id'] ) . '&status=active&_wpnonce=' . wp_create_nonce( 'flosc_set_status' ) ) ); ?>" <?php selected( $flosc_item['status'], 'active' ); ?>>active</option>
+						<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_item['id'] ) . '&status=draft&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'set_status', $flosc_item['id'], 'draft' ) ) ) ); ?>" <?php selected( $flosc_item['status'], 'draft' ); ?>>draft</option>
+						<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_item['id'] ) . '&status=inactive&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'set_status', $flosc_item['id'], 'inactive' ) ) ) ); ?>" <?php selected( $flosc_item['status'], 'inactive' ); ?>>inactive</option>
+						<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_item['id'] ) . '&status=active&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'set_status', $flosc_item['id'], 'active' ) ) ) ); ?>" <?php selected( $flosc_item['status'], 'active' ); ?>>active</option>
 					</select>
 				</td>
 			</tr>
@@ -566,9 +596,9 @@ foreach ( $flosc_offers as $flosc_offer ) :
 		</span>
 		<span class="offer-stats" data-stop-propagation="1">
 			<select data-flosc-action="redirect-on-change">
-				<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_offer['id'] ) . '&status=draft&_wpnonce=' . wp_create_nonce( 'flosc_set_status' ) ) ); ?>" <?php selected( $flosc_status_for_select, 'draft' ); ?>>draft</option>
-				<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_offer['id'] ) . '&status=inactive&_wpnonce=' . wp_create_nonce( 'flosc_set_status' ) ) ); ?>" <?php selected( $flosc_status_for_select, 'inactive' ); ?>>inactive</option>
-				<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_offer['id'] ) . '&status=active&_wpnonce=' . wp_create_nonce( 'flosc_set_status' ) ) ); ?>" <?php selected( $flosc_status_for_select, 'active' ); ?>>active</option>
+				<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_offer['id'] ) . '&status=draft&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'set_status', $flosc_offer['id'], 'draft' ) ) ) ); ?>" <?php selected( $flosc_status_for_select, 'draft' ); ?>>draft</option>
+				<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_offer['id'] ) . '&status=inactive&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'set_status', $flosc_offer['id'], 'inactive' ) ) ) ); ?>" <?php selected( $flosc_status_for_select, 'inactive' ); ?>>inactive</option>
+				<option value="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&set_status=' . rawurlencode( $flosc_offer['id'] ) . '&status=active&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'set_status', $flosc_offer['id'], 'active' ) ) ) ); ?>" <?php selected( $flosc_status_for_select, 'active' ); ?>>active</option>
 			</select>
 		</span>
 	</div>
@@ -1714,11 +1744,11 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 			<?php submit_button( 'Save Offer', 'primary', 'save_offer', false ); ?>
 			
 			<?php if ( ! $is_new ) : ?>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&toggle_status=' . rawurlencode( $flosc_offer_id ) . '&_wpnonce=' . wp_create_nonce( 'flosc_toggle_status' ) ) ); ?>" 
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&toggle_status=' . rawurlencode( $flosc_offer_id ) . '&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'toggle_status', $flosc_offer_id ) ) ) ); ?>" 
 					class="button">
 					<?php echo ( $flosc_offer['active'] ?? true ) ? 'Deactivate' : 'Activate'; ?>
 				</a>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&delete_offer=' . rawurlencode( $flosc_offer_id ) . '&_wpnonce=' . wp_create_nonce( 'flosc_delete_offer_' . $flosc_offer_id ) ) ); ?>" 
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&delete_offer=' . rawurlencode( $flosc_offer_id ) . '&_wpnonce=' . wp_create_nonce( flosc_offer_action_nonce_action( 'delete_offer', $flosc_offer_id ) ) ) ); ?>" 
 					class="button flosc-offer-delete-link"
 						data-confirm-message="Permanently delete this offer?">
 					Delete Offer

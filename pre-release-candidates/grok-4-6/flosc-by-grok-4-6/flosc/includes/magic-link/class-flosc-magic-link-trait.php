@@ -1171,6 +1171,15 @@ trait FLOSC_Magic_Link_Trait {
 	 * @return mixed
 	 */
 	public function handle_email_registration( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'email', 'flow_id', 'redirect_to', 'temp_id', 'session_id' ) ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => 'Please enter a valid email address.',
+				),
+				400
+			);
+		}
 		$email           = sanitize_email( $request->get_param( 'email' ) );
 		$flow_id         = sanitize_key( (string) $request->get_param( 'flow_id' ) );
 		$redirect_to_raw = esc_url_raw( (string) $request->get_param( 'redirect_to' ) );
@@ -1862,6 +1871,9 @@ trait FLOSC_Magic_Link_Trait {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr', 'force' ) ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid request fields.' ), 400 );
+		}
 
 		$email = sanitize_email( $post['email'] ?? '' );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1937,11 +1949,15 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
 		$post  = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
+			exit;
+		}
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1969,11 +1985,15 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post    = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'flow_id' ) ) ) {
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
+			exit;
+		}
 		$email   = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
 		$actor   = get_current_user_id();
@@ -2037,11 +2057,15 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
 		$post  = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
+			exit;
+		}
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -2068,11 +2092,15 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
 		$post  = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
+			exit;
+		}
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );

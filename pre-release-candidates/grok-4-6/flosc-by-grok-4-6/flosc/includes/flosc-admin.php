@@ -1278,11 +1278,18 @@ trait FLOSC_Admin_Trait {
 
 		$flosc_nonce = flosc_nav_param( '_wpnonce', array(), '', 'sanitize_text_field' );
 
-		$flosc_nonce_action = 'set_status' === $flosc_action
-			? 'flosc_set_status'
-			: ( 'toggle_status' === $flosc_action ? 'flosc_toggle_status' : 'flosc_delete_offer_' . $flosc_target );
+		/*
+		 * The requested status is read before the nonce because it is part of
+		 * the action the nonce has to match. flosc_nav_param() constrains it to
+		 * the three literals below, so nothing unvalidated reaches the action.
+		 */
+		$flosc_requested_status = 'set_status' === $flosc_action
+			? flosc_nav_param( 'status', array( 'draft', 'inactive', 'active' ), '' )
+			: '';
 
-		if ( ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
+		$flosc_nonce_action = flosc_offer_action_nonce_action( $flosc_action, $flosc_target, $flosc_requested_status );
+
+		if ( '' === $flosc_nonce_action || ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
 			wp_die( esc_html__( 'Nonce verification failed.', 'flosc' ), esc_html__( 'Invalid token', 'flosc' ), array( 'response' => 403 ) );
 		}
 
@@ -1407,6 +1414,9 @@ trait FLOSC_Admin_Trait {
 		check_admin_referer( 'flosc_set_default_flow', 'flosc_default_flow_nonce' );
 
 		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'ivr', 'tab', 'view' ) ) ) {
+			wp_die( esc_html__( 'Missing flow file.', 'flosc' ) );
+		}
 		$ivr  = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
 		$tab  = isset( $post['tab'] ) ? sanitize_text_field( (string) $post['tab'] ) : 'identity';
 		$view = isset( $post['view'] ) ? sanitize_text_field( (string) $post['view'] ) : 'single';
@@ -1845,22 +1855,41 @@ trait FLOSC_Admin_Trait {
 	 * Handle contact form submit.
 	 */
 	public function handle_contact_form_submit() {
-		$return_url = esc_url_raw( (string) wp_unslash( $_POST['flosc_contact_return'] ?? home_url( '/' ) ) );
-		$nonce      = sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_nonce'] ?? '' ) );
+		$posted = wp_unslash( $_POST );
+		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text(
+			$posted,
+			array(
+				'flosc_contact_return',
+				'flosc_contact_nonce',
+				'flosc_contact_flow',
+				'flosc_contact_first_name',
+				'flosc_contact_last_name',
+				'flosc_contact_email',
+				'flosc_contact_phone',
+				'flosc_contact_message',
+				'flosc_contact_company',
+				'flosc_contact_rendered_at',
+			)
+		) ) {
+			$this->redirect_contact_form_result( home_url( '/' ), 'error' );
+		}
+
+		$return_url = isset( $posted['flosc_contact_return'] ) ? esc_url_raw( $posted['flosc_contact_return'] ) : home_url( '/' );
+		$nonce      = isset( $posted['flosc_contact_nonce'] ) ? sanitize_text_field( $posted['flosc_contact_nonce'] ) : '';
 		if ( ! wp_verify_nonce( $nonce, 'flosc_contact_submit' ) ) {
 			$this->redirect_contact_form_result( $return_url, 'error' );
 		}
 
-		$flow_id = sanitize_key( (string) wp_unslash( $_POST['flosc_contact_flow'] ?? '' ) );
+		$flow_id = isset( $posted['flosc_contact_flow'] ) ? sanitize_key( $posted['flosc_contact_flow'] ) : '';
 		$result  = $this->process_contact_form_submission(
 			array(
-				'first_name'  => sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_first_name'] ?? '' ) ),
-				'last_name'   => sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_last_name'] ?? '' ) ),
-				'email'       => sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_email'] ?? '' ) ),
-				'phone'       => sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_phone'] ?? '' ) ),
-				'message'     => sanitize_textarea_field( (string) wp_unslash( $_POST['flosc_contact_message'] ?? '' ) ),
-				'honeypot'    => sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_company'] ?? '' ) ),
-				'rendered_at' => intval( wp_unslash( $_POST['flosc_contact_rendered_at'] ?? 0 ) ),
+				'first_name'  => isset( $posted['flosc_contact_first_name'] ) ? sanitize_text_field( $posted['flosc_contact_first_name'] ) : '',
+				'last_name'   => isset( $posted['flosc_contact_last_name'] ) ? sanitize_text_field( $posted['flosc_contact_last_name'] ) : '',
+				'email'       => isset( $posted['flosc_contact_email'] ) ? sanitize_text_field( $posted['flosc_contact_email'] ) : '',
+				'phone'       => isset( $posted['flosc_contact_phone'] ) ? sanitize_text_field( $posted['flosc_contact_phone'] ) : '',
+				'message'     => isset( $posted['flosc_contact_message'] ) ? sanitize_textarea_field( $posted['flosc_contact_message'] ) : '',
+				'honeypot'    => isset( $posted['flosc_contact_company'] ) ? sanitize_text_field( $posted['flosc_contact_company'] ) : '',
+				'rendered_at' => isset( $posted['flosc_contact_rendered_at'] ) ? intval( $posted['flosc_contact_rendered_at'] ) : 0,
 			),
 			$flow_id,
 			array(
@@ -1885,6 +1914,15 @@ trait FLOSC_Admin_Trait {
 	 * @return mixed
 	 */
 	public function process_contact_form_submission( $data, $flow_id = '', $options = array() ) {
+		if ( ! is_array( $data ) || ! flosc_submitted_value_is_text( $flow_id ) || ! flosc_submitted_fields_are_text(
+			$data,
+			array( 'first_name', 'last_name', 'email', 'phone', 'message', 'honeypot', 'rendered_at' )
+		) ) {
+			return array(
+				'success' => false,
+				'error'   => 'validation',
+			);
+		}
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = $this->get_contact_form_settings( $flow_id );
 
@@ -1966,7 +2004,7 @@ trait FLOSC_Admin_Trait {
 
 		$headers = array(
 			'Content-Type: text/plain; charset=UTF-8',
-			'Reply-To: ' . $first_name . ' ' . $last_name . ' <' . $email . '>',
+			'Reply-To: ' . $email,
 		);
 
 		$sent = wp_mail( $recipient, $subject, $body, $headers );
@@ -2531,8 +2569,11 @@ trait FLOSC_Admin_Trait {
 			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 		$post     = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_request_is_text( $post ) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '', 'identity', 'all' ), 'That flow could not be saved.', 'error' );
+		}
 		$save_ivr = sanitize_file_name( (string) ( $post['flosc_save_flow'] ?? '' ) );
-		$return   = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$return   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		$row      = $this->flosc_identity_flow_row( $save_ivr );
 		if ( '' === $save_ivr || ! in_array( $save_ivr, $this->flosc_admin_ivr_filenames(), true ) ) {
 			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'That flow could not be saved.', 'error' );
@@ -2553,7 +2594,10 @@ trait FLOSC_Admin_Trait {
 			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 		$post   = wp_unslash( $_POST );
-		$return = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		if ( ! is_array( $post ) || ! flosc_submitted_request_is_text( $post ) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '', 'identity', 'all' ), 'The flow identities could not be saved.', 'error' );
+		}
+		$return = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		foreach ( $this->flosc_admin_ivr_filenames() as $ivr_file ) {
 			$row      = $this->flosc_identity_flow_row( $ivr_file );
 			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $ivr_file ) . '_' );
@@ -2595,9 +2639,12 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
-		$post      = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flosc_delete_feedback' ) ) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback was not deleted.', 'error' );
+		}
 		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_feedback'] ?? '' ) );
 		$items     = isset( $settings['ai_feedback'] ) && is_array( $settings['ai_feedback'] ) ? $settings['ai_feedback'] : array();
 		$settings['ai_feedback'] = array_values(
@@ -2622,9 +2669,15 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text(
+			$post,
+			array( 'feedback_user_message', 'feedback_bad_response', 'feedback_admin_note', 'feedback_preferred_response' )
+		) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback needs a user message and a note.', 'error' );
+		}
 		$item = array(
 			'id'                 => uniqid( 'corr_' ),
 			'timestamp'          => current_time( 'mysql' ),
@@ -2654,9 +2707,12 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
-		$post      = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flosc_delete_praise' ) ) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise was not deleted.', 'error' );
+		}
 		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_praise'] ?? '' ) );
 		$items     = isset( $settings['ai_praises'] ) && is_array( $settings['ai_praises'] ) ? $settings['ai_praises'] : array();
 		$settings['ai_praises'] = array_values(
@@ -2681,9 +2737,15 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text(
+			$post,
+			array( 'praise_user_message', 'praise_good_response', 'praise_admin_note' )
+		) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise needs a user message and a note.', 'error' );
+		}
 		$item = array(
 			'id'            => uniqid( 'praise_' ),
 			'timestamp'     => current_time( 'mysql' ),
@@ -2712,7 +2774,7 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$posted_ivr = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		unset( $settings['chat_style_preset'], $settings['chat_style_bubble'], $settings['chat_style_accent'], $settings['chat_style_font'], $settings['chat_style_scale'] );
 		update_option( $key, $settings );
@@ -2767,8 +2829,14 @@ trait FLOSC_Admin_Trait {
 	 */
 	public function handle_save_flow_record() {
 		check_admin_referer( 'flosc_save_flow_record' );
-		$flow_id = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
-		$is_new  = ( 'new' === $flow_id );
+		$flow_id = '';
+		if ( isset( $_POST['flow_id'] ) ) {
+			if ( ! is_string( $_POST['flow_id'] ) && ! is_numeric( $_POST['flow_id'] ) ) {
+				wp_die( esc_html__( 'The flow was not saved. The flow id arrived as a list, so the stored flow was left unchanged.', 'flosc' ), '', array( 'response' => 400 ) );
+			}
+			$flow_id = sanitize_key( wp_unslash( $_POST['flow_id'] ) );
+		}
+		$is_new = ( 'new' === $flow_id );
 		if ( $is_new && ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Only administrators can create new flows.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
@@ -2776,9 +2844,58 @@ trait FLOSC_Admin_Trait {
 			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 		$post = wp_unslash( $_POST );
-		$tab  = sanitize_key( (string) ( $post['flosc_return_tab'] ?? 'identity' ) );
+		$tab  = ( isset( $post['flosc_return_tab'] ) && flosc_submitted_value_is_text( $post['flosc_return_tab'] ) )
+			? sanitize_key( (string) $post['flosc_return_tab'] )
+			: 'identity';
 		if ( '' === $tab ) {
 			$tab = 'identity';
+		}
+
+		$flosc_record_text_keys = array(
+			'flosc_return_tab',
+			'flow_slug',
+			'flow_domain',
+			'flow_status',
+			'floscflow_name',
+			'floscflow_title',
+			'floscflow_tagline',
+			'floscflow_chatlogo',
+			'floscflow_favicon',
+			'floscflow_badge',
+			'floscflow_color',
+			'floscflow_share_text',
+			'ivr_file',
+			'wp_category',
+			'quiz_type',
+			'visitor_bar_text',
+			'visitor_bar_icon',
+		);
+		$flosc_record_ok        = flosc_submitted_fields_are_text( $post, $flosc_record_text_keys );
+		if ( $flosc_record_ok && isset( $post['visitor_menu_items'] ) ) {
+			if ( ! is_array( $post['visitor_menu_items'] ) ) {
+				$flosc_record_ok = false;
+			} else {
+				foreach ( $post['visitor_menu_items'] as $flosc_menu_item ) {
+					if ( ! is_array( $flosc_menu_item ) || ! flosc_submitted_fields_are_text( $flosc_menu_item, array( 'label', 'enabled' ) ) ) {
+						$flosc_record_ok = false;
+						break;
+					}
+				}
+			}
+		}
+		if ( ! $flosc_record_ok ) {
+			$this->flosc_redirect_notice(
+				add_query_arg(
+					array(
+						'page'    => 'flosc-flow-edit',
+						'flow_id' => $is_new ? 'new' : $flow_id,
+						'tab'     => $tab,
+					),
+					admin_url( 'admin.php' )
+				),
+				__( 'The flow was not saved. One of its fields arrived as a list, so the stored flow was left unchanged.', 'flosc' ),
+				'error'
+			);
 		}
 
 		if ( current_user_can( 'manage_options' ) && ( isset( $post['visitor_bar_text'] ) || isset( $post['visitor_bar_icon'] ) ) ) {
@@ -2850,7 +2967,13 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Only administrators can update a flow team.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$post    = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flow_id' ) ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		if ( isset( $post['team_users'] ) && ! flosc_submitted_list_is_text( $post['team_users'] ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
 		if ( '' === $flow_id || 'new' === $flow_id || ! function_exists( 'flosc_flows' ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
@@ -2894,6 +3017,9 @@ trait FLOSC_Admin_Trait {
 		check_admin_referer( 'flosc_delete_flow' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Only administrators can delete a flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		if ( isset( $_GET['flow_id'] ) && ! is_string( $_GET['flow_id'] ) && ! is_numeric( $_GET['flow_id'] ) ) {
+			$this->flosc_redirect_notice( admin_url( 'admin.php?page=flosc-flows' ), 'That flow could not be deleted.', 'error' );
 		}
 		$flow_id = isset( $_GET['flow_id'] ) ? sanitize_key( wp_unslash( $_GET['flow_id'] ) ) : '';
 		$result  = flosc_flows()->delete_flow( $flow_id );

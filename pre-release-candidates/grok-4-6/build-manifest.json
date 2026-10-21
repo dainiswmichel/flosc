@@ -1,35 +1,32 @@
 {
   "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate v151",
+  "candidate_label": "FLOSC 8.0.0 candidate v174",
   "owner": "Grok",
   "parent": {
     "candidate": "origin/main",
-    "commit": "86a7c51bd02afb7ffd05e86e24e52a870829f5af"
+    "commit": "2d57b06db17665d86329f6e215b658509f091b79"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v151",
-  "github_hashid_at_pack": "86a7c51bd02afb7ffd05e86e24e52a870829f5af",
+  "internal_iteration": "v174",
+  "github_hashid_at_pack": "2d57b06db17665d86329f6e215b658509f091b79",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "baseline": "origin/main at 86a7c51bd02afb7ffd05e86e24e52a870829f5af",
-  "code_base": "v150 86a7c51bd02afb7ffd05e86e24e52a870829f5af",
+  "baseline": "origin/main at 2d57b06db17665d86329f6e215b658509f091b79",
+  "code_base": "v173 2d57b06db17665d86329f6e215b658509f091b79",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
-  "v151_delta": [
-    "flosc.php",
-    "admin/starter-packs.php",
-    "includes/flosc-request.php",
-    "tests/check-nonce-scope-and-flow-preservation.php"
+  "v174_delta_from_parent_tree": [
+    "flosc.php header: Internal Iteration v174, Github HashID 2d57b06db17665d86329f6e215b658509f091b79"
   ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2826354,
-    "sha256": "d6267e4ce4f49d5a2c1468272fd30435d8d26667c8b9fda0f25a138dc0e39ef1",
-    "runtime_manifest_sha256": "21338d1cb24013f49da3b4533d35b62efd73f6a2fe0424f1d5caa8010e296e19",
+    "bytes": 2841752,
+    "sha256": "16b2c2bd0e363a067d07e68b8a19c22d602762af29101131c1e688b7f29f769d",
+    "runtime_manifest_sha256": "0325ebd941449e29854590b0e1648859fe3bcfe579eb62da2c1acf01d34ada67",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

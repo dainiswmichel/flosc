@@ -143,7 +143,8 @@
             const sourceId = clickable.getAttribute('data-source-id') || '';
             const source = sourceId ? document.getElementById(sourceId) : null;
             if (!source || !navigator.clipboard) return;
-            navigator.clipboard.writeText(source.textContent || '').then(function() {
+            const sourceText = ('value' in source) ? source.value : (source.textContent || '');
+            navigator.clipboard.writeText(sourceText).then(function() {
                 const alertMsg = clickable.getAttribute('data-alert-message') || '';
                 if (alertMsg) {
                     window.alert(alertMsg);

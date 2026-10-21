@@ -245,6 +245,7 @@ function flosc_flow_phase_messages( $config, $phase ) {
 	return $out;
 }
 
+require dirname( __DIR__ ) . '/includes/flosc-accessors.php';
 require dirname( __DIR__ ) . '/includes/class-flosc-user-access-manager.php';
 require dirname( __DIR__ ) . '/includes/class-flosc-condition-evaluator.php';
 require dirname( __DIR__ ) . '/includes/flosc-rest.php';

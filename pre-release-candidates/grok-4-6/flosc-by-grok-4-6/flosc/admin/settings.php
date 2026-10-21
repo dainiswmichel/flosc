@@ -440,9 +440,26 @@ if ( ! in_array( $flosc_identity_view, array( 'single', 'all' ), true ) ) {
 // Do not redirect here — headers are already sent during page render (white content pane).
 
 // Trajectory quick-toggle: flip a trajectory post between LIVE (private) and OFF (draft).
-if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_toggle_trajectory_nonce'] ?? '' ), 'flosc_toggle_trajectory_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) ) {
+	check_admin_referer( 'flosc_toggle_trajectory_post', 'flosc_toggle_trajectory_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to toggle trajectory posts.', 'flosc' ) );
+	}
+
+	if ( ! flosc_submitted_fields_are_text( $flosc_post, array( 'flosc_toggle_trajectory_post', 'flosc_trajectory_set' ) ) ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'             => 'flosc-settings',
+					'ivr'              => $flosc_selected_ivr,
+					'tab'              => 'trajectories',
+					'trajectory_error' => 'toggle_failed',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	$flosc_trj_post_id       = absint( $flosc_post['flosc_toggle_trajectory_post'] );
@@ -491,9 +508,41 @@ if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sa
 }
 
 // Concierge quick-create: create a private concierge post and sync it to the flow.
-if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_concierge_create_nonce'] ?? '' ), 'flosc_create_concierge_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_create_concierge_post'] ) ) {
+	check_admin_referer( 'flosc_create_concierge_post', 'flosc_concierge_create_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to create concierge posts.', 'flosc' ) );
+	}
+
+	if ( ! flosc_submitted_fields_are_text(
+		$flosc_post,
+		array(
+			'flosc_cncrg_title',
+			'flosc_cncrg_flow',
+			'flosc_cncrg_keyword',
+			'flosc_cncrg_password',
+			'flosc_cncrg_success',
+			'flosc_cncrg_max_tries',
+			'flosc_cncrg_retry',
+			'flosc_cncrg_delivery',
+			'flosc_cncrg_off_ramp_phrases',
+			'flosc_cncrg_off_ramp_exactness',
+			'flosc_cncrg_content',
+		)
+	) ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'            => 'flosc-settings',
+					'ivr'             => $flosc_selected_ivr,
+					'tab'             => 'concierge',
+					'concierge_error' => 'missing_required',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	$flosc_cncrg_title              = sanitize_text_field( $flosc_post['flosc_cncrg_title'] ?? 'Concierge Note' );
@@ -600,9 +649,37 @@ if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( san
 }
 
 // Trajectory quick-create: create a private trajectory post and sync trajectory guidance into flow DB.
-if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_trajectory_create_nonce'] ?? '' ), 'flosc_create_trajectory_post' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_create_trajectory_post'] ) ) {
+	check_admin_referer( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to create trajectory posts.', 'flosc' ) );
+	}
+
+	if ( ! flosc_submitted_fields_are_text(
+		$flosc_post,
+		array(
+			'flosc_trj_title',
+			'flosc_trj_flow',
+			'flosc_trj_keywords',
+			'flosc_trj_priority',
+			'flosc_trj_instructions',
+			'flosc_trj_off_ramp_phrases',
+			'flosc_trj_off_ramp_exactness',
+		)
+	) ) {
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'             => 'flosc-settings',
+					'ivr'              => $flosc_selected_ivr,
+					'tab'              => 'trajectories',
+					'trajectory_error' => 'missing_required',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	$flosc_trj_title              = sanitize_text_field( $flosc_post['flosc_trj_title'] ?? 'Trajectory Note' );
@@ -701,7 +778,9 @@ if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sa
 }
 
 // Handle save.
-if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
+// Routing first, then origin. A posted form with a bad nonce is refused, not ignored.
+if ( isset( $flosc_post['flosc_save'] ) ) {
+	check_admin_referer( 'flosc_save_settings' );
 	if ( ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 		wp_die( esc_html__( 'You do not have permission to save this FLOSC flow.', 'flosc' ) );
 	}
@@ -774,10 +853,38 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
 	$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
 	$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
+	// Real multi-selects. Any other flow_ list is not a setting value.
+	$flosc_flow_list_keys           = array(
+		'companion_include_pages',
+		'companion_include_posts',
+		'companion_include_categories',
+		'companion_include_tags',
+		'companion_exclude_pages',
+		'companion_exclude_posts',
+		'companion_exclude_categories',
+		'companion_exclude_tags',
+		'site_index_post_types',
+		'enabled_quizzes',
+		'knowledge_base_ids',
+	);
 
 	foreach ( $flosc_post as $flosc_key => $flosc_value ) {
 		if ( 0 === strpos( $flosc_key, 'flow_' ) ) {
-			$flosc_setting_key = substr( $flosc_key, 5 ); // Remove 'flow_' prefix
+			$flosc_setting_key   = substr( $flosc_key, 5 ); // Remove 'flow_' prefix.
+			$flosc_flow_list_key = in_array( $flosc_setting_key, $flosc_flow_list_keys, true );
+			// A list posted into a one-value field is left out of this copy.
+			// The value copied from the stored flow at the start of the save stays.
+			if ( 'buddyboss_index' === $flosc_setting_key ) {
+				if ( ! is_array( $flosc_value ) ) {
+					continue;
+				}
+			} elseif ( $flosc_flow_list_key ) {
+				if ( ! flosc_submitted_list_is_text( $flosc_value ) ) {
+					continue;
+				}
+			} elseif ( 'ai_base_prompt' !== $flosc_setting_key && ! flosc_submitted_value_is_text( $flosc_value ) ) {
+				continue;
+			}
 			// Check static textarea keys OR dynamic quiz content/template keys.
 			$flosc_is_textarea = in_array( $flosc_setting_key, $flosc_textarea_flow_keys, true )
 				|| 0 === strpos( $flosc_setting_key, 'quiz_content_' )
@@ -801,10 +908,54 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
 				$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
 			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
-				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( is_string( $flosc_value ) ? $flosc_value : '' );
+				if ( ! is_string( $flosc_value ) || ( function_exists( 'flosc_personality_text_is_valid_utf8' ) && ! flosc_personality_text_is_valid_utf8( $flosc_value ) ) ) {
+					set_transient(
+						'flosc_settings_notice_' . get_current_user_id(),
+						__( 'The personality profile was not saved because it is not valid UTF-8 text. The previous profile is unchanged.', 'flosc' ),
+						60
+					);
+					wp_safe_redirect(
+						add_query_arg(
+							array(
+								'page' => 'flosc-settings',
+								'ivr'  => $flosc_selected_ivr,
+								'tab'  => $flosc_active_tab,
+								'view' => $flosc_identity_view,
+							),
+							admin_url( 'admin.php' )
+						)
+					);
+					exit;
+				}
+				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( $flosc_value );
 			} elseif ( $flosc_is_textarea ) {
 				$flosc_new_settings[ $flosc_setting_key ] = sanitize_textarea_field( $flosc_value );
 			} elseif ( 'buddyboss_index' === $flosc_setting_key && is_array( $flosc_value ) ) {
+				$flosc_bb_shape_ok = true;
+				if ( array_key_exists( 'enabled', $flosc_value ) && ! flosc_submitted_value_is_text( $flosc_value['enabled'] ) ) {
+					$flosc_bb_shape_ok = false;
+				}
+				foreach ( array( 'group_ids', 'vgm_default' ) as $flosc_bb_list_key ) {
+					if ( array_key_exists( $flosc_bb_list_key, $flosc_value ) && ! flosc_submitted_list_is_text( $flosc_value[ $flosc_bb_list_key ] ) ) {
+						$flosc_bb_shape_ok = false;
+					}
+				}
+				if ( array_key_exists( 'vgm_rows', $flosc_value ) ) {
+					if ( ! is_array( $flosc_value['vgm_rows'] ) ) {
+						$flosc_bb_shape_ok = false;
+					} else {
+						foreach ( $flosc_value['vgm_rows'] as $flosc_bb_row ) {
+							if ( ! flosc_submitted_list_is_text( $flosc_bb_row ) ) {
+								$flosc_bb_shape_ok = false;
+								break;
+							}
+						}
+					}
+				}
+				if ( ! $flosc_bb_shape_ok ) {
+					continue;
+				}
+
 				/*
 				 * Nested, so it cannot go through the flat array branch below —
 				 * array_map('sanitize_text_field', …) over a nested array turns
@@ -841,9 +992,9 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 					),
 					'vgm_rows'    => $flosc_bb_rows,
 				);
-			} elseif ( is_array( $flosc_value ) ) {
+			} elseif ( is_array( $flosc_value ) && $flosc_flow_list_key ) {
 				$flosc_new_settings[ $flosc_setting_key ] = array_map( 'sanitize_text_field', $flosc_value );
-			} else {
+			} elseif ( ! is_array( $flosc_value ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = sanitize_text_field( $flosc_value );
 			}
 		}
@@ -878,38 +1029,49 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		// Store the global fallback option (non-flow) so non-BuddyBoss installs
 		// have a working default without an IVR-flow settings bag.
-		if ( isset( $flosc_new_settings['login_destination'] ) && '' !== $flosc_new_settings['login_destination'] ) {
-			update_option( 'flosc_login_destination', esc_url_raw( $flosc_new_settings['login_destination'] ) );
+		if ( isset( $flosc_new_settings['login_destination'] ) && flosc_submitted_value_is_text( $flosc_new_settings['login_destination'] ) && '' !== (string) $flosc_new_settings['login_destination'] ) {
+			update_option( 'flosc_login_destination', esc_url_raw( (string) $flosc_new_settings['login_destination'] ) );
 		}
 		foreach ( array( 'login_destination', 'logout_destination', 'login_destination_accounts_url', 'logout_destination_fallback' ) as $flosc_url_key ) {
-			if ( isset( $flosc_new_settings[ $flosc_url_key ] ) ) {
-				$flosc_new_settings[ $flosc_url_key ] = esc_url_raw( $flosc_new_settings[ $flosc_url_key ] );
+			if ( isset( $flosc_new_settings[ $flosc_url_key ] ) && flosc_submitted_value_is_text( $flosc_new_settings[ $flosc_url_key ] ) ) {
+				$flosc_new_settings[ $flosc_url_key ] = esc_url_raw( (string) $flosc_new_settings[ $flosc_url_key ] );
 			}
 		}
-		$flosc_mode_login                              = sanitize_key( (string) ( $flosc_new_settings['login_destination_mode'] ?? 'auto' ) );
+		$flosc_login_mode_raw                          = $flosc_new_settings['login_destination_mode'] ?? 'auto';
+		if ( ! flosc_submitted_value_is_text( $flosc_login_mode_raw ) ) {
+			$flosc_login_mode_raw = 'auto';
+		}
+		$flosc_mode_login                              = sanitize_key( (string) $flosc_login_mode_raw );
 		$flosc_new_settings['login_destination_mode']  = in_array( $flosc_mode_login, array( 'auto', 'buddyboss_profile', 'core_profile', 'custom_url' ), true )
 			? $flosc_mode_login : 'auto';
-		$flosc_mode_logout                             = sanitize_key( (string) ( $flosc_new_settings['logout_destination_mode'] ?? 'entry_flow' ) );
+		$flosc_logout_mode_raw                        = $flosc_new_settings['logout_destination_mode'] ?? 'entry_flow';
+		if ( ! flosc_submitted_value_is_text( $flosc_logout_mode_raw ) ) {
+			$flosc_logout_mode_raw = 'entry_flow';
+		}
+		$flosc_mode_logout                             = sanitize_key( (string) $flosc_logout_mode_raw );
 		$flosc_new_settings['logout_destination_mode'] = in_array( $flosc_mode_logout, array( 'entry_flow', 'fallback', 'flow' ), true )
 			? $flosc_mode_logout : 'entry_flow';
-		if ( isset( $flosc_new_settings['logout_farewell_message'] ) ) {
-			$flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field( $flosc_new_settings['logout_farewell_message'] );
+		if ( isset( $flosc_new_settings['logout_farewell_message'] ) && flosc_submitted_value_is_text( $flosc_new_settings['logout_farewell_message'] ) ) {
+			$flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field( (string) $flosc_new_settings['logout_farewell_message'] );
 		}
 	}
 	// The AI tab's parameter box is the request; Temperature and Max Tokens are
 	// a way of writing into it. So after a save the fields must show what the
 	// text says, or the page displays one number and sends another.
 	if ( 'ai' === $flosc_active_tab ) {
-		$flosc_sticky_pid = sanitize_key( (string) ( $flosc_new_settings['personality_library_id'] ?? '' ) );
-		if ( '' !== $flosc_sticky_pid && function_exists( 'flosc_personality_library_update_entry' ) ) {
-			$flosc_sticky_on = ! empty( $flosc_post['flosc_personality_enable_user_sticky'] ) ? '1' : '';
+		$flosc_sticky_raw  = $flosc_new_settings['personality_library_id'] ?? '';
+		$flosc_sticky_flag = $flosc_post['flosc_personality_enable_user_sticky'] ?? null;
+		$flosc_sticky_pid  = flosc_submitted_value_is_text( $flosc_sticky_raw ) ? sanitize_key( (string) $flosc_sticky_raw ) : '';
+		if ( '' !== $flosc_sticky_pid && function_exists( 'flosc_personality_library_update_entry' ) && ( null === $flosc_sticky_flag || flosc_submitted_value_is_text( $flosc_sticky_flag ) ) ) {
+			$flosc_sticky_on = ( null !== $flosc_sticky_flag && ! empty( $flosc_sticky_flag ) ) ? '1' : '';
 			flosc_personality_library_update_entry( $flosc_sticky_pid, array( 'enable_user_sticky' => $flosc_sticky_on ) );
 		}
 		unset( $flosc_new_settings['enable_user_sticky'] );
 	}
 
 	if ( 'ai' === $flosc_active_tab && function_exists( 'flosc_reconcile_model_parameters' ) ) {
-		$flosc_param_provider = sanitize_key( (string) ( $flosc_new_settings['ai_provider'] ?? '' ) );
+		$flosc_provider_raw   = $flosc_new_settings['ai_provider'] ?? '';
+		$flosc_param_provider = flosc_submitted_value_is_text( $flosc_provider_raw ) ? sanitize_key( (string) $flosc_provider_raw ) : '';
 
 		if ( '' !== $flosc_param_provider ) {
 			$flosc_new_settings = flosc_reconcile_model_parameters( $flosc_new_settings, $flosc_param_provider );
@@ -1299,7 +1461,12 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 	if ( 'style' === $flosc_active_tab ) {
 		// Visitor visibility uses 0/1 so "off" is not confused with unset (sales default = on).
-		$flosc_new_settings['companion_show_for_visitors'] = isset( $flosc_post['flow_companion_show_for_visitors'] ) ? 1 : 0;
+		// A missing box is off. A list is not a box, so the stored value stays.
+		if ( ! isset( $flosc_post['flow_companion_show_for_visitors'] ) ) {
+			$flosc_new_settings['companion_show_for_visitors'] = 0;
+		} elseif ( flosc_submitted_value_is_text( $flosc_post['flow_companion_show_for_visitors'] ) ) {
+			$flosc_new_settings['companion_show_for_visitors'] = ( '1' === (string) $flosc_post['flow_companion_show_for_visitors'] ) ? 1 : 0;
+		}
 
 		foreach ( array( 'companion_enabled', 'companion_pass_page_context', 'companion_auto_open_enabled', 'companion_auto_open_once_per_session', 'companion_launch_on_exit_intent', 'companion_launch_on_scroll_threshold', 'companion_trigger_desktop_only', 'companion_trigger_suppress_on_auth_checkout', 'companion_focus_on_open', 'companion_allow_escape_close', 'companion_enable_keyboard_shortcut', 'companion_remember_open_state' ) as $flosc_cb ) {
 			if ( ! isset( $flosc_post[ "flow_{$flosc_cb}" ] ) ) {
@@ -1465,307 +1632,379 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_companion_motion_modes     = apply_filters( 'flosc_companion_motion_modes', array( 'system', 'reduce', 'full' ) );
 		$flosc_companion_state_storages   = apply_filters( 'flosc_companion_state_storages', array( 'session', 'local' ) );
 
-		$flosc_mode = sanitize_text_field( (string) ( $flosc_post['flow_companion_content_display_mode'] ?? $flosc_companion_defaults['mode'] ) );
-		if ( ! in_array( $flosc_mode, (array) $flosc_companion_modes, true ) ) {
-			$flosc_mode = $flosc_companion_defaults['mode'];
-		}
-
-		$flosc_position = sanitize_text_field( (string) ( $flosc_post['flow_companion_position'] ?? $flosc_companion_defaults['position'] ) );
-		if ( ! in_array( $flosc_position, (array) $flosc_companion_positions, true ) ) {
-			$flosc_position = $flosc_companion_defaults['position'];
-		}
-
-		$flosc_accent = sanitize_hex_color( (string) ( $flosc_post['flow_companion_accent_color'] ?? $flosc_companion_defaults['accent_color'] ) );
-		if ( empty( $flosc_accent ) ) {
-			$flosc_accent = sanitize_hex_color( (string) $flosc_companion_defaults['accent_color'] );
-			if ( ! $flosc_accent ) {
-				$flosc_accent = '#6366f1';
+		$flosc_companion_list_fields = array(
+			'flow_companion_include_pages',
+			'flow_companion_include_posts',
+			'flow_companion_include_categories',
+			'flow_companion_include_tags',
+			'flow_companion_exclude_pages',
+			'flow_companion_exclude_posts',
+			'flow_companion_exclude_categories',
+			'flow_companion_exclude_tags',
+		);
+		$flosc_companion_fields_ok = true;
+		foreach ( $flosc_post as $flosc_companion_key => $flosc_companion_value ) {
+			if ( 0 !== strpos( (string) $flosc_companion_key, 'flow_companion_' ) ) {
+				continue;
+			}
+			if ( in_array( $flosc_companion_key, $flosc_companion_list_fields, true ) ) {
+				if ( ! flosc_submitted_list_is_text( $flosc_companion_value ) ) {
+					$flosc_companion_fields_ok = false;
+					break;
+				}
+			} elseif ( ! flosc_submitted_value_is_text( $flosc_companion_value ) ) {
+				$flosc_companion_fields_ok = false;
+				break;
 			}
 		}
-
-		$flosc_panel_width   = absint( $flosc_post['flow_companion_panel_width'] ?? $flosc_companion_defaults['panel_width'] );
-		$flosc_panel_height  = absint( $flosc_post['flow_companion_panel_height'] ?? $flosc_companion_defaults['panel_height'] );
-		$flosc_panel_width   = max( $flosc_companion_numeric_limits['panel_width_min'], min( $flosc_companion_numeric_limits['panel_width_max'], $flosc_panel_width ) );
-		$flosc_panel_height  = max( $flosc_companion_numeric_limits['panel_height_min'], min( $flosc_companion_numeric_limits['panel_height_max'], $flosc_panel_height ) );
-		$flosc_launcher_size = absint( $flosc_post['flow_companion_launcher_size'] ?? $flosc_companion_defaults['launcher_size'] );
-		$flosc_launcher_size = max( $flosc_companion_numeric_limits['launcher_size_min'], min( $flosc_companion_numeric_limits['launcher_size_max'], $flosc_launcher_size ) );
-		$flosc_launcher_icon = sanitize_key( (string) ( $flosc_post['flow_companion_launcher_icon'] ?? $flosc_companion_defaults['launcher_icon'] ) );
-		if ( ! in_array( $flosc_launcher_icon, (array) $flosc_companion_launcher_icons, true ) ) {
-			$flosc_launcher_icon = $flosc_companion_defaults['launcher_icon'];
-		}
-
-		$flosc_mobile_behavior = sanitize_text_field( (string) ( $flosc_post['flow_companion_mobile_behavior'] ?? $flosc_companion_defaults['mobile_behavior'] ) );
-		if ( ! in_array( $flosc_mobile_behavior, (array) $flosc_companion_mobile_behaviors, true ) ) {
-			$flosc_mobile_behavior = $flosc_companion_defaults['mobile_behavior'];
-		}
-
-		$flosc_context_scope = sanitize_text_field( (string) ( $flosc_post['flow_companion_context_scope'] ?? $flosc_companion_defaults['context_scope'] ) );
-		if ( ! in_array( $flosc_context_scope, (array) $flosc_companion_context_scopes, true ) ) {
-			$flosc_context_scope = $flosc_companion_defaults['context_scope'];
-		}
-
-		$flosc_motion_mode = sanitize_text_field( (string) ( $flosc_post['flow_companion_motion_mode'] ?? $flosc_companion_defaults['motion_mode'] ) );
-		if ( ! in_array( $flosc_motion_mode, (array) $flosc_companion_motion_modes, true ) ) {
-			$flosc_motion_mode = $flosc_companion_defaults['motion_mode'];
-		}
-
-		$flosc_auto_open_delay_ms       = absint( $flosc_post['flow_companion_auto_open_delay_ms'] ?? $flosc_companion_defaults['auto_open_delay_ms'] );
-		$flosc_auto_open_delay_ms       = max( $flosc_companion_numeric_limits['auto_open_delay_min_ms'], min( $flosc_companion_numeric_limits['auto_open_delay_max_ms'], $flosc_auto_open_delay_ms ) );
-		$flosc_launch_on_scroll_percent = absint( $flosc_post['flow_companion_launch_on_scroll_percent'] ?? $flosc_companion_defaults['launch_on_scroll_percent'] );
-		$flosc_launch_on_scroll_percent = max( $flosc_companion_numeric_limits['scroll_percent_min'], min( $flosc_companion_numeric_limits['scroll_percent_max'], $flosc_launch_on_scroll_percent ) );
-		$flosc_trigger_min_page_time_ms = absint( $flosc_post['flow_companion_trigger_min_page_time_ms'] ?? $flosc_companion_defaults['trigger_min_page_time_ms'] );
-		$flosc_trigger_min_page_time_ms = max( $flosc_companion_numeric_limits['trigger_min_page_time_min_ms'], min( $flosc_companion_numeric_limits['trigger_min_page_time_max_ms'], $flosc_trigger_min_page_time_ms ) );
-		$flosc_keyboard_shortcut_key    = sanitize_text_field( (string) ( $flosc_post['flow_companion_keyboard_shortcut_key'] ?? $flosc_companion_defaults['keyboard_shortcut_key'] ) );
-		$flosc_keyboard_shortcut_key    = strtolower( substr( trim( $flosc_keyboard_shortcut_key ), 0, 1 ) );
-		if ( '' === $flosc_keyboard_shortcut_key || ! preg_match( '/^[a-z0-9]$/', $flosc_keyboard_shortcut_key ) ) {
-			$flosc_keyboard_shortcut_key = 'k';
-		}
-		$flosc_launcher_aria_label = sanitize_text_field( (string) ( $flosc_post['flow_companion_launcher_aria_label'] ?? $flosc_companion_defaults['launcher_aria_label'] ) );
-		if ( '' === $flosc_launcher_aria_label ) {
-			$flosc_launcher_aria_label = 'Open Chat';
-		}
-		$flosc_close_aria_label = sanitize_text_field( (string) ( $flosc_post['flow_companion_close_aria_label'] ?? $flosc_companion_defaults['close_aria_label'] ) );
-		if ( '' === $flosc_close_aria_label ) {
-			$flosc_close_aria_label = 'Collapse Chat';
-		}
-		$flosc_state_storage = sanitize_text_field( (string) ( $flosc_post['flow_companion_state_storage'] ?? $flosc_companion_defaults['state_storage'] ) );
-		if ( ! in_array( $flosc_state_storage, (array) $flosc_companion_state_storages, true ) ) {
-			$flosc_state_storage = $flosc_companion_defaults['state_storage'];
-		}
-		$flosc_trigger_cooldown_ms = absint( $flosc_post['flow_companion_trigger_cooldown_ms'] ?? $flosc_companion_defaults['trigger_cooldown_ms'] );
-		$flosc_trigger_cooldown_ms = max( $flosc_companion_numeric_limits['trigger_cooldown_min_ms'], min( $flosc_companion_numeric_limits['trigger_cooldown_max_ms'], $flosc_trigger_cooldown_ms ) );
-
-		$flosc_new_settings['companion_content_display_mode'] = $flosc_mode;
-		$flosc_new_settings['companion_position']             = $flosc_position;
-		$flosc_new_settings['companion_greeting']             = sanitize_textarea_field( (string) ( $flosc_post['flow_companion_greeting'] ?? $flosc_companion_defaults['greeting'] ) );
-		$flosc_new_settings['companion_subtitle']             = sanitize_text_field( (string) ( $flosc_post['flow_companion_subtitle'] ?? $flosc_companion_defaults['subtitle'] ) );
-		$flosc_new_settings['companion_header_icon_url']      = esc_url_raw( (string) ( $flosc_post['flow_companion_header_icon_url'] ?? '' ) );
-		$flosc_new_settings['companion_contextual_prompt']    = sanitize_text_field( (string) ( $flosc_post['flow_companion_contextual_prompt'] ?? $flosc_companion_defaults['contextual_prompt'] ) );
-		// Companion profile-row tier codes (defaults V/G/M) and accessible labels.
-		$flosc_sanitize_tier_code                                   = static function ( $raw, $fallback ) {
-			$code = strtoupper( sanitize_text_field( (string) $raw ) );
-			$code = preg_replace( '/[^A-Z0-9]/', '', $code );
-			$code = substr( (string) $code, 0, 3 );
-			return '' !== $code ? $code : $fallback;
-		};
-		$flosc_new_settings['companion_profile_tier_visitor']       = $flosc_sanitize_tier_code(
-			$flosc_post['flow_companion_profile_tier_visitor'] ?? ( $flosc_companion_defaults['profile_tier_visitor'] ?? 'V' ),
-			'V'
-		);
-		$flosc_new_settings['companion_profile_tier_guest']         = $flosc_sanitize_tier_code(
-			$flosc_post['flow_companion_profile_tier_guest'] ?? ( $flosc_companion_defaults['profile_tier_guest'] ?? 'G' ),
-			'G'
-		);
-		$flosc_new_settings['companion_profile_tier_member']        = $flosc_sanitize_tier_code(
-			$flosc_post['flow_companion_profile_tier_member'] ?? ( $flosc_companion_defaults['profile_tier_member'] ?? 'M' ),
-			'M'
-		);
-		$flosc_new_settings['companion_profile_tier_visitor_label'] = sanitize_text_field(
-			(string) ( $flosc_post['flow_companion_profile_tier_visitor_label'] ?? ( $flosc_companion_defaults['profile_tier_visitor_label'] ?? 'Visitor' ) )
-		);
-		$flosc_new_settings['companion_profile_tier_guest_label']   = sanitize_text_field(
-			(string) ( $flosc_post['flow_companion_profile_tier_guest_label'] ?? ( $flosc_companion_defaults['profile_tier_guest_label'] ?? 'Guest' ) )
-		);
-		$flosc_new_settings['companion_profile_tier_member_label']  = sanitize_text_field(
-			(string) ( $flosc_post['flow_companion_profile_tier_member_label'] ?? ( $flosc_companion_defaults['profile_tier_member_label'] ?? 'Member' ) )
-		);
-		// Explicit header visibility toggles (checkbox: present = show, absent = hide).
-		$flosc_new_settings['companion_show_header_title']              = isset( $flosc_post['flow_companion_show_header_title'] ) ? 1 : 0;
-		$flosc_new_settings['companion_show_header_subtitle']           = isset( $flosc_post['flow_companion_show_header_subtitle'] ) ? 1 : 0;
-		$flosc_new_settings['companion_show_open_fullpage']             = isset( $flosc_post['flow_companion_show_open_fullpage'] ) ? 1 : 0;
-		$flosc_new_settings['companion_accent_color']                   = $flosc_accent;
-		$flosc_new_settings['companion_panel_width']                    = $flosc_panel_width;
-		$flosc_new_settings['companion_panel_height']                   = $flosc_panel_height;
-		$flosc_new_settings['companion_launcher_size']                  = $flosc_launcher_size;
-		$flosc_new_settings['companion_launcher_icon']                  = $flosc_launcher_icon;
-		$flosc_new_settings['companion_mobile_behavior']                = $flosc_mobile_behavior;
-		$flosc_new_settings['companion_context_scope']                  = $flosc_context_scope;
-		$flosc_new_settings['companion_page_intent_phrases']            = sanitize_textarea_field( (string) ( $flosc_post['flow_companion_page_intent_phrases'] ?? '' ) );
-		$flosc_new_settings['companion_motion_mode']                    = $flosc_motion_mode;
-		$flosc_new_settings['companion_keyboard_shortcut_key']          = $flosc_keyboard_shortcut_key;
-		$flosc_new_settings['companion_launcher_aria_label']            = $flosc_launcher_aria_label;
-		$flosc_new_settings['companion_close_aria_label']               = $flosc_close_aria_label;
-		$flosc_new_settings['companion_state_storage']                  = $flosc_state_storage;
-		$flosc_new_settings['companion_trigger_cooldown_ms']            = $flosc_trigger_cooldown_ms;
-		$flosc_new_settings['companion_auto_open_delay_ms']             = $flosc_auto_open_delay_ms;
-		$flosc_new_settings['companion_launch_on_scroll_percent']       = $flosc_launch_on_scroll_percent;
-		$flosc_new_settings['companion_trigger_min_page_time_ms']       = $flosc_trigger_min_page_time_ms;
-		$flosc_new_settings['companion_trigger_suppress_path_patterns'] = sanitize_textarea_field( (string) ( $flosc_post['flow_companion_trigger_suppress_path_patterns'] ?? '' ) );
-
-		$flosc_parse_companion_custom_rules = static function ( $raw_rules ) {
-			$rules  = array();
-			$chunks = preg_split( '/[\r\n,]+/', (string) $raw_rules );
-			if ( ! is_array( $chunks ) ) {
-				return $rules;
+		if ( $flosc_companion_fields_ok ) {
+			$flosc_mode = sanitize_text_field( (string) ( $flosc_post['flow_companion_content_display_mode'] ?? $flosc_companion_defaults['mode'] ) );
+			if ( ! in_array( $flosc_mode, (array) $flosc_companion_modes, true ) ) {
+				$flosc_mode = $flosc_companion_defaults['mode'];
 			}
 
-			foreach ( $chunks as $chunk ) {
-				$chunk = trim( (string) $chunk );
-				if ( '' === $chunk ) {
-					continue;
+			$flosc_position = sanitize_text_field( (string) ( $flosc_post['flow_companion_position'] ?? $flosc_companion_defaults['position'] ) );
+			if ( ! in_array( $flosc_position, (array) $flosc_companion_positions, true ) ) {
+				$flosc_position = $flosc_companion_defaults['position'];
+			}
+
+			$flosc_accent = sanitize_hex_color( (string) ( $flosc_post['flow_companion_accent_color'] ?? $flosc_companion_defaults['accent_color'] ) );
+			if ( empty( $flosc_accent ) ) {
+				$flosc_accent = sanitize_hex_color( (string) $flosc_companion_defaults['accent_color'] );
+				if ( ! $flosc_accent ) {
+					$flosc_accent = '#6366f1';
+				}
+			}
+
+			$flosc_panel_width   = absint( $flosc_post['flow_companion_panel_width'] ?? $flosc_companion_defaults['panel_width'] );
+			$flosc_panel_height  = absint( $flosc_post['flow_companion_panel_height'] ?? $flosc_companion_defaults['panel_height'] );
+			$flosc_panel_width   = max( $flosc_companion_numeric_limits['panel_width_min'], min( $flosc_companion_numeric_limits['panel_width_max'], $flosc_panel_width ) );
+			$flosc_panel_height  = max( $flosc_companion_numeric_limits['panel_height_min'], min( $flosc_companion_numeric_limits['panel_height_max'], $flosc_panel_height ) );
+			$flosc_launcher_size = absint( $flosc_post['flow_companion_launcher_size'] ?? $flosc_companion_defaults['launcher_size'] );
+			$flosc_launcher_size = max( $flosc_companion_numeric_limits['launcher_size_min'], min( $flosc_companion_numeric_limits['launcher_size_max'], $flosc_launcher_size ) );
+			$flosc_launcher_icon = sanitize_key( (string) ( $flosc_post['flow_companion_launcher_icon'] ?? $flosc_companion_defaults['launcher_icon'] ) );
+			if ( ! in_array( $flosc_launcher_icon, (array) $flosc_companion_launcher_icons, true ) ) {
+				$flosc_launcher_icon = $flosc_companion_defaults['launcher_icon'];
+			}
+
+			$flosc_mobile_behavior = sanitize_text_field( (string) ( $flosc_post['flow_companion_mobile_behavior'] ?? $flosc_companion_defaults['mobile_behavior'] ) );
+			if ( ! in_array( $flosc_mobile_behavior, (array) $flosc_companion_mobile_behaviors, true ) ) {
+				$flosc_mobile_behavior = $flosc_companion_defaults['mobile_behavior'];
+			}
+
+			$flosc_context_scope = sanitize_text_field( (string) ( $flosc_post['flow_companion_context_scope'] ?? $flosc_companion_defaults['context_scope'] ) );
+			if ( ! in_array( $flosc_context_scope, (array) $flosc_companion_context_scopes, true ) ) {
+				$flosc_context_scope = $flosc_companion_defaults['context_scope'];
+			}
+
+			$flosc_motion_mode = sanitize_text_field( (string) ( $flosc_post['flow_companion_motion_mode'] ?? $flosc_companion_defaults['motion_mode'] ) );
+			if ( ! in_array( $flosc_motion_mode, (array) $flosc_companion_motion_modes, true ) ) {
+				$flosc_motion_mode = $flosc_companion_defaults['motion_mode'];
+			}
+
+			$flosc_auto_open_delay_ms       = absint( $flosc_post['flow_companion_auto_open_delay_ms'] ?? $flosc_companion_defaults['auto_open_delay_ms'] );
+			$flosc_auto_open_delay_ms       = max( $flosc_companion_numeric_limits['auto_open_delay_min_ms'], min( $flosc_companion_numeric_limits['auto_open_delay_max_ms'], $flosc_auto_open_delay_ms ) );
+			$flosc_launch_on_scroll_percent = absint( $flosc_post['flow_companion_launch_on_scroll_percent'] ?? $flosc_companion_defaults['launch_on_scroll_percent'] );
+			$flosc_launch_on_scroll_percent = max( $flosc_companion_numeric_limits['scroll_percent_min'], min( $flosc_companion_numeric_limits['scroll_percent_max'], $flosc_launch_on_scroll_percent ) );
+			$flosc_trigger_min_page_time_ms = absint( $flosc_post['flow_companion_trigger_min_page_time_ms'] ?? $flosc_companion_defaults['trigger_min_page_time_ms'] );
+			$flosc_trigger_min_page_time_ms = max( $flosc_companion_numeric_limits['trigger_min_page_time_min_ms'], min( $flosc_companion_numeric_limits['trigger_min_page_time_max_ms'], $flosc_trigger_min_page_time_ms ) );
+			$flosc_keyboard_shortcut_key    = sanitize_text_field( (string) ( $flosc_post['flow_companion_keyboard_shortcut_key'] ?? $flosc_companion_defaults['keyboard_shortcut_key'] ) );
+			$flosc_keyboard_shortcut_key    = strtolower( substr( trim( $flosc_keyboard_shortcut_key ), 0, 1 ) );
+			if ( '' === $flosc_keyboard_shortcut_key || ! preg_match( '/^[a-z0-9]$/', $flosc_keyboard_shortcut_key ) ) {
+				$flosc_keyboard_shortcut_key = 'k';
+			}
+			$flosc_launcher_aria_label = sanitize_text_field( (string) ( $flosc_post['flow_companion_launcher_aria_label'] ?? $flosc_companion_defaults['launcher_aria_label'] ) );
+			if ( '' === $flosc_launcher_aria_label ) {
+				$flosc_launcher_aria_label = 'Open Chat';
+			}
+			$flosc_close_aria_label = sanitize_text_field( (string) ( $flosc_post['flow_companion_close_aria_label'] ?? $flosc_companion_defaults['close_aria_label'] ) );
+			if ( '' === $flosc_close_aria_label ) {
+				$flosc_close_aria_label = 'Collapse Chat';
+			}
+			$flosc_state_storage = sanitize_text_field( (string) ( $flosc_post['flow_companion_state_storage'] ?? $flosc_companion_defaults['state_storage'] ) );
+			if ( ! in_array( $flosc_state_storage, (array) $flosc_companion_state_storages, true ) ) {
+				$flosc_state_storage = $flosc_companion_defaults['state_storage'];
+			}
+			$flosc_trigger_cooldown_ms = absint( $flosc_post['flow_companion_trigger_cooldown_ms'] ?? $flosc_companion_defaults['trigger_cooldown_ms'] );
+			$flosc_trigger_cooldown_ms = max( $flosc_companion_numeric_limits['trigger_cooldown_min_ms'], min( $flosc_companion_numeric_limits['trigger_cooldown_max_ms'], $flosc_trigger_cooldown_ms ) );
+
+			$flosc_new_settings['companion_content_display_mode'] = $flosc_mode;
+			$flosc_new_settings['companion_position']             = $flosc_position;
+			$flosc_new_settings['companion_greeting']             = sanitize_textarea_field( (string) ( $flosc_post['flow_companion_greeting'] ?? $flosc_companion_defaults['greeting'] ) );
+			$flosc_new_settings['companion_subtitle']             = sanitize_text_field( (string) ( $flosc_post['flow_companion_subtitle'] ?? $flosc_companion_defaults['subtitle'] ) );
+			$flosc_new_settings['companion_header_icon_url']      = esc_url_raw( (string) ( $flosc_post['flow_companion_header_icon_url'] ?? '' ) );
+			$flosc_new_settings['companion_contextual_prompt']    = sanitize_text_field( (string) ( $flosc_post['flow_companion_contextual_prompt'] ?? $flosc_companion_defaults['contextual_prompt'] ) );
+			// Companion profile-row tier codes (defaults V/G/M) and accessible labels.
+			$flosc_sanitize_tier_code                                   = static function ( $raw, $fallback ) {
+				$code = strtoupper( sanitize_text_field( (string) $raw ) );
+				$code = preg_replace( '/[^A-Z0-9]/', '', $code );
+				$code = substr( (string) $code, 0, 3 );
+				return '' !== $code ? $code : $fallback;
+			};
+			$flosc_new_settings['companion_profile_tier_visitor']       = $flosc_sanitize_tier_code(
+				$flosc_post['flow_companion_profile_tier_visitor'] ?? ( $flosc_companion_defaults['profile_tier_visitor'] ?? 'V' ),
+				'V'
+			);
+			$flosc_new_settings['companion_profile_tier_guest']         = $flosc_sanitize_tier_code(
+				$flosc_post['flow_companion_profile_tier_guest'] ?? ( $flosc_companion_defaults['profile_tier_guest'] ?? 'G' ),
+				'G'
+			);
+			$flosc_new_settings['companion_profile_tier_member']        = $flosc_sanitize_tier_code(
+				$flosc_post['flow_companion_profile_tier_member'] ?? ( $flosc_companion_defaults['profile_tier_member'] ?? 'M' ),
+				'M'
+			);
+			$flosc_new_settings['companion_profile_tier_visitor_label'] = sanitize_text_field(
+				(string) ( $flosc_post['flow_companion_profile_tier_visitor_label'] ?? ( $flosc_companion_defaults['profile_tier_visitor_label'] ?? 'Visitor' ) )
+			);
+			$flosc_new_settings['companion_profile_tier_guest_label']   = sanitize_text_field(
+				(string) ( $flosc_post['flow_companion_profile_tier_guest_label'] ?? ( $flosc_companion_defaults['profile_tier_guest_label'] ?? 'Guest' ) )
+			);
+			$flosc_new_settings['companion_profile_tier_member_label']  = sanitize_text_field(
+				(string) ( $flosc_post['flow_companion_profile_tier_member_label'] ?? ( $flosc_companion_defaults['profile_tier_member_label'] ?? 'Member' ) )
+			);
+			// Explicit header visibility toggles (checkbox: present = show, absent = hide).
+			$flosc_new_settings['companion_show_header_title']              = isset( $flosc_post['flow_companion_show_header_title'] ) ? 1 : 0;
+			$flosc_new_settings['companion_show_header_subtitle']           = isset( $flosc_post['flow_companion_show_header_subtitle'] ) ? 1 : 0;
+			$flosc_new_settings['companion_show_open_fullpage']             = isset( $flosc_post['flow_companion_show_open_fullpage'] ) ? 1 : 0;
+			$flosc_new_settings['companion_accent_color']                   = $flosc_accent;
+			$flosc_new_settings['companion_panel_width']                    = $flosc_panel_width;
+			$flosc_new_settings['companion_panel_height']                   = $flosc_panel_height;
+			$flosc_new_settings['companion_launcher_size']                  = $flosc_launcher_size;
+			$flosc_new_settings['companion_launcher_icon']                  = $flosc_launcher_icon;
+			$flosc_new_settings['companion_mobile_behavior']                = $flosc_mobile_behavior;
+			$flosc_new_settings['companion_context_scope']                  = $flosc_context_scope;
+			$flosc_new_settings['companion_page_intent_phrases']            = sanitize_textarea_field( (string) ( $flosc_post['flow_companion_page_intent_phrases'] ?? '' ) );
+			$flosc_new_settings['companion_motion_mode']                    = $flosc_motion_mode;
+			$flosc_new_settings['companion_keyboard_shortcut_key']          = $flosc_keyboard_shortcut_key;
+			$flosc_new_settings['companion_launcher_aria_label']            = $flosc_launcher_aria_label;
+			$flosc_new_settings['companion_close_aria_label']               = $flosc_close_aria_label;
+			$flosc_new_settings['companion_state_storage']                  = $flosc_state_storage;
+			$flosc_new_settings['companion_trigger_cooldown_ms']            = $flosc_trigger_cooldown_ms;
+			$flosc_new_settings['companion_auto_open_delay_ms']             = $flosc_auto_open_delay_ms;
+			$flosc_new_settings['companion_launch_on_scroll_percent']       = $flosc_launch_on_scroll_percent;
+			$flosc_new_settings['companion_trigger_min_page_time_ms']       = $flosc_trigger_min_page_time_ms;
+			$flosc_new_settings['companion_trigger_suppress_path_patterns'] = sanitize_textarea_field( (string) ( $flosc_post['flow_companion_trigger_suppress_path_patterns'] ?? '' ) );
+
+			$flosc_parse_companion_custom_rules = static function ( $raw_rules ) {
+				$rules  = array();
+				$chunks = preg_split( '/[\r\n,]+/', (string) $raw_rules );
+				if ( ! is_array( $chunks ) ) {
+					return $rules;
 				}
 
-				if ( false === strpos( $chunk, ':' ) ) {
-					$chunk = 'path:/' . ltrim( $chunk, '/' );
+				foreach ( $chunks as $chunk ) {
+					$chunk = sanitize_text_field( trim( (string) $chunk ) );
+					if ( '' === $chunk ) {
+						continue;
+					}
+
+					if ( false === strpos( $chunk, ':' ) ) {
+						$chunk = 'path:/' . ltrim( $chunk, '/' );
+					}
+
+					$rules[] = $chunk;
 				}
 
-				$rules[] = $chunk;
-			}
+				return array_values( array_unique( $rules ) );
+			};
 
-			return array_values( array_unique( $rules ) );
-		};
+			$flosc_collect_companion_rules = static function ( $prefix, $post_data, $custom_parser ) {
+				$rules = array();
 
-		$flosc_collect_companion_rules = static function ( $prefix, $post_data, $custom_parser ) {
-			$rules = array();
+				$flosc_page_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_pages' ] ?? array() ) ) ) ) );
+				foreach ( $flosc_page_ids as $page_id ) {
+					$rules[] = 'page:' . $page_id;
+				}
 
-			$flosc_page_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_pages' ] ?? array() ) ) ) ) );
-			foreach ( $flosc_page_ids as $page_id ) {
-				$rules[] = 'page:' . $page_id;
-			}
+				$flosc_post_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_posts' ] ?? array() ) ) ) ) );
+				foreach ( $flosc_post_ids as $post_id ) {
+					$rules[] = 'post:' . $post_id;
+				}
 
-			$flosc_post_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_posts' ] ?? array() ) ) ) ) );
-			foreach ( $flosc_post_ids as $post_id ) {
-				$rules[] = 'post:' . $post_id;
-			}
+				$categories = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_categories' ] ?? array() ) ) ) ) );
+				foreach ( $categories as $term_id ) {
+					$rules[] = 'category:' . $term_id;
+				}
 
-			$categories = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_categories' ] ?? array() ) ) ) ) );
-			foreach ( $categories as $term_id ) {
-				$rules[] = 'category:' . $term_id;
-			}
+				$tags = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_tags' ] ?? array() ) ) ) ) );
+				foreach ( $tags as $term_id ) {
+					$rules[] = 'tag:' . $term_id;
+				}
 
-			$tags = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $post_data[ 'flow_companion_' . $prefix . '_tags' ] ?? array() ) ) ) ) );
-			foreach ( $tags as $term_id ) {
-				$rules[] = 'tag:' . $term_id;
-			}
+				$custom_field_key = 'flow_companion_target_' . $prefix . '_custom';
+				foreach ( $custom_parser( (string) ( $post_data[ $custom_field_key ] ?? '' ) ) as $custom_rule ) {
+					$rules[] = $custom_rule;
+				}
 
-			$custom_field_key = 'flow_companion_target_' . $prefix . '_custom';
-			foreach ( $custom_parser( (string) ( $post_data[ $custom_field_key ] ?? '' ) ) as $custom_rule ) {
-				$rules[] = $custom_rule;
-			}
+				return implode( "\n", array_values( array_unique( $rules ) ) );
+			};
 
-			return implode( "\n", array_values( array_unique( $rules ) ) );
-		};
-
-		$flosc_new_settings['companion_target_include'] = $flosc_collect_companion_rules( 'include', $flosc_post, $flosc_parse_companion_custom_rules );
-		$flosc_new_settings['companion_target_exclude'] = $flosc_collect_companion_rules( 'exclude', $flosc_post, $flosc_parse_companion_custom_rules );
-
+			$flosc_new_settings['companion_target_include'] = $flosc_collect_companion_rules( 'include', $flosc_post, $flosc_parse_companion_custom_rules );
+			$flosc_new_settings['companion_target_exclude'] = $flosc_collect_companion_rules( 'exclude', $flosc_post, $flosc_parse_companion_custom_rules );
+		}
 	}
 
 	// v8.1.0: Member Levels tab — parse level registry + content protection repeaters.
 	if ( in_array( $flosc_active_tab, array( 'member-levels', 'content' ), true ) ) {
 		// Level registry repeater.
-		$flosc_level_slugs        = $flosc_post['level_slug'] ?? array();
-		$flosc_level_names        = $flosc_post['level_name'] ?? array();
-		$flosc_level_descriptions = $flosc_post['level_description'] ?? array();
-		$flosc_member_levels      = array();
-		foreach ( $flosc_level_slugs as $flosc_i => $flosc_slug ) {
-			$flosc_slug = sanitize_key( $flosc_slug );
-			if ( '' === $flosc_slug ) {
-				continue;
+		$flosc_levels_ok = ( ! isset( $flosc_post['level_slug'] ) || is_array( $flosc_post['level_slug'] ) );
+		foreach ( array( 'level_name', 'level_description' ) as $flosc_level_key ) {
+			if ( isset( $flosc_post[ $flosc_level_key ] ) && ! is_array( $flosc_post[ $flosc_level_key ] ) ) {
+				$flosc_levels_ok = false;
 			}
-			$flosc_member_levels[ $flosc_slug ] = array(
-				'slug'        => $flosc_slug,
-				'name'        => sanitize_text_field( $flosc_level_names[ $flosc_i ] ?? '' ),
-				'description' => sanitize_text_field( $flosc_level_descriptions[ $flosc_i ] ?? '' ),
-			);
 		}
-		$flosc_new_settings['member_levels'] = $flosc_member_levels;
+		if ( $flosc_levels_ok ) {
+			$flosc_level_slugs        = $flosc_post['level_slug'] ?? array();
+			$flosc_level_names        = is_array( $flosc_post['level_name'] ?? null ) ? $flosc_post['level_name'] : array();
+			$flosc_level_descriptions = is_array( $flosc_post['level_description'] ?? null ) ? $flosc_post['level_description'] : array();
+			$flosc_member_levels      = array();
+			foreach ( $flosc_level_slugs as $flosc_i => $flosc_slug ) {
+				if ( ! flosc_submitted_value_is_text( $flosc_slug ) ) {
+					continue;
+				}
+				$flosc_slug = sanitize_key( (string) $flosc_slug );
+				if ( '' === $flosc_slug ) {
+					continue;
+				}
+				$flosc_name_raw = $flosc_level_names[ $flosc_i ] ?? '';
+				$flosc_desc_raw = $flosc_level_descriptions[ $flosc_i ] ?? '';
+				if ( ! flosc_submitted_value_is_text( $flosc_name_raw ) ) {
+					$flosc_name_raw = '';
+				}
+				if ( ! flosc_submitted_value_is_text( $flosc_desc_raw ) ) {
+					$flosc_desc_raw = '';
+				}
+				$flosc_member_levels[ $flosc_slug ] = array(
+					'slug'        => $flosc_slug,
+					'name'        => sanitize_text_field( (string) $flosc_name_raw ),
+					'description' => sanitize_text_field( (string) $flosc_desc_raw ),
+				);
+			}
+			$flosc_new_settings['member_levels'] = $flosc_member_levels;
+		}
 
 		// Content protection repeater.
-		$flosc_prot_types  = $flosc_post['protection_type'] ?? array();
-		$flosc_prot_values = $flosc_post['protection_value'] ?? array();
-		$flosc_prot_levels = $flosc_post['protection_level'] ?? array();
-		// Access has two axes: vgm says who, depth says how much of the post.
-		$flosc_prot_vgms         = $flosc_post['protection_vgm'] ?? array();
-		$flosc_prot_depths       = $flosc_post['protection_depth'] ?? array();
-		$flosc_protected_content = array();
-		foreach ( $flosc_prot_types as $flosc_i => $flosc_type ) {
-			$flosc_type  = sanitize_text_field( $flosc_type );
-			$flosc_value = sanitize_text_field( $flosc_prot_values[ $flosc_i ] ?? '' );
-			$flosc_level = sanitize_key( $flosc_prot_levels[ $flosc_i ] ?? '' );
-			$flosc_vgm   = sanitize_key( $flosc_prot_vgms[ $flosc_i ] ?? '' );
-			$flosc_depth = sanitize_key( $flosc_prot_depths[ $flosc_i ] ?? '' );
-			if ( ! in_array( $flosc_vgm, array( 'visitor', 'guest', 'member' ), true ) ) {
-				// A rule stored before these columns existed meant members only.
-				$flosc_vgm = 'member';
+		$flosc_protection_ok = ( ! isset( $flosc_post['protection_type'] ) || is_array( $flosc_post['protection_type'] ) );
+		foreach ( array( 'protection_value', 'protection_level', 'protection_vgm', 'protection_depth' ) as $flosc_prot_key ) {
+			if ( isset( $flosc_post[ $flosc_prot_key ] ) && ! is_array( $flosc_post[ $flosc_prot_key ] ) ) {
+				$flosc_protection_ok = false;
 			}
-			if ( ! in_array( $flosc_depth, array( 'title', 'excerpt', 'readmore', 'full' ), true ) ) {
-				$flosc_depth = 'full';
-			}
-			if ( '' === $flosc_value ) {
-				continue;
-			}
-			$flosc_item = array(
-				'type'  => $flosc_type,
-				'id'    => $flosc_value,
-				'level' => $flosc_level,
-				'vgm'   => $flosc_vgm,
-				'depth' => $flosc_depth,
-			);
-			// Resolve names for display.
-			if ( in_array( $flosc_type, array( 'category', 'tag' ), true ) ) {
-				$flosc_term = get_term( intval( $flosc_value ) );
-				if ( $flosc_term && ! is_wp_error( $flosc_term ) ) {
-					$flosc_item['slug'] = $flosc_term->slug;
-					$flosc_item['name'] = $flosc_term->name;
+		}
+		if ( $flosc_protection_ok ) {
+			$flosc_prot_types  = $flosc_post['protection_type'] ?? array();
+			$flosc_prot_values = is_array( $flosc_post['protection_value'] ?? null ) ? $flosc_post['protection_value'] : array();
+			$flosc_prot_levels = is_array( $flosc_post['protection_level'] ?? null ) ? $flosc_post['protection_level'] : array();
+			// Access has two axes: vgm says who, depth says how much of the post.
+			$flosc_prot_vgms         = is_array( $flosc_post['protection_vgm'] ?? null ) ? $flosc_post['protection_vgm'] : array();
+			$flosc_prot_depths       = is_array( $flosc_post['protection_depth'] ?? null ) ? $flosc_post['protection_depth'] : array();
+			$flosc_protected_content = array();
+			foreach ( $flosc_prot_types as $flosc_i => $flosc_type ) {
+				if ( ! flosc_submitted_value_is_text( $flosc_type ) ) {
+					continue;
 				}
-			} elseif ( in_array( $flosc_type, array( 'post', 'page' ), true ) ) {
-				$flosc_post_obj = get_post( intval( $flosc_value ) );
-				if ( $flosc_post_obj ) {
-					$flosc_item['name'] = $flosc_post_obj->post_title;
+				$flosc_value_raw = $flosc_prot_values[ $flosc_i ] ?? '';
+				if ( ! flosc_submitted_value_is_text( $flosc_value_raw ) ) {
+					continue;
+				}
+				$flosc_level_raw = $flosc_prot_levels[ $flosc_i ] ?? '';
+				$flosc_vgm_raw   = $flosc_prot_vgms[ $flosc_i ] ?? '';
+				$flosc_depth_raw = $flosc_prot_depths[ $flosc_i ] ?? '';
+				$flosc_type      = sanitize_text_field( (string) $flosc_type );
+				$flosc_value     = sanitize_text_field( (string) $flosc_value_raw );
+				$flosc_level     = flosc_submitted_value_is_text( $flosc_level_raw ) ? sanitize_key( (string) $flosc_level_raw ) : '';
+				$flosc_vgm       = flosc_submitted_value_is_text( $flosc_vgm_raw ) ? sanitize_key( (string) $flosc_vgm_raw ) : '';
+				$flosc_depth     = flosc_submitted_value_is_text( $flosc_depth_raw ) ? sanitize_key( (string) $flosc_depth_raw ) : '';
+				if ( ! in_array( $flosc_vgm, array( 'visitor', 'guest', 'member' ), true ) ) {
+					// A rule stored before these columns existed meant members only.
+					$flosc_vgm = 'member';
+				}
+				if ( ! in_array( $flosc_depth, array( 'title', 'excerpt', 'readmore', 'full' ), true ) ) {
+					$flosc_depth = 'full';
+				}
+				if ( '' === $flosc_value ) {
+					continue;
+				}
+				$flosc_item = array(
+					'type'  => $flosc_type,
+					'id'    => $flosc_value,
+					'level' => $flosc_level,
+					'vgm'   => $flosc_vgm,
+					'depth' => $flosc_depth,
+				);
+				// Resolve names for display.
+				if ( in_array( $flosc_type, array( 'category', 'tag' ), true ) ) {
+					$flosc_term = get_term( intval( $flosc_value ) );
+					if ( $flosc_term && ! is_wp_error( $flosc_term ) ) {
+						$flosc_item['slug'] = $flosc_term->slug;
+						$flosc_item['name'] = $flosc_term->name;
+					}
+				} elseif ( in_array( $flosc_type, array( 'post', 'page' ), true ) ) {
+					$flosc_post_obj = get_post( intval( $flosc_value ) );
+					if ( $flosc_post_obj ) {
+						$flosc_item['name'] = $flosc_post_obj->post_title;
+					}
+				}
+				$flosc_protected_content[] = $flosc_item;
+			}
+			$flosc_new_settings['protected_content'] = $flosc_protected_content;
+
+			/*
+			* The site-wide default, for every post no rule names: one depth per
+			* tier. Ships as full body for everybody, because published is public.
+			* This is where "all titles VGM" or "all excerpts VGM" is set once.
+			*/
+			$flosc_posted_default_vgm = $flosc_post['content_default_vgm'] ?? array();
+			if ( is_array( $flosc_posted_default_vgm ) && flosc_submitted_fields_are_text( $flosc_posted_default_vgm, array( 'visitor', 'guest', 'member' ) ) ) {
+				$flosc_default_vgm = array();
+				foreach ( array( 'visitor', 'guest', 'member' ) as $flosc_tier ) {
+					$flosc_d                          = sanitize_key( (string) ( $flosc_posted_default_vgm[ $flosc_tier ] ?? '' ) );
+					$flosc_default_vgm[ $flosc_tier ] = in_array( $flosc_d, array( 'title', 'excerpt', 'readmore', 'full' ), true )
+					? $flosc_d
+					: 'full';
+				}
+				$flosc_new_settings['content_default_vgm'] = $flosc_default_vgm;
+			}
+
+			// Guest chat entitlements (checkboxes need explicit empty when unchecked).
+			$flosc_new_settings['guest_max_chats'] = max( 0, min( 9999, intval( $flosc_new_settings['guest_max_chats'] ?? 0 ) ) );
+			foreach ( array( 'guest_can_delete_chats', 'guest_can_rename_chats' ) as $flosc_guest_flag ) {
+				$flosc_guest_flag_key = 'flow_' . $flosc_guest_flag;
+				if ( ! isset( $flosc_post[ $flosc_guest_flag_key ] ) ) {
+					$flosc_new_settings[ $flosc_guest_flag ] = '';
+				} elseif ( flosc_submitted_value_is_text( $flosc_post[ $flosc_guest_flag_key ] ) ) {
+					$flosc_new_settings[ $flosc_guest_flag ] = ! empty( $flosc_post[ $flosc_guest_flag_key ] ) ? '1' : '';
 				}
 			}
-			$flosc_protected_content[] = $flosc_item;
-		}
-		$flosc_new_settings['protected_content'] = $flosc_protected_content;
-
-		/*
-		 * The site-wide default, for every post no rule names: one depth per
-		 * tier. Ships as full body for everybody, because published is public.
-		 * This is where "all titles VGM" or "all excerpts VGM" is set once.
-		 */
-		$flosc_default_vgm = array();
-		foreach ( array( 'visitor', 'guest', 'member' ) as $flosc_tier ) {
-			$flosc_d                          = sanitize_key( $flosc_post['content_default_vgm'][ $flosc_tier ] ?? '' );
-			$flosc_default_vgm[ $flosc_tier ] = in_array( $flosc_d, array( 'title', 'excerpt', 'readmore', 'full' ), true )
-				? $flosc_d
-				: 'full';
-		}
-		$flosc_new_settings['content_default_vgm'] = $flosc_default_vgm;
-
-		// Guest chat entitlements (checkboxes need explicit empty when unchecked).
-		$flosc_new_settings['guest_max_chats']        = max( 0, min( 9999, intval( $flosc_new_settings['guest_max_chats'] ?? 0 ) ) );
-		$flosc_new_settings['guest_can_delete_chats'] = ! empty( $flosc_post['flow_guest_can_delete_chats'] ) ? '1' : '';
-		$flosc_new_settings['guest_can_rename_chats'] = ! empty( $flosc_post['flow_guest_can_rename_chats'] ) ? '1' : '';
-		if ( isset( $flosc_post['flow_guest_new_chat_limit_message'] ) ) {
-			$flosc_new_settings['guest_new_chat_limit_message'] = sanitize_textarea_field(
-				wp_unslash( (string) $flosc_post['flow_guest_new_chat_limit_message'] )
-			);
-		}
-		if ( isset( $flosc_new_settings['guest_access_days'] ) ) {
-			$flosc_new_settings['guest_access_days'] = max( 0, min( 365, intval( $flosc_new_settings['guest_access_days'] ) ) );
-		}
-		if ( isset( $flosc_new_settings['free_content_item_count'] ) ) {
-			$flosc_new_settings['free_content_item_count'] = max( 1, min( 50, intval( $flosc_new_settings['free_content_item_count'] ) ) );
-		}
-
-		// Sync to term_meta while class-flosc-content-protection.php still reads term_meta.
-		// Follow-up: move class-flosc-content-protection.php to flow_settings['protected_content']
-		// and then remove this compatibility sync.
-		// First clear old protection flags from categories no longer protected.
-		$flosc_old_protected = $flosc_flow_settings['protected_content'] ?? array();
-		foreach ( $flosc_old_protected as $flosc_old_item ) {
-			if ( 'category' === $flosc_old_item['type'] ) {
-				delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_protected' );
-				delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_required_level' );
+			if ( isset( $flosc_post['flow_guest_new_chat_limit_message'] ) && flosc_submitted_value_is_text( $flosc_post['flow_guest_new_chat_limit_message'] ) ) {
+				$flosc_new_settings['guest_new_chat_limit_message'] = sanitize_textarea_field(
+					wp_unslash( (string) $flosc_post['flow_guest_new_chat_limit_message'] )
+				);
 			}
-		}
-		// Set new protection flags.
-		foreach ( $flosc_protected_content as $flosc_item ) {
-			if ( 'category' === $flosc_item['type'] ) {
-				update_term_meta( intval( $flosc_item['id'] ), '_flosc_protected', 'yes' );
-				if ( ! empty( $flosc_item['level'] ) ) {
-					update_term_meta( intval( $flosc_item['id'] ), '_flosc_required_level', $flosc_item['level'] );
+			if ( isset( $flosc_new_settings['guest_access_days'] ) ) {
+				$flosc_new_settings['guest_access_days'] = max( 0, min( 365, intval( $flosc_new_settings['guest_access_days'] ) ) );
+			}
+			if ( isset( $flosc_new_settings['free_content_item_count'] ) ) {
+				$flosc_new_settings['free_content_item_count'] = max( 1, min( 50, intval( $flosc_new_settings['free_content_item_count'] ) ) );
+			}
+
+			// Sync to term_meta while class-flosc-content-protection.php still reads term_meta.
+			// Follow-up: move class-flosc-content-protection.php to flow_settings['protected_content']
+			// and then remove this compatibility sync.
+			// First clear old protection flags from categories no longer protected.
+			$flosc_old_protected = $flosc_flow_settings['protected_content'] ?? array();
+			foreach ( $flosc_old_protected as $flosc_old_item ) {
+				if ( 'category' === $flosc_old_item['type'] ) {
+					delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_protected' );
+					delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_required_level' );
+				}
+			}
+			// Set new protection flags.
+			foreach ( $flosc_protected_content as $flosc_item ) {
+				if ( 'category' === $flosc_item['type'] ) {
+					update_term_meta( intval( $flosc_item['id'] ), '_flosc_protected', 'yes' );
+					if ( ! empty( $flosc_item['level'] ) ) {
+						update_term_meta( intval( $flosc_item['id'] ), '_flosc_required_level', $flosc_item['level'] );
+					}
 				}
 			}
 		}
@@ -1776,13 +2015,26 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	if ( in_array( $flosc_active_tab, array( 'lessons', 'content' ), true ) ) {
 		$flosc_group_quizzes       = $flosc_post['content_item_group_quiz'] ?? array();
 		$flosc_group_categories    = $flosc_post['content_item_group_category'] ?? array();
+		if ( ! is_array( $flosc_group_quizzes ) ) {
+			$flosc_group_quizzes = array();
+		}
+		if ( ! is_array( $flosc_group_categories ) ) {
+			$flosc_group_categories = array();
+		}
 		$flosc_content_item_groups = array();
 		foreach ( $flosc_group_categories as $flosc_i => $flosc_cat ) {
-			$flosc_cat = sanitize_text_field( $flosc_cat );
+			if ( ! flosc_submitted_value_is_text( $flosc_cat ) ) {
+				continue;
+			}
+			$flosc_cat = sanitize_text_field( (string) $flosc_cat );
 			if ( '' === $flosc_cat ) {
 				continue; // Skip rows with no category selected.
 			}
-			$flosc_quiz                  = sanitize_text_field( $flosc_group_quizzes[ $flosc_i ] ?? '' );
+			$flosc_quiz_raw = $flosc_group_quizzes[ $flosc_i ] ?? '';
+			if ( ! flosc_submitted_value_is_text( $flosc_quiz_raw ) ) {
+				continue;
+			}
+			$flosc_quiz                  = sanitize_text_field( (string) $flosc_quiz_raw );
 			$flosc_content_item_groups[] = array(
 				'quiz_id'  => $flosc_quiz,
 				'category' => $flosc_cat,
@@ -1827,11 +2079,18 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		// Content Types repeater (singular / plural columns).
 		$flosc_ct_singular = $flosc_post['content_type_singular'] ?? array();
 		$flosc_ct_plural   = $flosc_post['content_type_plural'] ?? array();
-		if ( is_array( $flosc_ct_singular ) ) {
+		if ( is_array( $flosc_ct_singular ) && is_array( $flosc_ct_plural ) ) {
 			$flosc_content_types = array();
 			foreach ( $flosc_ct_singular as $flosc_i => $flosc_s ) {
+				if ( ! flosc_submitted_value_is_text( $flosc_s ) ) {
+					continue;
+				}
+				$flosc_p_raw = $flosc_ct_plural[ $flosc_i ] ?? '';
+				if ( ! flosc_submitted_value_is_text( $flosc_p_raw ) ) {
+					$flosc_p_raw = '';
+				}
 				$flosc_s = sanitize_text_field( wp_unslash( (string) $flosc_s ) );
-				$flosc_p = sanitize_text_field( wp_unslash( (string) ( $flosc_ct_plural[ $flosc_i ] ?? '' ) ) );
+				$flosc_p = sanitize_text_field( wp_unslash( (string) $flosc_p_raw ) );
 				if ( '' === $flosc_s && '' === $flosc_p ) {
 					continue;
 				}
@@ -1861,23 +2120,23 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	// Chat navigation settings are managed from the Profile Bar tab.
 	if ( 'ui' === $flosc_active_tab ) {
 		// Chat list chrome (flow-scoped labels / new-chat welcome copy).
-		if ( isset( $flosc_post['flow_new_chat_button_label'] ) ) {
+		if ( isset( $flosc_post['flow_new_chat_button_label'] ) && flosc_submitted_value_is_text( $flosc_post['flow_new_chat_button_label'] ) ) {
 			$flosc_new_settings['new_chat_button_label'] = sanitize_text_field(
 				wp_unslash( (string) $flosc_post['flow_new_chat_button_label'] )
 			);
 		}
 		// first_chat_title removed: session title is always "New Chat" on create, then auto/rename.
-		if ( isset( $flosc_post['flow_empty_chat_list_message'] ) ) {
+		if ( isset( $flosc_post['flow_empty_chat_list_message'] ) && flosc_submitted_value_is_text( $flosc_post['flow_empty_chat_list_message'] ) ) {
 			$flosc_new_settings['empty_chat_list_message'] = sanitize_text_field(
 				wp_unslash( (string) $flosc_post['flow_empty_chat_list_message'] )
 			);
 		}
-		if ( isset( $flosc_post['flow_guest_new_chat_welcome_message'] ) ) {
+		if ( isset( $flosc_post['flow_guest_new_chat_welcome_message'] ) && flosc_submitted_value_is_text( $flosc_post['flow_guest_new_chat_welcome_message'] ) ) {
 			$flosc_new_settings['guest_new_chat_welcome_message'] = sanitize_textarea_field(
 				wp_unslash( (string) $flosc_post['flow_guest_new_chat_welcome_message'] )
 			);
 		}
-		if ( isset( $flosc_post['flow_member_new_chat_welcome_message'] ) ) {
+		if ( isset( $flosc_post['flow_member_new_chat_welcome_message'] ) && flosc_submitted_value_is_text( $flosc_post['flow_member_new_chat_welcome_message'] ) ) {
 			$flosc_new_settings['member_new_chat_welcome_message'] = sanitize_textarea_field(
 				wp_unslash( (string) $flosc_post['flow_member_new_chat_welcome_message'] )
 			);
@@ -1886,116 +2145,150 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		// Visitor menu — dynamic items from repeater.
 		$flosc_menu_labels  = $flosc_post['visitor_menu_label'] ?? array();
 		$flosc_menu_actions = $flosc_post['visitor_menu_action'] ?? array();
-		$flosc_new_menu     = array();
-		foreach ( $flosc_menu_labels as $flosc_i => $flosc_label ) {
-			$flosc_label       = sanitize_text_field( $flosc_label );
-			$flosc_menu_action = sanitize_text_field( $flosc_menu_actions[ $flosc_i ] ?? '' );
-			if ( '' !== $flosc_label && '' !== $flosc_menu_action ) {
-				$flosc_new_menu[] = array(
-					'label'  => $flosc_label,
-					'action' => $flosc_menu_action,
-				);
+		if ( flosc_submitted_list_is_text( $flosc_menu_labels ) && flosc_submitted_list_is_text( $flosc_menu_actions ) ) {
+			$flosc_new_menu = array();
+			foreach ( $flosc_menu_labels as $flosc_i => $flosc_label ) {
+				$flosc_label       = sanitize_text_field( (string) $flosc_label );
+				$flosc_menu_action = sanitize_text_field( (string) ( $flosc_menu_actions[ $flosc_i ] ?? '' ) );
+				if ( '' !== $flosc_label && '' !== $flosc_menu_action ) {
+					$flosc_new_menu[] = array(
+						'label'  => $flosc_label,
+						'action' => $flosc_menu_action,
+					);
+				}
 			}
+			update_option( 'flosc_visitor_menu_items', $flosc_new_menu );
 		}
-		update_option( 'flosc_visitor_menu_items', $flosc_new_menu );
 
 		// v1.9.8: Guest menu — dynamic items from repeater
 		// Purchase/offer actions are the profile-bar Upgrade button, not plain menu rows.
 		$flosc_guest_labels   = $flosc_post['guest_menu_label'] ?? array();
 		$flosc_guest_actions  = $flosc_post['guest_menu_action'] ?? array();
-		$flosc_new_guest_menu = array();
-		foreach ( $flosc_guest_labels as $flosc_i => $flosc_label ) {
-			$flosc_label       = sanitize_text_field( $flosc_label );
-			$flosc_menu_action = sanitize_text_field( $flosc_guest_actions[ $flosc_i ] ?? '' );
-			if ( '' === $flosc_label || '' === $flosc_menu_action ) {
-				continue;
+		if ( flosc_submitted_list_is_text( $flosc_guest_labels ) && flosc_submitted_list_is_text( $flosc_guest_actions ) ) {
+			$flosc_new_guest_menu = array();
+			foreach ( $flosc_guest_labels as $flosc_i => $flosc_label ) {
+				$flosc_label       = sanitize_text_field( (string) $flosc_label );
+				$flosc_menu_action = sanitize_text_field( (string) ( $flosc_guest_actions[ $flosc_i ] ?? '' ) );
+				if ( '' === $flosc_label || '' === $flosc_menu_action ) {
+					continue;
+				}
+				if ( 'open_sandbox_purchase' === $flosc_menu_action || 0 === strpos( $flosc_menu_action, 'show_offer' ) ) {
+					continue;
+				}
+				$flosc_new_guest_menu[] = array(
+					'label'  => $flosc_label,
+					'action' => $flosc_menu_action,
+				);
 			}
-			if ( 'open_sandbox_purchase' === $flosc_menu_action || 0 === strpos( $flosc_menu_action, 'show_offer' ) ) {
-				continue;
-			}
-			$flosc_new_guest_menu[] = array(
-				'label'  => $flosc_label,
-				'action' => $flosc_menu_action,
-			);
+			update_option( 'flosc_guest_menu_items', $flosc_new_guest_menu );
 		}
-		update_option( 'flosc_guest_menu_items', $flosc_new_guest_menu );
 
 		// v1.9.8: Member menu — dynamic items from repeater.
-		$flosc_member_labels   = $flosc_post['member_menu_label'] ?? array();
-		$flosc_member_actions  = $flosc_post['member_menu_action'] ?? array();
-		$flosc_new_member_menu = array();
-		foreach ( $flosc_member_labels as $flosc_i => $flosc_label ) {
-			$flosc_label       = sanitize_text_field( $flosc_label );
-			$flosc_menu_action = sanitize_text_field( $flosc_member_actions[ $flosc_i ] ?? '' );
-			if ( '' === $flosc_label || '' === $flosc_menu_action ) {
-				continue;
+		$flosc_member_labels  = $flosc_post['member_menu_label'] ?? array();
+		$flosc_member_actions = $flosc_post['member_menu_action'] ?? array();
+		if ( flosc_submitted_list_is_text( $flosc_member_labels ) && flosc_submitted_list_is_text( $flosc_member_actions ) ) {
+			$flosc_new_member_menu = array();
+			foreach ( $flosc_member_labels as $flosc_i => $flosc_label ) {
+				$flosc_label       = sanitize_text_field( (string) $flosc_label );
+				$flosc_menu_action = sanitize_text_field( (string) ( $flosc_member_actions[ $flosc_i ] ?? '' ) );
+				if ( '' === $flosc_label || '' === $flosc_menu_action ) {
+					continue;
+				}
+				if ( 'open_sandbox_purchase' === $flosc_menu_action || 0 === strpos( $flosc_menu_action, 'show_offer' ) ) {
+					continue;
+				}
+				$flosc_new_member_menu[] = array(
+					'label'  => $flosc_label,
+					'action' => $flosc_menu_action,
+				);
 			}
-			if ( 'open_sandbox_purchase' === $flosc_menu_action || 0 === strpos( $flosc_menu_action, 'show_offer' ) ) {
-				continue;
-			}
-			$flosc_new_member_menu[] = array(
-				'label'  => $flosc_label,
-				'action' => $flosc_menu_action,
-			);
+			update_option( 'flosc_member_menu_items', $flosc_new_member_menu );
 		}
-		update_option( 'flosc_member_menu_items', $flosc_new_member_menu );
 
 		// Login destination — v1.9.8: now a URL, not a key.
-		$flosc_login_dest = trim( $flosc_post['flosc_login_destination'] ?? '' );
-		update_option( 'flosc_login_destination', '' !== $flosc_login_dest ? esc_url_raw( $flosc_login_dest ) : '' );
+		if ( ! isset( $flosc_post['flosc_login_destination'] ) || flosc_submitted_value_is_text( $flosc_post['flosc_login_destination'] ) ) {
+			$flosc_login_dest = trim( (string) ( $flosc_post['flosc_login_destination'] ?? '' ) );
+			update_option( 'flosc_login_destination', '' !== $flosc_login_dest ? esc_url_raw( $flosc_login_dest ) : '' );
+		}
 	}
 
 	// v8.0.1: Profile Bar tab now manages profile-bar state labels and badges only.
 	if ( 'ui' === $flosc_active_tab ) {
 
-		$flosc_allowed_avatar_radii  = array( '8px', '50%', '4px', '0' );
-		$flosc_visitor_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_visitor_avatar_radius'] ?? ( $flosc_post['flow_avatar_radius'] ?? '8px' ) ) );
-		if ( ! in_array( $flosc_visitor_avatar_radius, $flosc_allowed_avatar_radii, true ) ) {
-			$flosc_visitor_avatar_radius = '8px';
-		}
-		$flosc_guest_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_guest_avatar_radius'] ?? '8px' ) );
-		if ( ! in_array( $flosc_guest_avatar_radius, $flosc_allowed_avatar_radii, true ) ) {
-			$flosc_guest_avatar_radius = '8px';
-		}
-		$flosc_member_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_member_avatar_radius'] ?? '8px' ) );
-		if ( ! in_array( $flosc_member_avatar_radius, $flosc_allowed_avatar_radii, true ) ) {
-			$flosc_member_avatar_radius = '8px';
-		}
-
-		// Profile bar per-state settings.
-		$flosc_profile_bar = array(
-			'visitor' => array(
-				'name'          => sanitize_text_field( $flosc_post['profile_bar_visitor_name'] ?? 'Visitor' ),
-				'badge'         => sanitize_text_field( $flosc_post['profile_bar_visitor_badge'] ?? 'Hope you enjoy our chat :-)' ),
-				'icon'          => sanitize_text_field( $flosc_post['profile_bar_visitor_icon'] ?? '👋' ),
-				'icon_url'      => esc_url_raw( $flosc_post['profile_bar_visitor_icon_url'] ?? '' ),
-				'avatar_radius' => $flosc_visitor_avatar_radius,
-				'show_upgrade'  => isset( $flosc_post['profile_bar_visitor_show_upgrade'] ) && '1' === $flosc_post['profile_bar_visitor_show_upgrade'],
-				'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_visitor_upgrade_label'] ?? 'Upgrade' ),
-			),
-			'guest'   => array(
-				'name'          => sanitize_text_field( $flosc_post['profile_bar_guest_name'] ?? '' ),
-				'badge'         => sanitize_text_field( $flosc_post['profile_bar_guest_badge'] ?? 'Guest' ),
-				'icon'          => sanitize_text_field( $flosc_post['profile_bar_guest_icon'] ?? '' ),
-				'icon_url'      => esc_url_raw( $flosc_post['profile_bar_guest_icon_url'] ?? '' ),
-				'avatar_radius' => $flosc_guest_avatar_radius,
-				'show_upgrade'  => isset( $flosc_post['profile_bar_guest_show_upgrade'] ) && '1' === $flosc_post['profile_bar_guest_show_upgrade'],
-				'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_guest_upgrade'] ?? 'Upgrade to Pro' ),
-			),
-			'member'  => array(
-				'name'          => sanitize_text_field( $flosc_post['profile_bar_member_name'] ?? '' ),
-				'badge'         => sanitize_text_field( $flosc_post['profile_bar_member_badge'] ?? 'Member' ),
-				'icon'          => sanitize_text_field( $flosc_post['profile_bar_member_icon'] ?? '' ),
-				'icon_url'      => esc_url_raw( $flosc_post['profile_bar_member_icon_url'] ?? '' ),
-				'avatar_radius' => $flosc_member_avatar_radius,
-				'show_upgrade'  => isset( $flosc_post['profile_bar_member_show_upgrade'] ) && '1' === $flosc_post['profile_bar_member_show_upgrade'],
-				'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_member_upgrade_label'] ?? 'Upgrade' ),
-			),
+		$flosc_profile_bar_fields = array(
+			'profile_bar_visitor_avatar_radius',
+			'flow_avatar_radius',
+			'profile_bar_guest_avatar_radius',
+			'profile_bar_member_avatar_radius',
+			'profile_bar_visitor_name',
+			'profile_bar_visitor_badge',
+			'profile_bar_visitor_icon',
+			'profile_bar_visitor_icon_url',
+			'profile_bar_visitor_show_upgrade',
+			'profile_bar_visitor_upgrade_label',
+			'profile_bar_guest_name',
+			'profile_bar_guest_badge',
+			'profile_bar_guest_icon',
+			'profile_bar_guest_icon_url',
+			'profile_bar_guest_show_upgrade',
+			'profile_bar_guest_upgrade',
+			'profile_bar_member_name',
+			'profile_bar_member_badge',
+			'profile_bar_member_icon',
+			'profile_bar_member_icon_url',
+			'profile_bar_member_show_upgrade',
+			'profile_bar_member_upgrade_label',
 		);
-		update_option( 'flosc_profile_bar', $flosc_profile_bar );
+		if ( flosc_submitted_fields_are_text( $flosc_post, $flosc_profile_bar_fields ) ) {
+			$flosc_allowed_avatar_radii  = array( '8px', '50%', '4px', '0' );
+			$flosc_visitor_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_visitor_avatar_radius'] ?? ( $flosc_post['flow_avatar_radius'] ?? '8px' ) ) );
+			if ( ! in_array( $flosc_visitor_avatar_radius, $flosc_allowed_avatar_radii, true ) ) {
+				$flosc_visitor_avatar_radius = '8px';
+			}
+			$flosc_guest_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_guest_avatar_radius'] ?? '8px' ) );
+			if ( ! in_array( $flosc_guest_avatar_radius, $flosc_allowed_avatar_radii, true ) ) {
+				$flosc_guest_avatar_radius = '8px';
+			}
+			$flosc_member_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_member_avatar_radius'] ?? '8px' ) );
+			if ( ! in_array( $flosc_member_avatar_radius, $flosc_allowed_avatar_radii, true ) ) {
+				$flosc_member_avatar_radius = '8px';
+			}
 
-		// Legacy compatibility path for any runtime still reading flow-level avatar radius.
-		$flosc_new_settings['avatar_radius'] = $flosc_visitor_avatar_radius;
+			// Profile bar per-state settings.
+			$flosc_profile_bar = array(
+				'visitor' => array(
+					'name'          => sanitize_text_field( $flosc_post['profile_bar_visitor_name'] ?? 'Visitor' ),
+					'badge'         => sanitize_text_field( $flosc_post['profile_bar_visitor_badge'] ?? 'Hope you enjoy our chat :-)' ),
+					'icon'          => sanitize_text_field( $flosc_post['profile_bar_visitor_icon'] ?? '👋' ),
+					'icon_url'      => esc_url_raw( $flosc_post['profile_bar_visitor_icon_url'] ?? '' ),
+					'avatar_radius' => $flosc_visitor_avatar_radius,
+					'show_upgrade'  => isset( $flosc_post['profile_bar_visitor_show_upgrade'] ) && '1' === $flosc_post['profile_bar_visitor_show_upgrade'],
+					'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_visitor_upgrade_label'] ?? 'Upgrade' ),
+				),
+				'guest'   => array(
+					'name'          => sanitize_text_field( $flosc_post['profile_bar_guest_name'] ?? '' ),
+					'badge'         => sanitize_text_field( $flosc_post['profile_bar_guest_badge'] ?? 'Guest' ),
+					'icon'          => sanitize_text_field( $flosc_post['profile_bar_guest_icon'] ?? '' ),
+					'icon_url'      => esc_url_raw( $flosc_post['profile_bar_guest_icon_url'] ?? '' ),
+					'avatar_radius' => $flosc_guest_avatar_radius,
+					'show_upgrade'  => isset( $flosc_post['profile_bar_guest_show_upgrade'] ) && '1' === $flosc_post['profile_bar_guest_show_upgrade'],
+					'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_guest_upgrade'] ?? 'Upgrade to Pro' ),
+				),
+				'member'  => array(
+					'name'          => sanitize_text_field( $flosc_post['profile_bar_member_name'] ?? '' ),
+					'badge'         => sanitize_text_field( $flosc_post['profile_bar_member_badge'] ?? 'Member' ),
+					'icon'          => sanitize_text_field( $flosc_post['profile_bar_member_icon'] ?? '' ),
+					'icon_url'      => esc_url_raw( $flosc_post['profile_bar_member_icon_url'] ?? '' ),
+					'avatar_radius' => $flosc_member_avatar_radius,
+					'show_upgrade'  => isset( $flosc_post['profile_bar_member_show_upgrade'] ) && '1' === $flosc_post['profile_bar_member_show_upgrade'],
+					'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_member_upgrade_label'] ?? 'Upgrade' ),
+				),
+			);
+			update_option( 'flosc_profile_bar', $flosc_profile_bar );
+
+			// Legacy compatibility path for any runtime still reading flow-level avatar radius.
+			$flosc_new_settings['avatar_radius'] = $flosc_visitor_avatar_radius;
+		}
 	}
 
 	if ( 'administration' === $flosc_active_tab ) {
@@ -2014,21 +2307,30 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			);
 			$flosc_protection          = get_option( 'flosc_public_request_protection', array() );
 			$flosc_protection          = is_array( $flosc_protection ) ? $flosc_protection : array();
-			foreach ( $flosc_protection_defaults as $flosc_protection_key => $flosc_protection_default ) {
-				if ( 'enabled' === $flosc_protection_key || 'retry_after_429' === $flosc_protection_key ) {
-					$flosc_protection[ $flosc_protection_key ] = isset( $flosc_post['flosc_public_request_protection'][ $flosc_protection_key ] )
-						? '1'
-						: '0';
-					continue;
+			$flosc_posted_protection   = $flosc_post['flosc_public_request_protection'] ?? null;
+			if ( null === $flosc_posted_protection || is_array( $flosc_posted_protection ) ) {
+				$flosc_posted_protection = is_array( $flosc_posted_protection ) ? $flosc_posted_protection : array();
+				foreach ( $flosc_protection_defaults as $flosc_protection_key => $flosc_protection_default ) {
+					if ( 'enabled' === $flosc_protection_key || 'retry_after_429' === $flosc_protection_key ) {
+						if ( ! array_key_exists( $flosc_protection_key, $flosc_posted_protection ) ) {
+							$flosc_protection[ $flosc_protection_key ] = '0';
+						} elseif ( flosc_submitted_value_is_text( $flosc_posted_protection[ $flosc_protection_key ] ) ) {
+							$flosc_protection[ $flosc_protection_key ] = '1';
+						}
+						continue;
+					}
+					if ( array_key_exists( $flosc_protection_key, $flosc_posted_protection ) && ! flosc_submitted_value_is_text( $flosc_posted_protection[ $flosc_protection_key ] ) ) {
+						continue;
+					}
+					// Clamped rather than trusted: a zero would lock every visitor
+					// out of the site, and an unbounded value is not a limit.
+					$flosc_protection[ $flosc_protection_key ] = max(
+						1,
+						min( 10000, absint( $flosc_posted_protection[ $flosc_protection_key ] ?? $flosc_protection_default ) )
+					);
 				}
-				// Clamped rather than trusted: a zero would lock every visitor
-				// out of the site, and an unbounded value is not a limit.
-				$flosc_protection[ $flosc_protection_key ] = max(
-					1,
-					min( 10000, absint( $flosc_post['flosc_public_request_protection'][ $flosc_protection_key ] ?? $flosc_protection_default ) )
-				);
+				update_option( 'flosc_public_request_protection', $flosc_protection, false );
 			}
-			update_option( 'flosc_public_request_protection', $flosc_protection, false );
 
 			/*
 			 * What FLOSC tells the AI provider about itself.
@@ -2039,60 +2341,71 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			 * missing key would silently mean "on" and the floscAdmin could
 			 * never turn either of them off.
 			 */
-			$flosc_identity = get_option( 'flosc_provider_identity', array() );
-			$flosc_identity = is_array( $flosc_identity ) ? $flosc_identity : array();
-			foreach ( array( 'enabled', 'send_site' ) as $flosc_identity_key ) {
-				$flosc_identity[ $flosc_identity_key ] = isset( $flosc_post['flosc_provider_identity'][ $flosc_identity_key ] )
-					? '1'
-					: '0';
+			$flosc_identity        = get_option( 'flosc_provider_identity', array() );
+			$flosc_identity        = is_array( $flosc_identity ) ? $flosc_identity : array();
+			$flosc_posted_identity = $flosc_post['flosc_provider_identity'] ?? null;
+			if ( null === $flosc_posted_identity || is_array( $flosc_posted_identity ) ) {
+				$flosc_posted_identity = is_array( $flosc_posted_identity ) ? $flosc_posted_identity : array();
+				foreach ( array( 'enabled', 'send_site' ) as $flosc_identity_key ) {
+					if ( ! array_key_exists( $flosc_identity_key, $flosc_posted_identity ) ) {
+						$flosc_identity[ $flosc_identity_key ] = '0';
+					} elseif ( flosc_submitted_value_is_text( $flosc_posted_identity[ $flosc_identity_key ] ) ) {
+						$flosc_identity[ $flosc_identity_key ] = '1';
+					}
+				}
+				update_option( 'flosc_provider_identity', $flosc_identity, false );
 			}
-			update_option( 'flosc_provider_identity', $flosc_identity, false );
 
-			$flosc_allowed_debug_modes = array( 'inherit', 'on', 'off' );
-			$flosc_debug_mode          = sanitize_key( $flosc_post['flosc_debug_mode'] ?? 'inherit' );
-			if ( ! in_array( $flosc_debug_mode, $flosc_allowed_debug_modes, true ) ) {
-				$flosc_debug_mode = 'inherit';
+			if ( ! isset( $flosc_post['flosc_debug_mode'] ) || flosc_submitted_value_is_text( $flosc_post['flosc_debug_mode'] ) ) {
+				$flosc_allowed_debug_modes = array( 'inherit', 'on', 'off' );
+				$flosc_debug_mode          = sanitize_key( (string) ( $flosc_post['flosc_debug_mode'] ?? 'inherit' ) );
+				if ( ! in_array( $flosc_debug_mode, $flosc_allowed_debug_modes, true ) ) {
+					$flosc_debug_mode = 'inherit';
+				}
+				update_option( 'flosc_debug_mode', $flosc_debug_mode );
 			}
-			update_option( 'flosc_debug_mode', $flosc_debug_mode );
 		}
 
 		// Site admin assigns floscEditors (Editor or above) to this flow.
-		if ( current_user_can( 'manage_options' ) && isset( $flosc_post['flosc_update_flosc_editors'] ) ) {
-			$flosc_selected_editor_ids = array_map( 'intval', (array) ( $flosc_post['flosc_flow_editors'] ?? array() ) );
+		if ( current_user_can( 'manage_options' ) && isset( $flosc_post['flosc_update_flosc_editors'] ) && flosc_submitted_value_is_text( $flosc_post['flosc_update_flosc_editors'] ) ) {
+			$flosc_editor_raw = $flosc_post['flosc_flow_editors'] ?? array();
+			if ( flosc_submitted_list_is_text( $flosc_editor_raw ) ) {
+				$flosc_selected_editor_ids = array_map( 'intval', $flosc_editor_raw );
 
-			$flosc_assignable_users = get_users(
-				array(
-					'role__in' => array( 'administrator', 'editor' ),
-					'fields'   => array( 'ID', 'roles' ),
-				)
-			);
+				$flosc_assignable_users = get_users(
+					array(
+						'role__in' => array( 'administrator', 'editor' ),
+						'fields'   => array( 'ID', 'roles' ),
+					)
+				);
 
-			$flosc_allowed_user_ids = array();
-			foreach ( $flosc_assignable_users as $flosc_assignable_user ) {
-				$flosc_allowed_user_ids[] = (int) $flosc_assignable_user->ID;
-			}
-
-			$flosc_selected_editor_ids = array_values( array_intersect( $flosc_selected_editor_ids, $flosc_allowed_user_ids ) );
-
-			$flosc_current_team     = flosc_flows()->get_flow_users( $flosc_selected_flow_id );
-			$flosc_current_team_ids = array_map(
-				static function ( $flosc_user ) {
-					return (int) $flosc_user->ID;
-				},
-				$flosc_current_team
-			);
-
-			// Remove users no longer selected.
-			foreach ( $flosc_current_team_ids as $flosc_uid ) {
-				if ( ! in_array( $flosc_uid, $flosc_selected_editor_ids, true ) ) {
-					flosc_flows()->revoke_flow_access( $flosc_uid, $flosc_selected_flow_id );
+				$flosc_allowed_user_ids = array();
+				foreach ( $flosc_assignable_users as $flosc_assignable_user ) {
+					$flosc_allowed_user_ids[] = (int) $flosc_assignable_user->ID;
 				}
-			}
 
-			// Grant selected Editor+ users; admins naturally retain global authority.
-			foreach ( $flosc_selected_editor_ids as $flosc_uid ) {
-				if ( user_can( $flosc_uid, 'edit_others_posts' ) ) {
-					flosc_flows()->grant_flow_access( $flosc_uid, $flosc_selected_flow_id );
+				$flosc_selected_editor_ids = array_values( array_intersect( $flosc_selected_editor_ids, $flosc_allowed_user_ids ) );
+
+				$flosc_current_team     = flosc_flows()->get_flow_users( $flosc_selected_flow_id );
+				$flosc_current_team_ids = array_map(
+					static function ( $flosc_user ) {
+						return (int) $flosc_user->ID;
+					},
+					$flosc_current_team
+				);
+
+				// Remove users no longer selected.
+				foreach ( $flosc_current_team_ids as $flosc_uid ) {
+					if ( ! in_array( $flosc_uid, $flosc_selected_editor_ids, true ) ) {
+						flosc_flows()->revoke_flow_access( $flosc_uid, $flosc_selected_flow_id );
+					}
+				}
+
+				// Grant selected Editor+ users; admins naturally retain global authority.
+				foreach ( $flosc_selected_editor_ids as $flosc_uid ) {
+					if ( user_can( $flosc_uid, 'edit_others_posts' ) ) {
+						flosc_flows()->grant_flow_access( $flosc_uid, $flosc_selected_flow_id );
+					}
 				}
 			}
 		}
@@ -2242,6 +2555,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	</h1>
 
 	<?php
+	$flosc_settings_notice = get_transient( 'flosc_settings_notice_' . get_current_user_id() );
+	if ( is_string( $flosc_settings_notice ) && '' !== $flosc_settings_notice ) {
+		delete_transient( 'flosc_settings_notice_' . get_current_user_id() );
+		add_settings_error( 'flosc_settings', 'personality_profile_invalid', $flosc_settings_notice, 'error' );
+	}
 	// Portability upload, import, delete, etc. use add_settings_error( 'flosc_settings', … ).
 	settings_errors( 'flosc_settings' );
 	?>

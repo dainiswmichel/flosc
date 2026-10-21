@@ -588,6 +588,9 @@ class FLOSC_Checkout_Rest {
 				401
 			);
 		}
+		if ( ! flosc_rest_fields_are_text( $request, array( '_wpnonce', 'flow_id', 'product_id', 'offer_id', 'amount' ) ) ) {
+			return new WP_Error( 'invalid_request_shape', __( 'Please check the purchase fields and try again.', 'flosc' ), array( 'status' => 400 ) );
+		}
 
 		// Verify nonce for REST security.
 		$nonce = $request->get_header( 'X-WP-Nonce' );
@@ -737,6 +740,9 @@ class FLOSC_Checkout_Rest {
 	 * @return mixed
 	 */
 	public function create_payment_intent( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'offer_id', 'coupon_code', 'flow_id' ) ) ) {
+			return new WP_Error( 'invalid_request_shape', __( 'Please check the purchase fields and try again.', 'flosc' ), array( 'status' => 400 ) );
+		}
 		// Stripe is first-class: requires publishable + secret keys on Payments (per-flow WPDB).
 		$stripe = $this->flosc->sale()->get_provider( 'stripe' );
 		if ( ! $stripe || ! $stripe->is_configured() ) {
@@ -807,6 +813,9 @@ class FLOSC_Checkout_Rest {
 	 * @param mixed $request Request.
 	 */
 	public function complete_purchase( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'payment_intent_id', 'offer_id', 'flow_id' ) ) ) {
+			return new WP_Error( 'invalid_request_shape', __( 'Please check the purchase fields and try again.', 'flosc' ), array( 'status' => 400 ) );
+		}
 		$payment_intent_id = sanitize_text_field( $request->get_param( 'payment_intent_id' ) );
 		$offer_id          = sanitize_text_field( $request->get_param( 'offer_id' ) );
 
@@ -931,6 +940,9 @@ class FLOSC_Checkout_Rest {
 	 * @return WP_REST_Response
 	 */
 	public function handle_checkout_binding( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'session_id', 'flow_id', 'offer_id', 'provider' ) ) ) {
+			return new WP_Error( 'invalid_request_shape', __( 'Please check the checkout fields and try again.', 'flosc' ), array( 'status' => 400 ) );
+		}
 		$session_id = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
 		$flow_id    = sanitize_text_field( (string) $request->get_param( 'flow_id' ) );
 		$offer_id   = sanitize_text_field( (string) $request->get_param( 'offer_id' ) );
@@ -1002,6 +1014,9 @@ class FLOSC_Checkout_Rest {
 	 * @return mixed
 	 */
 	public function check_access( $request ) {
+		if ( ! flosc_rest_fields_are_text( $request, array( 'flow_id' ) ) ) {
+			return new WP_Error( 'invalid_request_shape', __( 'Please check the flow field and try again.', 'flosc' ), array( 'status' => 400 ) );
+		}
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(
 				array(

@@ -1,0 +1,10 @@
+Internal Iteration: v174
+Installable copy: pre-release-candidates/grok-4-6/flosc.zip
+Source tree: pre-release-candidates/grok-4-6/flosc-by-grok-4-6/flosc
+Parent commit: 2d57b06db17665d86329f6e215b658509f091b79
+Version: 8.0.0
+Requires at least: 7.1
+Requires PHP: 7.4
+Zip SHA-256: 16b2c2bd0e363a067d07e68b8a19c22d602762af29101131c1e688b7f29f769d
+Zip files: 243
+Zip entries: 283

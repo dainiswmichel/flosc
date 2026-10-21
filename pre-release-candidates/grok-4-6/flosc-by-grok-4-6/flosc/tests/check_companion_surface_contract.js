@@ -136,4 +136,42 @@ ok(registersBeforeFlush(packs),
 ok(registersBeforeFlush(upload),
     'uploaded flow registration adds the new rule before flushing');
 
+const enqueueStart = framework.indexOf('public function enqueue_assets()');
+const enqueueEnd = framework.indexOf('public function enqueue_companion()', enqueueStart);
+const enqueueAssets = framework.slice(enqueueStart, enqueueEnd);
+ok(enqueueStart !== -1 && enqueueEnd > enqueueStart,
+    'the asset-enqueue function is present');
+ok(!enqueueAssets.includes("wp_enqueue_script( 'paypal-js'")
+    && !enqueueAssets.includes("$flosc_app_deps[] = 'paypal-js'"),
+    'the initial app page does not enqueue or depend on PayPal');
+ok(template.includes("'paypalClientId'")
+    && template.includes("'paypalCurrency'")
+    && template.includes("'paypalSdkIntent'"),
+    'the app receives the public PayPal loader configuration');
+
+const paypalLoaderStart = app.indexOf('loadPayPalSdk()');
+const paypalLoaderEnd = app.indexOf('renderPayPalSdkError(', paypalLoaderStart);
+const paypalLoader = app.slice(paypalLoaderStart, paypalLoaderEnd);
+ok(paypalLoaderStart !== -1 && paypalLoaderEnd > paypalLoaderStart
+    && paypalLoader.includes('this._paypalSdkPromise')
+    && paypalLoader.includes("document.createElement('script')")
+    && paypalLoader.includes('script.async = true'),
+    'PayPal uses one cached asynchronous SDK request');
+ok(paypalLoader.includes('https://www.paypal.com/sdk/js?')
+    && paypalLoader.includes("components: 'buttons'")
+    && paypalLoader.includes("params.set('vault', 'true')")
+    && paypalLoader.includes("script.addEventListener('error'"),
+    'the PayPal loader preserves subscription configuration and retry recovery');
+
+const paymentModalStart = app.indexOf('async showPaymentModal(offerId)');
+const paymentModalEnd = app.indexOf('\n    _bindPaymentModalChrome(modal) {', paymentModalStart);
+const paymentModal = app.slice(paymentModalStart, paymentModalEnd);
+ok(paymentModalStart !== -1 && paymentModalEnd > paymentModalStart
+    && paymentModal.includes('await this.loadPayPalSdk()')
+    && paymentModal.includes('Loading secure checkout...')
+    && paymentModal.includes('this.renderPayPalSdkError(paypalContainer, offerId)'),
+    'opening PayPal checkout owns its loading and retry states');
+ok((app.match(/this\.loadPayPalSdk\(\)/g) || []).length === 1,
+    'startup and unrelated interfaces do not load PayPal');
+
 process.exit(failures === 0 ? 0 : 1);

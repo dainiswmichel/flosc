@@ -1,8 +1,16 @@
 /* FLOSC admin bridge: same-page workshop, save to library. */
 (function () {
   var wp = window.floscPersonalityWp;
+  var pendingWarning = "";
   if (!wp || !wp.ajaxUrl) {
     return;
+  }
+
+  try {
+    pendingWarning = window.sessionStorage.getItem("floscPersonalityWarning") || "";
+    window.sessionStorage.removeItem("floscPersonalityWarning");
+  } catch (ignore) {
+    pendingWarning = "";
   }
 
   function builderApi() {
@@ -56,14 +64,27 @@
     };
   }
 
-  function setStatus(text, ok) {
+  function setStatus(text, ok, warning) {
     var el = document.getElementById("flosc-personality-builder-status");
     if (!el) {
       return;
     }
     el.textContent = text;
-    el.classList.remove("is-ok", "is-err");
-    el.classList.add(ok ? "is-ok" : "is-err");
+    el.classList.remove("is-ok", "is-err", "notice", "notice-warning", "inline");
+    if (warning) {
+      el.classList.add("notice", "notice-warning", "inline");
+    } else {
+      el.classList.add(ok ? "is-ok" : "is-err");
+    }
+  }
+
+  function setLoadedStatus(text) {
+    if (pendingWarning) {
+      setStatus(pendingWarning, true, true);
+      pendingWarning = "";
+      return;
+    }
+    setStatus(text, true);
   }
 
   /* ---------------------------------------------------------------
@@ -220,7 +241,8 @@
           unsaved = false;
           markState("is-saved");
           setSavedStamp(json.data && json.data.saved_at ? json.data.saved_at : "");
-          setStatus((json.data && json.data.message) || wp.i18n.saved, true);
+          var warning = json.data && json.data.warning ? json.data.warning : "";
+          setStatus(warning || (json.data && json.data.message) || wp.i18n.saved, true, !!warning);
         } else {
           var msg = json && json.data && json.data.message ? json.data.message : wp.i18n.error;
           markState("is-unsaved");
@@ -269,15 +291,17 @@
     fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: body })
       .then(function (r) { return r.json(); })
       .then(function (json) {
+        var warning;
         if (!json || !json.success) {
           setStatus((json && json.data && json.data.message) || wp.i18n.error, false);
           if (done) { done(false); }
           return;
         }
+        warning = json.data && json.data.warning ? json.data.warning : "";
         /* Created. Attach it to this flow so the builder opens it on reload —
            the builder always edits the personality this flow is attached to. */
         if (!wp.attachNonce || !wp.ivr) {
-          setStatus("Created " + label + ". Attach it on this tab to edit it.", true);
+          setStatus(warning || "Created " + label + ". Attach it on this tab to edit it.", true, !!warning);
           if (done) { done(true, id); }
           return;
         }
@@ -291,6 +315,13 @@
           .then(function () {
             unsaved = false;
             if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
+            if (warning) {
+              try {
+                window.sessionStorage.setItem("floscPersonalityWarning", warning);
+              } catch (ignore) {
+                pendingWarning = warning;
+              }
+            }
             setStatus("Created " + label + ". Opening it\u2026", true);
             window.location.reload();
           });
@@ -380,7 +411,7 @@
           bootDiag("import ran but canvas is empty", "cards=" + cardCount + " expected>=" + activeCount);
         } else {
           if (window.console && console.info) console.info("[flosc designer] imported " + wp.personaId + " — " + cardCount + " cards on canvas");
-          setStatus("Loaded " + (wp.entry && wp.entry.label ? wp.entry.label : wp.personaId) + " (" + cardCount + " aspects)", true);
+          setLoadedStatus("Loaded " + (wp.entry && wp.entry.label ? wp.entry.label : wp.personaId) + " (" + cardCount + " aspects)");
         }
         return;
       } catch (e) {
@@ -416,7 +447,7 @@
       api.render();
     }
     if (hasProfile) {
-      setStatus("Loaded " + (wp.entry && wp.entry.label ? wp.entry.label : wp.personaId) + " profile", true);
+      setLoadedStatus("Loaded " + (wp.entry && wp.entry.label ? wp.entry.label : wp.personaId) + " profile");
     }
   }
 
