@@ -37,6 +37,58 @@ class FLOSC_DA1_Catalogs {
 	);
 
 	/**
+	 * Resolve a submitted catalog key against the catalogs on disk.
+	 *
+	 * @param mixed $raw        Submitted catalog key.
+	 * @param array $known_keys Catalog keys present on disk.
+	 * @return string
+	 */
+	public static function save_catalog_key( $raw, array $known_keys ) {
+		if ( ! is_string( $raw ) ) {
+			return '';
+		}
+
+		$key = preg_replace( '/[^a-z0-9._-]/', '', strtolower( trim( $raw ) ) );
+		if ( '' === $key || ! in_array( $key, $known_keys, true ) ) {
+			return '';
+		}
+
+		return $key;
+	}
+
+	/**
+	 * Confirm that submitted catalog columns and cells are text.
+	 *
+	 * @param mixed $columns Submitted column names.
+	 * @param mixed $rows    Submitted rows.
+	 * @return bool
+	 */
+	public static function table_is_text( $columns, $rows ) {
+		if ( ! is_array( $columns ) || ! is_array( $rows ) ) {
+			return false;
+		}
+
+		foreach ( $columns as $column ) {
+			if ( ! is_string( $column ) ) {
+				return false;
+			}
+		}
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				return false;
+			}
+			foreach ( $row as $cell ) {
+				if ( ! is_string( $cell ) ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Build a deterministic catalog reply when the user clearly asks about an
 	 * assigned DA1 catalog or names an available item.
 	 *
