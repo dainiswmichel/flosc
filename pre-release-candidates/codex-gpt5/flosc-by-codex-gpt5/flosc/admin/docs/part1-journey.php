@@ -138,7 +138,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>An AI model was added as the fallback for anything the IVR didn't cover. Because the IVR handles scripted moments, the AI only deals with the gaps — which keeps cost predictable and keeps key messages reliable. Multiple providers are supported on a bring-your-own-key basis.</p>
 
 <h3 id="era-payment-access">Era 5: Payment and Access Control (v1.8–v1.9)</h3>
-<p>The Sale system landed: payment providers (Stripe, PayPal), offer management, token-based credit, and affiliate support. Access control tied purchase records to content visibility, the Visitor / Guest / Member model was formalized, and chat logging with admin feedback arrived in v1.9.</p>
+<p>The Sale system landed: payment providers (Stripe, PayPal), offer management, and token-based credit. Access control tied purchase records to content visibility, the Visitor / Guest / Member model was formalized, and chat logging with admin feedback arrived in v1.9.</p>
 
 <h3 id="era-multi-flow">Era 6: Multi-Flow Architecture (v1.9.5+)</h3>
 <p>The Flow system turned single-product FLOSC into a multi-product one. A single WordPress install can run several independent flows, each with its own branding, IVR file, AI configuration, quiz, offers, and domain mapping — for example a publisher running separate funnels for a poetry collection, a workshop, and a membership, all from one plugin.</p>

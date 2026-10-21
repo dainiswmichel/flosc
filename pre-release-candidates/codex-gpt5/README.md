@@ -1,59 +1,70 @@
-# FLOSC 8.0.0 — Codex candidate v175
+# FLOSC 8.0.0 — Codex candidate v180
 
 Source tree: `flosc-by-codex-gpt5/flosc`. Installable artifact: `flosc.zip`.
 The public plugin version and stable tag remain 8.0.0. The internal iteration is
-v175.
+v180.
 
 ## Scope
 
-This candidate fully remediates WordPress.org review Issue 06 without changing
-purchased member-level assignment or login behavior:
+This candidate starts from GitHub `main` commit
+`004f6e74eb039b0be3adc4d6209d9dec5fce80ab` and contains one bounded DA1
+starter-pack repair:
 
-- every FLOSC account-creation path supplies an explicitly validated role to
-  `wp_insert_user()`;
-- SSO once again starts with `subscriber`, then applies the existing SSO role
-  and user-data filters before final role validation;
-- roles with user, plugin, theme, core, network, options, file-editing, or
-  unfiltered-HTML administration capabilities cannot be assigned at account
-  creation;
-- an unavailable or privileged fallback `subscriber` role stops account
-  creation instead of silently creating an account; and
-- the regression test executes the resolver and verifies all five account-
-  creation paths, rather than certifying source strings.
+- a valid, access-filtered DA1 catalog reply is returned directly instead of
+  being handed to the configured AI provider for rewriting;
+- a deterministic catalog reply does not reserve or charge AI tokens and does
+  not retain provider billing/request metadata;
+- the DA1 starter prompts explicitly request the complete catalog subset
+  available to Visitor, Guest, or Member; and
+- the DA1 starter README names the files that actually ship and accurately
+  explains automatic pack installation and Media Library import.
+
+The added CLI regression exercises the real starter catalog and verifies that
+the visitor reply contains the four public titles, excludes the guest-only
+title, and that Visitor and Guest receive 4 and 8 rows respectively.
+
+This change does not redesign the separate mapping between the catalog's 50
+metadata rows, the starter pack's 10 WordPress demonstration posts, and the
+single paid UberManual PDF. That broader content-connection work remains a
+post-submission starter-pack task.
+
+Registration, login, SSO, flow editing, offers, payments, and purchased access
+were not edited for v180.
 
 ## Provenance
 
-- Base v174 commit: `5afca498bb60ea4b042c2673845f39fddc41b576`
-- v175 code commit: `6b16801ba85bc91a483bbc6e99a12c35ca77fa91`
-- Commit name: `Home run candidate v175 coded by Codex.`
+- GitHub baseline and header `Github HashID`:
+  `004f6e74eb039b0be3adc4d6209d9dec5fce80ab`
+- Candidate artifact commit: `PENDING_PUBLICATION`
+- Required commit subject: `Home run candidate v180 coded by Codex.`
 - Michel date: `2026-10m-21d`
 
-## Verification
+## Verification actually run
 
 - Source PHP syntax: 213 files, 0 failures.
-- ZIP/live PHP syntax: 154 files, 0 failures.
-- `tests/check_registration_role_boundary.php`: passed all assertions.
-- `tests/check_login_action_boundary.php`: passed all 12 assertions.
-- PHPCompatibilityWP, PHP 7.4: passed on all changed shipping files.
-- WordPress PHPCS on changed shipping files: 0 errors; 23 inherited warnings
-  (15 nonce recommendations and 8 unrelated formatting warnings).
-- Exact ZIP release gate: all available metadata, security, review-defect,
-  disclosure, and syntax checks passed. Official Plugin Check is explicitly
-  unverified because this shell has no booting `WP_PATH`.
-- ZIP integrity: passed; one `flosc/` root; no tests, vendor, candidates, or
-  development tooling.
-- Live deployment: exact extracted ZIP synchronized to the FLOSC plugin
-  directory; checksum comparison found no differing or stale runtime files.
-- Live HTTP smoke check: `https://dainis.net/chat/` returned HTTP 200.
+- PHPCompatibilityWP for PHP 7.4: passed across the complete candidate source.
+- `tests/check-da1-chat-routing.php`: passed.
+- `tests/check_da1_grid_save.php`: passed.
+- `tests/test_starter_pack_install.php`: all checks passed.
+- PHPCS on the changed production PHP and new regression: 0 errors; 1 inherited
+  alignment warning in `trait-flosc-chat-turn.php`.
+- ZIP build: passed; one `flosc/` root, 242 files, 153 PHP files, and no tests.
+
+The raw `--standard=WordPress` scan across all source, CSS, JavaScript, and test
+harnesses reported 76,314 errors and 7,532 warnings, overwhelmingly inherited
+front-end/test formatting findings. The v180 shipping PHP edit itself has zero
+PHPCS errors. The artifact release gate was stopped at Dainis's request rather
+than spending more time on locally repeatable checks. Official Plugin Check and
+browser/runtime behavior for this v180 patch remain unverified.
 
 ## Exact artifact
 
 ```text
-57a669602fceab73b19be584d1a7d87df67aaf51b276897fa95b0e3bca1926bd  flosc.zip
+25aeb53390a058d8670eedb7d89763d71df1cd042f8386c6d0707f1a5606a3ec  flosc.zip
 ```
 
-- ZIP size: 2,842,613 bytes
-- ZIP entries: 283
-- Runtime files: 243
-- Runtime PHP files: 154
-- Runtime manifest SHA-256: `f72b7e8dcaaa180fe97d439282c425756f5ad10d0d438f62f8bbbce934db0c31`
+- ZIP size: 2,836,149 bytes
+- ZIP entries: 282
+- Runtime files: 242
+- Runtime PHP files: 153
+- Runtime manifest SHA-256: `abeaee1a2e9b16b45e51efeb59de61778113fd692b1a96646c363f7370c501e1`

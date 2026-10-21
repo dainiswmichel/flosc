@@ -3,7 +3,7 @@
  * FLOSC Token Payment Provider
  *
  * Internal credit/token system for pay-per-use features.
- * Tokens can be earned through affiliate purchases or bought with real money.
+ * Tokens can be granted by FLOSC or bought with real money.
  *
  * @package FLOSC
  */
@@ -316,7 +316,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
 		$wpdb->query( 'START TRANSACTION' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- atomic token/affiliate ledger under transaction; no WP API for row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Atomic token ledger under transaction; no WP API for row lock.
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
@@ -341,7 +341,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 				array( '%d', '%s', '%s' )
 			);
             // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 			$row = $wpdb->get_row(
 				$wpdb->prepare(
 					"SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
@@ -356,13 +356,13 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		}
 
 		if ( ! $locked ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'debit_failed', __( 'Could not lock token balance', 'flosc' ) );
 		}
 
 		if ( $current < $amount ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'insufficient_balance', __( 'Insufficient token balance', 'flosc' ) );
 		}
@@ -378,11 +378,11 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		);
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
 		if ( false === $updated ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'debit_failed', __( 'Token debit failed', 'flosc' ) );
 		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 		$wpdb->query( 'COMMIT' );
 		wp_cache_delete( $user_id, 'user_meta' );
 
@@ -498,36 +498,6 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		}
 
 		return $bonus;
-	}
-
-	/**
-	 * Convert tokens from affiliate earnings
-	 *
-	 * @param mixed $user_id          User ID.
-	 * @param mixed $affiliate_amount Affiliate amount.
-	 * @param mixed $affiliate_meta   Affiliate meta.
-	 */
-	public function credit_from_affiliate( $user_id, $affiliate_amount, $affiliate_meta = array() ) {
-		// How many tokens one unit of affiliate commission buys. Ten by default.
-		$rate   = intval( $this->get_setting( 'affiliate_conversion_rate', 10 ) );
-		$tokens = round( $affiliate_amount * $rate );
-
-		if ( $tokens > 0 ) {
-			return $this->credit(
-				$user_id,
-				$tokens,
-				'Affiliate commission',
-				array_merge(
-					$affiliate_meta,
-					array(
-						'affiliate_amount' => $affiliate_amount,
-						'conversion_rate'  => $rate,
-					)
-				)
-			);
-		}
-
-		return 0;
 	}
 
 	/**

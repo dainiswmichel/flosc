@@ -27,14 +27,12 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
 * **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.1 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
-* **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
 == Other Notes ==
 
 = Included Features =
 
 * Create and manage unlimited FloscFlows — FLOSC chatbots served across unlimited domains
-* Unlimited visitors and sessions
 * Quiz builder with conditional branching
 * Content unlock and offer gating
 * Local storage in WordPress database
@@ -54,11 +52,11 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = How It Works =
 
-1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology, in which callers receive and provide information by using voice or menu inputs, floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths -- all while drawing from your WordPress content and configurable content database. 
-2. **Set Up Your AI Provider** - Attach Anthropic, OpenAI, xAI, or Gemini, paste your own API key, and (for OpenAI / Anthropic / Gemini) install that provider's official WordPress plugin. IVR stays scripted with no plugin.
+1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths. 
+2. **Set Up Your AI Provider** - Anthropic, OpenAI, xAI, or Gemini.
 3. **Build Your Flow** - Create quizzes, define conditions, add payment offers, and unlock content pages
-4. **Publish** - Visitors access the flow and experience your full conversational sales journey on your WordPress site
-5. **Review Results** - Track quiz completions, offer views, and conversions directly in WordPress
+4. **Publish** - Visitors access the flow and experience your full conversational sales journey
+5. **Review Results** - Track quiz completions and conversions
 
 = Technical Details =
 
@@ -109,6 +107,8 @@ Four packs ship with FLOSC:
 * **DA1 Catalog Sales Journey** - Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.
 * **Vegan Latvian Kitchen** - Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.
 
+The DA1 Catalog Sales Journey and the Vegan Latvian Kitchen each include a `catalog.txt` file. A catalog is the site owner's list of lessons, compositions, works of art, poems, products, services, projects, or case studies. The VGM column marks who may receive that row. Visitor is public. Guest is a person with a WordPress account. Member is a member level, including a complimentary membership. The installer copies `catalog.txt` out of the plugin into the site's FLOSC catalog folder as a tab-separated `.tsv` file. The copy inside the plugin is the example the installer reads. Replace the rows with your own list and keep the columns.
+
 Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
 
 All four are example content. Delete them, or take them apart and replace the subject with your own.
@@ -147,7 +147,7 @@ Current per-provider pocket rules are dated MTS 26_08m_20d on the Personality De
 
 = What are DA1 Catalogs? =
 
-DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Catalogs are stored as TSV datasets in the WordPress uploads directory and can be assigned to specific flows.
+DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Visitor is public. Guest is a logged-in WordPress account. Member is a member level, including a complimentary membership. The starter packs ship the example rows as `catalog.txt`. Installing a pack stores that list as a tab-separated `.tsv` file in the WordPress uploads directory, and a flow can use that catalog.
 
 = Where does visitor data get stored? =
 
@@ -299,11 +299,11 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 * Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
 * Included admin documentation updates for WordPress.org submission
 
-= Code standard =
+== Code standard ==
 
 FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
 
-= Support & Contribution =
+== Support & Contribution ==
 
 For support, feature requests, or bug reports, visit:
 * [FLOSC.ai](https://flosc.ai)
@@ -311,7 +311,7 @@ For support, feature requests, or bug reports, visit:
 
 FLOSC is an open-source project. Contributions welcome!
 
-= Stay Connected =
+== Stay Connected ==
 
 * Author: [solopreneur Dainis W. Michel](https://dainis.net)
 * Project: [FLOSC.ai](https://flosc.ai)
@@ -443,7 +443,7 @@ Privacy policy: determined by the configured endpoint provider.
 16. WordPress core oEmbed (in-chat media players)
 Endpoint: this site's `/flosc/v1/oembed` (GET). Resolution uses WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient.
 Purpose: render provider-native players under media links in assistant messages for YouTube, TikTok, Spotify, SoundCloud, Apple Music, and Vimeo.
-Data sent: the media URL. The visitor's browser then loads the provider player. FLOSC does not send visitor identity, email, or IP to these providers on this path.
+Data sent: FLOSC sends the media URL to WordPress core for oEmbed resolution. If the player is displayed, the visitor's browser connects directly to that media provider, which receives ordinary web-request information such as the IP address, browser headers, and any provider cookies. FLOSC does not send the visitor's WordPress user ID or email on this path.
 Service terms: https://www.youtube.com/t/terms , https://www.tiktok.com/legal/page/us/terms-of-service , https://www.spotify.com/legal/end-user-agreement/ , https://soundcloud.com/terms-of-use , https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ , https://vimeo.com/terms
 Privacy policy: https://policies.google.com/privacy , https://www.tiktok.com/legal/page/us/privacy-policy , https://www.spotify.com/legal/privacy-policy/ , https://soundcloud.com/pages/privacy , https://www.apple.com/legal/privacy/ , https://vimeo.com/privacy
 

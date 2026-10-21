@@ -56,6 +56,8 @@ function wp_insert_attachment($args, $file, $parent = 0, $err = false) {
     return $id;
 }
 function wp_delete_attachment($id, $force = false) { global $ATTACH; unset($ATTACH[$id]); return true; }
+function wp_get_attachment_url($id) { global $ATTACH; return isset($ATTACH[$id]) ? 'https://example.test/uploads/' . basename($ATTACH[$id]['file']) : false; }
+function esc_url_raw($url) { return filter_var((string) $url, FILTER_SANITIZE_URL); }
 function wp_delete_term($id, $tax) { global $TERMS; unset($TERMS[$id]); return true; }
 function add_term_meta($id, $k, $v, $u = false) { global $TERMMETA; $TERMMETA[$id][$k] = $v; return true; }
 function get_term_meta($id, $k, $single = true) { global $TERMMETA; return $TERMMETA[$id][$k] ?? ''; }
@@ -267,6 +269,39 @@ foreach (['vegan-latvian-kitchen', 'membership-craft'] as $newpack) {
     ok("  tier split", $tiers);
     ok("  flow carries its personality",
         get_option($rec['flow_option'])['personality_library_id'] ?? null);
+	if ($newpack === 'vegan-latvian-kitchen') {
+		$cookbook_content = '';
+		foreach ($POSTS as $id => $pp) {
+			if (get_post_meta($id, '_flosc_starter_pack') === $newpack && (int) get_post_meta($id, '_flosc_starter_pack_item') === 15) {
+				$cookbook_content = (string) ($pp['post_content'] ?? '');
+				break;
+			}
+		}
+		ok('  cookbook uses its local Media Library URL', strpos($cookbook_content, 'https://example.test/uploads/vegan-latvian-kitchen-cookbook.pdf') !== false, true);
+		ok('  cookbook does not retain the sample-site URL', strpos($cookbook_content, 'www.vlat.lv') === false, true);
+		ok('  cookbook asset placeholder was resolved', strpos($cookbook_content, '{{flosc_asset_url:') === false, true);
+
+		$cookbook_id = 0;
+		foreach ($POSTS as $id => $pp) {
+			if (get_post_meta($id, '_flosc_starter_pack') === $newpack && (int) get_post_meta($id, '_flosc_starter_pack_item') === 15) {
+				$cookbook_id = $id;
+				break;
+			}
+		}
+		wp_delete_post($cookbook_id, true);
+		$rep = FLOSC_Starter_Packs::repair($newpack);
+		ok('  repair restores the missing cookbook post', !empty($rep['ok']), true);
+		$repaired = '';
+		foreach ($POSTS as $id => $pp) {
+			if (get_post_meta($id, '_flosc_starter_pack') === $newpack && (int) get_post_meta($id, '_flosc_starter_pack_item') === 15) {
+				$repaired = (string) ($pp['post_content'] ?? '');
+				break;
+			}
+		}
+		ok('  repaired cookbook uses its local Media Library URL', strpos($repaired, 'https://example.test/uploads/vegan-latvian-kitchen-cookbook.pdf') !== false, true);
+		ok('  repaired cookbook has no sample-site URL', strpos($repaired, 'www.vlat.lv') === false, true);
+		ok('  repaired cookbook has no unresolved placeholder', strpos($repaired, '{{flosc_asset_url:') === false, true);
+	}
 }
 
 echo "\n== the voice switch ==\n";

@@ -14,11 +14,17 @@ $10 USD.
 
 FILES
 -----
-DCSJ.md
+flow_ivr.md
     FLOSC IVR / portable flow configuration for the DA1 Catalog Sales Journey.
 
-50-catalog-items.tsv
+catalog.txt
     DA1 catalog with 50 catalog items.
+
+content.json
+    Ten demonstration posts used by the flow's WordPress content index.
+
+pack.json
+    Starter-pack manifest used by the FLOSC installer.
 
 UberManual.pdf
     The compiled paid demonstration product containing all 50 manuals.
@@ -76,30 +82,30 @@ Price: $10 USD
 Type: one-time purchase
 Grant: member
 
-DCSJ.md seeds the $10 offer and Member grant. It is configured for PayPal as the
+flow_ivr.md seeds the $10 offer and Member grant. It is configured for PayPal as the
 starter processor; the FLOSC admin must supply valid payment credentials in the
 flow's Payments settings before a live transaction can run.
 
-UberManual.pdf is included in this pack as the demonstration product. The current
-portable IVR format seeds offer copy, price, and access behavior but does not encode
-a local downloadable-file attachment. After import, the FLOSC admin should place
-UberManual.pdf in the site's chosen protected/download location and connect that
-file to the site's post-purchase delivery method.
+UberManual.pdf is included in this pack as the demonstration product. The starter-
+pack installer copies it into the WordPress Media Library. The FLOSC admin must
+connect that local attachment to the site's chosen protected post-purchase delivery
+method before accepting payment.
 
 PERSONALITY
 -----------
-No personality file is included. DCSJ.md references the existing DadJokeDan
+No personality file is included. flow_ivr.md references the existing DadJokeDan
 personality by personality_library_id. Change that reference in FLOSC if another
 installed personality should curate the journey.
 
 BASIC SETUP
 -----------
-1. Import / create the DA1 catalog from 50-catalog-items.tsv.
-2. Import DCSJ.md as the IVR / flow configuration.
-3. Confirm the referenced personality exists, or select another installed one.
+1. Install this starter pack from FLOSC's Starter Packs screen.
+2. Confirm the referenced DadJokeDan personality exists, or select another installed
+   personality.
+3. Confirm the catalog is assigned to dcsj_ivr.md on the DA1 screen.
 4. Configure the payment credentials for the flow.
-5. Put UberManual.pdf in the site's protected/download delivery location and
-   connect it to the successful-purchase experience.
+5. Connect the imported UberManual Media Library attachment to the site's chosen
+   protected post-purchase delivery method.
 6. Test the journey as Visitor, Guest, and purchasing customer.
 
 EXPECTED EXPERIENCE
