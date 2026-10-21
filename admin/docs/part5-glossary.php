@@ -348,7 +348,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>PayPal's testing environment for payment development. FLOSC supports sandbox mode via a toggle in the Payments admin page. Sandbox mode uses separate PayPal credentials and processes no real money. The admin can test the full purchase flow without actual payment.</p>
 
 <h3 id="term-payment-provider">Payment Provider</h3>
-<p>An implementation of <code>class-flosc-payment-provider.php</code> that handles a specific payment gateway. Current providers: Stripe (<code>class-flosc-stripe-provider.php</code>), PayPal (<code>class-flosc-paypal-provider.php</code>), ClickBank (<code>class-flosc-clickbank-provider.php</code>), Token (<code>class-flosc-token-provider.php</code>), and Affiliate (<code>class-flosc-affiliate-provider.php</code>).</p>
+<p>An implementation of <code>class-flosc-payment-provider.php</code> that handles a specific payment gateway. Current providers: Stripe (<code>class-flosc-stripe-provider.php</code>), PayPal (<code>class-flosc-paypal-provider.php</code>), ClickBank (<code>class-flosc-clickbank-provider.php</code>), and Token (<code>class-flosc-token-provider.php</code>).</p>
 
 <h3 id="term-phase">Phase (Visitor / Freeline / Member)</h3>
 <p>One of three runtime states that determine which IVR messages, AI context, and content access apply to the current user. Visitor = not logged in. Guest/Freeline = logged in, no purchase. Member = logged in, purchased. Determined by <code>determine_flosc_phase()</code>.</p>

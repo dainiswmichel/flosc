@@ -2614,14 +2614,11 @@ The Team',
 				'status'        => 'active',
 				'display_price' => '$97',
 				'pricing'       => array(
-					'stripe'    => array(
+					'stripe' => array(
 						'price_id' => '', // The operator sets this in the Payments tab; there is no usable default.
 					),
-					'tokens'    => array(
+					'tokens' => array(
 						'cost' => 1000,
-					),
-					'affiliate' => array(
-						'credit_amount' => 97.00,
 					),
 				),
 				'grants'        => array(
@@ -10437,64 +10434,6 @@ Example good response:
 				'ledger'  => $token_provider->get_ledger( $user_id, 10 ),
 			)
 		);
-	}
-
-	/**
-	 * REST: record what a user is looking for, so offers can be matched to it.
-	 *
-	 * Part of the affiliate path: rather than guessing, the user says what they
-	 * want, roughly what they expect to pay and how soon, and offers are found
-	 * against that.
-	 *
-	 * @param WP_REST_Request $request Expects description, and optionally category,
-	 *                                 expected_price, timeframe and notes.
-	 * @return WP_REST_Response|WP_Error The stored intent, or an error when the
-	 *                                   affiliate provider is not configured.
-	 */
-	public function declare_intent( $request ) {
-		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
-
-		if ( ! $affiliate || ! $affiliate->is_configured() ) {
-			return new WP_Error( 'not_configured', __( 'Affiliate system not configured', 'flosc' ), array( 'status' => 500 ) );
-		}
-
-		$intent = $affiliate->declare_intent(
-			get_current_user_id(),
-			array(
-				'description'    => sanitize_text_field( $request->get_param( 'description' ) ),
-				'category'       => sanitize_text_field( $request->get_param( 'category' ) ?? 'general' ),
-				'expected_price' => floatval( $request->get_param( 'expected_price' ) ?? 0 ),
-				'timeframe'      => sanitize_text_field( $request->get_param( 'timeframe' ) ?? 'exploring' ),
-				'notes'          => sanitize_textarea_field( $request->get_param( 'notes' ) ?? '' ),
-			)
-		);
-
-		return new WP_REST_Response( array( 'intent' => $intent ) );
-	}
-
-	/**
-	 * REST: the offers matching one of the current user's declared intents.
-	 *
-	 * The intent must belong to the calling user: it is looked up in their own
-	 * intents rather than by id alone, so one user cannot read another's.
-	 *
-	 * @param WP_REST_Request $request Expects the intent id.
-	 * @return WP_REST_Response|WP_Error The matching offers, or a 404 when the
-	 *                                   intent is not theirs.
-	 */
-	public function get_intent_offers( $request ) {
-		$intent_id = $request->get_param( 'id' );
-		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
-
-		$intents = $affiliate->get_intents( get_current_user_id() );
-
-		if ( ! isset( $intents[ $intent_id ] ) ) {
-			return new WP_Error( 'not_found', __( 'Intent not found', 'flosc' ), array( 'status' => 404 ) );
-		}
-
-		$offers = $affiliate->find_offers_for_intent( $intents[ $intent_id ] );
-
-		return new WP_REST_Response( array( 'offers' => $offers ) );
 	}
 
 	/**

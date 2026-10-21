@@ -72,7 +72,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<li><strong>Sessions:</strong> <code>/sessions</code> (GET/POST), <code>/sessions/{id}</code> (GET/PUT/DELETE)</li>
 	<li><strong>Offers and purchase:</strong> <code>/offers</code>, <code>/offer-content</code>, <code>/purchase</code>, <code>/sandbox-purchase</code>, <code>/free-lesson</code></li>
 	<li><strong>Payments:</strong> <code>/create-payment-intent</code>, <code>/complete-purchase</code>, <code>/paypal/create-order</code>, <code>/paypal/capture-order</code>, <code>/paypal/get-plans</code>, <code>/paypal/activate-subscription</code>, <code>/webhooks/{provider}</code></li>
-	<li><strong>Access and intent:</strong> <code>/access</code>, <code>/tokens</code>, <code>/intents</code>, <code>/intents/{id}/offers</code>, <code>/referral</code></li>
+	<li><strong>Access and referral:</strong> <code>/access</code>, <code>/tokens</code>, <code>/referral</code></li>
 	<li><strong>Lessons:</strong> <code>/lessons</code>, <code>/lessons/{id}</code>, <code>/lessons/free</code></li>
 	<li><strong>Utility/admin:</strong> <code>/nonce</code>, <code>/test-ai</code>, <code>/register-email</code>, <code>/update-guest-profile</code>, <code>/feedback</code>, <code>/praises</code>, <code>/redeem-access-code</code></li>
 </ul>

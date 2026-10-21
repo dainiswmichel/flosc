@@ -443,7 +443,7 @@ Privacy policy: determined by the configured endpoint provider.
 16. WordPress core oEmbed (in-chat media players)
 Endpoint: this site's `/flosc/v1/oembed` (GET). Resolution uses WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient.
 Purpose: render provider-native players under media links in assistant messages for YouTube, TikTok, Spotify, SoundCloud, Apple Music, and Vimeo.
-Data sent: the media URL. The visitor's browser then loads the provider player. FLOSC does not send visitor identity, email, or IP to these providers on this path.
+Data sent: FLOSC sends the media URL to WordPress core for oEmbed resolution. If the player is displayed, the visitor's browser connects directly to that media provider, which receives ordinary web-request information such as the IP address, browser headers, and any provider cookies. FLOSC does not send the visitor's WordPress user ID or email on this path.
 Service terms: https://www.youtube.com/t/terms , https://www.tiktok.com/legal/page/us/terms-of-service , https://www.spotify.com/legal/end-user-agreement/ , https://soundcloud.com/terms-of-use , https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ , https://vimeo.com/terms
 Privacy policy: https://policies.google.com/privacy , https://www.tiktok.com/legal/page/us/privacy-policy , https://www.spotify.com/legal/privacy-policy/ , https://soundcloud.com/pages/privacy , https://www.apple.com/legal/privacy/ , https://vimeo.com/privacy
 
