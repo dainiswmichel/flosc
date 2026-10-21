@@ -27,14 +27,12 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
 * **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.1 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
-* **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
 == Other Notes ==
 
 = Included Features =
 
 * Create and manage unlimited FloscFlows — FLOSC chatbots served across unlimited domains
-* Unlimited visitors and sessions
 * Quiz builder with conditional branching
 * Content unlock and offer gating
 * Local storage in WordPress database
@@ -54,11 +52,11 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = How It Works =
 
-1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology, in which callers receive and provide information by using voice or menu inputs, floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths -- all while drawing from your WordPress content and configurable content database. 
-2. **Set Up Your AI Provider** - Attach Anthropic, OpenAI, xAI, or Gemini, paste your own API key, and (for OpenAI / Anthropic / Gemini) install that provider's official WordPress plugin. IVR stays scripted with no plugin.
+1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths. 
+2. **Set Up Your AI Provider** - Anthropic, OpenAI, xAI, or Gemini.
 3. **Build Your Flow** - Create quizzes, define conditions, add payment offers, and unlock content pages
-4. **Publish** - Visitors access the flow and experience your full conversational sales journey on your WordPress site
-5. **Review Results** - Track quiz completions, offer views, and conversions directly in WordPress
+4. **Publish** - Visitors access the flow and experience your full conversational sales journey
+5. **Review Results** - Track quiz completions and conversions
 
 = Technical Details =
 
