@@ -158,3 +158,81 @@ function flosc_site_content_index() {
 function flosc_sale() {
 	return FLOSC_Sale_Manager::instance();
 }
+
+/**
+ * Role stored on a new FLOSC account at insertion.
+ *
+ * A paid member level is applied later by FLOSC_Member_Access::grant_level().
+ * A filter may propose the account role. A malformed, missing, or privileged
+ * role falls back to subscriber only when subscriber is itself available and
+ * nonprivileged. When neither role is safe, account creation must stop.
+ *
+ * @param mixed $requested_role Role proposed by the caller or a filter.
+ * @return string|WP_Error Role slug for wp_insert_user(), or an error when no
+ *                         safe registration role exists.
+ */
+function flosc_registration_role( $requested_role ) {
+	$blocked = array(
+		'manage_options',
+		'create_users',
+		'edit_users',
+		'delete_users',
+		'promote_users',
+		'remove_users',
+		'activate_plugins',
+		'install_plugins',
+		'update_plugins',
+		'delete_plugins',
+		'edit_plugins',
+		'switch_themes',
+		'install_themes',
+		'update_themes',
+		'delete_themes',
+		'edit_themes',
+		'edit_theme_options',
+		'update_core',
+		'edit_files',
+		'unfiltered_html',
+		'manage_network',
+		'manage_sites',
+		'manage_network_users',
+		'manage_network_plugins',
+		'manage_network_themes',
+		'manage_network_options',
+		'setup_network',
+	);
+	$roles   = array();
+	if ( is_string( $requested_role ) ) {
+		$role = sanitize_key( $requested_role );
+		if ( '' !== $role ) {
+			$roles[] = $role;
+		}
+	}
+	if ( ! in_array( 'subscriber', $roles, true ) ) {
+		$roles[] = 'subscriber';
+	}
+
+	foreach ( $roles as $role ) {
+		$role_obj = get_role( $role );
+		if ( ! ( $role_obj instanceof WP_Role ) || ! is_array( $role_obj->capabilities ) ) {
+			continue;
+		}
+
+		$safe = true;
+		foreach ( $blocked as $cap ) {
+			if ( ! empty( $role_obj->capabilities[ $cap ] ) ) {
+				$safe = false;
+				break;
+			}
+		}
+		if ( $safe ) {
+			return $role;
+		}
+	}
+
+	return new WP_Error(
+		'flosc_no_safe_registration_role',
+		__( 'FLOSC could not create the account because no safe registration role is available.', 'flosc' ),
+		array( 'status' => 500 )
+	);
+}
