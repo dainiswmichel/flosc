@@ -1165,6 +1165,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		<?php elseif ( ! $flosc_pack_has_rows ) : ?>
 			<p class="description"><?php echo esc_html__( 'No data set files on this flow yet. Drop .tsv / WXR / media above (Apply), or Create with a .md plus data files.', 'flosc' ); ?></p>
 		<?php else : ?>
+		<div class="flosc-portability-table-scroll">
 		<table class="widefat striped flosc-ivr-file-table flosc-pack-assets-table">
 			<thead>
 				<tr>
@@ -1203,7 +1204,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 						<code><?php echo esc_html( $flosc_pack_cat_file ); ?></code>
 						<span class="description"> · <?php echo esc_html( $flosc_pack_cat_label ); ?></span>
 					</td>
-					<td><?php echo esc_html__( 'Assigned', 'flosc' ); ?></td>
+					<td class="flosc-ivr-col-status"><?php echo esc_html__( 'Assigned', 'flosc' ); ?></td>
 					<td>
 						<a href="<?php echo esc_url( $flosc_da1_url ); ?>" class="button button-small"><?php echo esc_html__( 'Open DA1', 'flosc' ); ?></a>
 					</td>
@@ -1228,7 +1229,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				<tr>
 					<td><span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'Posts (WXR)', 'flosc' ); ?></span></td>
 					<td><code><?php echo esc_html( $flosc_wxr_name ); ?></code></td>
-					<td><?php echo esc_html( $flosc_status_label ); ?></td>
+					<td class="flosc-ivr-col-status"><?php echo esc_html( $flosc_status_label ); ?></td>
 					<td>
 						<div class="flosc-ivr-file-action-group">
 							<?php if ( '' !== $flosc_wxr_url ) : ?>
@@ -1277,7 +1278,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 					<td>
 						<code><?php echo esc_html( '' !== $flosc_media_name ? $flosc_media_name : ( 'attachment:' . $flosc_media_id ) ); ?></code>
 					</td>
-					<td><?php echo esc_html( $flosc_media_alive ? __( 'In Media Library', 'flosc' ) : __( 'Missing attachment', 'flosc' ) ); ?></td>
+					<td class="flosc-ivr-col-status"><?php echo esc_html( $flosc_media_alive ? __( 'In Media Library', 'flosc' ) : __( 'Missing attachment', 'flosc' ) ); ?></td>
 					<td>
 						<div class="flosc-ivr-file-action-group">
 							<?php if ( '' !== $flosc_media_url ) : ?>
@@ -1299,6 +1300,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
 		<p class="description">
 			<?php echo esc_html__( 'This list is the data set only. Import posts needs the WordPress Importer for one-click import; Tools → Import works with a downloaded WXR. Personality files are in the table below.', 'flosc' ); ?>
 		</p>
@@ -1314,6 +1316,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			<a href="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="button button-small"><?php echo esc_html__( 'Refresh list', 'flosc' ); ?></a>
 		</div>
 
+		<div class="flosc-portability-table-scroll">
 		<table class="widefat striped flosc-ivr-file-table">
 			<thead>
 				<tr>
@@ -1363,7 +1366,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				?>
 				<tr class="<?php echo esc_attr( $flosc_is_active_row ? 'flosc-ivr-row--active' : '' ); ?>">
 					<td><code><?php echo esc_html( $flosc_ivr_filename ); ?></code></td>
-					<td><?php echo esc_html( $flosc_is_active_row ? __( 'Current flow', 'flosc' ) : __( 'Managed', 'flosc' ) ); ?></td>
+					<td class="flosc-ivr-col-status"><?php echo esc_html( $flosc_is_active_row ? __( 'Current flow', 'flosc' ) : __( 'Managed', 'flosc' ) ); ?></td>
 					<td>
 						<div class="flosc-ivr-file-action-group">
 							<a href="<?php echo esc_url( $flosc_edit_url ); ?>" class="button button-small"><?php echo esc_html__( 'Edit', 'flosc' ); ?></a>
@@ -1389,6 +1392,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
 		<p class="description flosc-flow-portability-actions-help">
 			<?php echo esc_html__( 'Table Apply: merge that personality (.md) into the current flow (same merge rules as the drop zone). Data set files are managed in the Data set table above.', 'flosc' ); ?>
 		</p>

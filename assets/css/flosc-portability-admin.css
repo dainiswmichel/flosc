@@ -323,11 +323,45 @@
 }
 
 .flosc-portability-section {
+	box-sizing: border-box;
+	max-width: 100%;
+	min-width: 0;
 	margin: 18px 0 8px;
 	padding: 12px 14px 14px;
 	border-radius: 8px;
 	border: 1px solid #dcdcde;
 	background: #fcfcfc;
+}
+
+/*
+ * widefat sets width: 100% as a minimum. The file name and the action buttons
+ * then size the table to its content, and that used width is wider than this
+ * card, so the table paints past the card into the admin background.
+ * The scroll box is the card's content width. The table may be wider inside it.
+ */
+.flosc-portability-table-scroll {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.flosc-portability-table-scroll .flosc-ivr-file-table {
+	width: max-content;
+	min-width: 100%;
+	margin-bottom: 0;
+}
+
+.flosc-portability-section .flosc-ivr-col-status {
+	width: auto;
+	white-space: nowrap;
+}
+
+.flosc-portability-section .flosc-ivr-file-action-group {
+	flex-wrap: nowrap;
 }
 
 .flosc-portability-section--personality {
