@@ -25,7 +25,7 @@ you push, rebase your own commits on top, never force-push.**
 > WOW says Dainis — this is ready for re-submission!
 
 The WOW is specifically: BubblyBetty answers, admin changes the Personality
-dropdown mid-conversation, the next reply is unmistakably DadJokeDan. No reload.
+dropdown mid-conversation, the next reply is unmistakably DadJokesDan. No reload.
 
 ## 2. What broke, and why it looked like something else
 
@@ -234,7 +234,7 @@ Not "how to write a soul.md file." The claim is:
 > communicate with AI APIs, creating conversational turns in which the designed
 > AI character truly shines through
 
-BubblyBetty and DadJokeDan already produce that result, and **we know exactly
+BubblyBetty and DadJokesDan already produce that result, and **we know exactly
 why**. This section is why.
 
 ### 9.2 Density is SEQUENCE. This is his insight and it has no counterpart in the literature.

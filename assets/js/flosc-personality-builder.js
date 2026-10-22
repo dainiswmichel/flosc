@@ -2806,7 +2806,7 @@
 
     /*
      * The same three lines the shipped personalities open with. A profile built
-     * here has to be the same kind of document as BubblyBetty and DadJokeDan,
+     * here has to be the same kind of document as BubblyBetty and DadJokesDan,
      * not a near-relative — and the top of the document is, by the density
      * rule, the most privileged position in it.
      *
@@ -5807,7 +5807,7 @@
     state.soul.name = this.value;
     // The label is what a floscAdmin picks from the Attached personality
     // dropdown. It follows the name, so the two cannot drift apart and leave
-    // somebody choosing "Dad Joke Dan" and getting a profile that says
+    // somebody choosing "Dad Jokes Dan" and getting a profile that says
     // something else. The id is untouched — that is what a flow attaches to.
     state.soul.label = this.value;
     persistAndRenderSoon();

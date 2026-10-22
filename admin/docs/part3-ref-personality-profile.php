@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <p>A personality profile is a document. The DA1 AI Personality Builder writes it, the library
 stores it, and the chatpack sends it to the provider at the top of every turn. It is the file
-that makes BubblyBetty bubbly and DadJokeDan tell dad jokes.</p>
+that makes BubblyBetty bubbly and DadJokesDan tell dad jokes.</p>
 
 <p>The builder downloads it as <code>soul.md</code>, by that name, because that is what it is.</p>
 

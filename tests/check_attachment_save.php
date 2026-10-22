@@ -7,15 +7,15 @@
  * what a floscAdmin saw was an indefinite "Attaching…" and then a page reload,
  * with no statement of what had been written — on the one control where being
  * sure matters most, and the one being switched constantly while testing
- * whether BubblyBetty and DadJokeDan stay distinct.
+ * whether BubblyBetty and DadJokesDan stay distinct.
  *
  * Underneath, the handler never checked. update_option() returns false for a
  * failed write and for a write that changed nothing, so its return cannot tell
  * them apart — and this handler ignored it either way. Every attach reported
  * success, including one that never landed.
  *
- * Acceptance, in the Captain's words: choose DadJokeDan, receive a clear saved
- * confirmation, reload the page, and see DadJokeDan still attached.
+ * Acceptance, in the Captain's words: choose DadJokesDan, receive a clear saved
+ * confirmation, reload the page, and see DadJokesDan still attached.
  */
 
 if ( PHP_SAPI !== 'cli' ) {

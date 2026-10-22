@@ -909,7 +909,10 @@ class FLOSC_Companion_Mode {
 			$slug = sanitize_title( (string) $flow['slug'] );
 		}
 		if ( '' !== $slug ) {
-			$candidates[] = esc_url_raw( home_url( '/' . $slug . '/' ), array( 'http', 'https' ) );
+			$local_flow         = $flow_settings;
+			$local_flow['slug'] = $slug;
+			unset( $local_flow['domain'], $local_flow['custom_domain'] );
+			$candidates[] = esc_url_raw( (string) $this->flosc->get_app_url( $local_flow ), array( 'http', 'https' ) );
 		}
 
 		$app = $this->flosc->get_app_url();

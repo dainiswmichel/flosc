@@ -93,14 +93,14 @@ method before accepting payment.
 
 PERSONALITY
 -----------
-No personality file is included. flow_ivr.md references the existing DadJokeDan
+No personality file is included. flow_ivr.md references the existing DadJokesDan
 personality by personality_library_id. Change that reference in FLOSC if another
 installed personality should curate the journey.
 
 BASIC SETUP
 -----------
 1. Install this starter pack from FLOSC's Starter Packs screen.
-2. Confirm the referenced DadJokeDan personality exists, or select another installed
+2. Confirm the referenced DadJokesDan personality exists, or select another installed
    personality.
 3. Confirm the catalog is assigned to dcsj_ivr.md on the DA1 screen.
 4. Configure the payment credentials for the flow.
