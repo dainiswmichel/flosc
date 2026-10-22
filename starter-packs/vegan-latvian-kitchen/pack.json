@@ -2,7 +2,7 @@
   "slug": "vegan-latvian-kitchen",
   "name": "Vegan Latvian Kitchen",
   "summary": "Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.",
-  "conversion": "The full recipe pack and cookbook PDF, $10 one-time or access code garšīgs",
+  "conversion": "The full recipe pack and cookbook PDF, $10 one-time or access code GETFLOSCD",
   "personality": "friendly",
   "installs": [
     "A flow: vlkit_ivr.md",
@@ -30,7 +30,6 @@
       "description": "All fourteen recipes as one bilingual PDF."
     }
   ],
-  "needs_configuration": "The $10 offer ships priced but unpaid-for: add your payment credentials under Payments.",
   "ships": [
     "catalog.txt",
     "content.json",

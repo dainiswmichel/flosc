@@ -168,6 +168,29 @@ class FLOSC_DA1_Catalogs {
 	}
 
 	/**
+	 * Whether a message is asking to buy rather than browse catalog content.
+	 *
+	 * This deliberately stays narrow. Words such as "manual" and "recipe" are
+	 * catalog terms; they only step around catalog matching when the message also
+	 * contains a clear buying signal.
+	 *
+	 * @param mixed $message User message.
+	 * @return bool
+	 */
+	public function has_purchase_intent( $message ) {
+		if ( ! is_string( $message ) ) {
+			return false;
+		}
+
+		$text = $this->normalize_search_text( $message );
+		if ( '' === $text ) {
+			return false;
+		}
+
+		return 1 === preg_match( '/(?:\b(?:buy|purchase|price|cost|pay|payment|order|checkout)\b|\bhow\s+much\b|\bget\s+(?:the\s+)?ubermanual\b|\$\s*\d)/u', $text );
+	}
+
+	/**
 	 * Conservative catalog-intent check. The runtime is called on every chat
 	 * turn, so it must not hijack unrelated conversation.
 	 *

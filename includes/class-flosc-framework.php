@@ -5271,6 +5271,24 @@ The Team',
 	}
 
 	/**
+	 * Whether an offer should answer this message before the DA1 catalog.
+	 *
+	 * @param mixed  $message User message.
+	 * @param string $flow_id Current flow id.
+	 * @return bool
+	 */
+	private function flosc_purchase_intent_has_offer( $message, $flow_id ) {
+		if ( ! $this->da1_catalogs->has_purchase_intent( $message ) ) {
+			return false;
+		}
+
+		$offer_id = flosc_get_setting( 'offer_id', '', (string) $flow_id );
+		$offers   = flosc_get_setting( 'offers', array(), (string) $flow_id );
+
+		return '' !== trim( (string) $offer_id ) || ( is_array( $offers ) && ! empty( $offers ) );
+	}
+
+	/**
 	 * Whether a visitor's message is asking about this flow's catalog.
 	 *
 	 * Delegates to FLOSC_DA1_Catalogs. The rows are loaded and their items extracted first,
@@ -5455,12 +5473,15 @@ The Team',
 		$flosc_da1_access_level = is_array( $eval_context )
 			? (string) ( $eval_context['access_level'] ?? 'visitor' )
 			: 'visitor';
-		$catalog_reply          = $this->flosc_build_da1_catalog_reply(
-			$user_message,
-			$flow_id,
-			$ivr_file,
-			$flosc_da1_access_level
-		);
+		$catalog_reply          = '';
+		if ( ! $this->flosc_purchase_intent_has_offer( $user_message, $flow_id ) ) {
+			$catalog_reply = $this->flosc_build_da1_catalog_reply(
+				$user_message,
+				$flow_id,
+				$ivr_file,
+				$flosc_da1_access_level
+			);
+		}
 		if ( '' !== $catalog_reply ) {
 			return $catalog_reply;
 		}

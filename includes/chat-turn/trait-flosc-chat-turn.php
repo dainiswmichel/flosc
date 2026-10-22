@@ -728,12 +728,15 @@ trait FLOSC_Chat_Turn_Trait {
 		// Rows are filtered by Status, parent Status, Flow Scope, and VGM before
 		// any catalog payload can reach the conversational layer. The resulting
 		// reply is authoritative catalog data, not guidance for a model to rewrite.
-		$da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
-			$message,
-			$flow_id,
-			$ivr_file,
-			(string) ( $eval_context['access_level'] ?? 'visitor' )
-		);
+		$da1_catalog_reply = '';
+		if ( ! $this->flosc_purchase_intent_has_offer( $message, $flow_id ) ) {
+			$da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
+				$message,
+				$flow_id,
+				$ivr_file,
+				(string) ( $eval_context['access_level'] ?? 'visitor' )
+			);
+		}
 		if ( '' !== $da1_catalog_reply ) {
 			$response_message      = array(
 				'content'          => $da1_catalog_reply,

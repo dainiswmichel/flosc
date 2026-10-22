@@ -1,14 +1,14 @@
 {
   "slug": "da1-catalog-sales",
   "name": "DA1 Catalog Sales Journey",
-  "summary": "Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.",
-  "conversion": "The UberManual — all 50 manuals as one PDF, $10",
+  "summary": "Fifty over-serious instruction manuals for ordinary household tasks. Everyone can browse the titles; visitors open four, guests open eight, and members reach all fifty in the compiled UberManual PDF.",
+  "conversion": "The UberManual — all 50 manuals as one PDF, $10 or access code GETFLOSCD",
   "personality": "dadjokedan",
   "installs": [
-    "A flow: dcsj_ivr.md, in DadJokesDan's voice",
-    "A DA1 catalog of 50 items, gated Freeline / Guest / Member",
+    "A flow: dcsj_ivr.md, in Dad Jokes Dan's voice",
+    "A DA1 catalog of 50 visible titles with Visitor / Guest / Member access labels",
     "10 posts in the FLOSC DA1 Catalog Posts category",
-    "The $10 UberManual offer and the PDF itself"
+    "The $10 UberManual offer, access code GETFLOSCD, and the PDF itself"
   ],
   "flow": {
     "file": "flow_ivr.md",
@@ -29,7 +29,6 @@
       "description": "All fifty Extremely Ordinary Instruction Manuals compiled into one PDF."
     }
   ],
-  "needs_configuration": "The $10 UberManual offer ships priced but unpaid-for: add PayPal credentials under Payments, and connect UberManual.pdf to your post-purchase delivery.",
   "ships": [
     "README.txt",
     "UberManual.pdf",

@@ -2,13 +2,13 @@
   "slug": "membership-craft",
   "name": "Membership Craft",
   "summary": "A hundred short articles about running a membership site — and the library itself is gated like one, so you are reading it from inside the example. Visitors read 15 articles, guests read 40, members read all 100.",
-  "conversion": "Membership — all 100 articles",
+  "conversion": "Membership — all 100 articles, $10 or access code GETFLOSCD",
   "personality": "friendly",
   "installs": [
     "A flow: mcraft_ivr.md, in Friendly Guide's voice",
     "100 articles, in four Membership Craft categories",
     "15 articles open to visitors, 25 more for guests, 60 for members only",
-    "A membership offer you price yourself"
+    "A $10 membership offer with reviewer access code GETFLOSCD"
   ],
   "flow": {
     "file": "flow_ivr.md",
@@ -17,7 +17,6 @@
   "content": {
     "file": "content.json"
   },
-  "needs_configuration": "The library offer ships without a price. Set price, currency and processor under Offers, then activate it.",
   "ships": [
     "content.json",
     "flow_ivr.md",
