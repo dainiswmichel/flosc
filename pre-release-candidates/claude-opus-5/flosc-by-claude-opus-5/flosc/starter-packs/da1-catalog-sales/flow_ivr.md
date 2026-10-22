@@ -154,7 +154,7 @@ Keywords: how many, count, access, guest catalog
 MessageName: dcsj_guest_ubermanual
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the $10 UberManual
+UserInput: What does $10 get me?
 Action: show_offer_dcsj_ubermanual
 MessageContent: Why did the **$10 UberManual** go to the library? It already holds fifty extremely ordinary manuals, and it still wanted to be checked out. Ten dollars. One PDF: **UberManual.pdf**. Member access to all **50**.
 MessageConditions: is_guest && !purchased
@@ -180,7 +180,7 @@ MessageConditions: !purchased
 MessageName: dcsj_show_ubermanual
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the $10 UberManual
+UserInput: What does $10 get me?
 Action: show_offer_dcsj_ubermanual
 MessageContent: You're still visiting. Four manuals is a tour, not a library. **$10 USD** buys **UberManual.pdf** and Member access to all fifty, Item 50 included. The shelf can wait.
 MessageConditions: is_visitor && !purchased
