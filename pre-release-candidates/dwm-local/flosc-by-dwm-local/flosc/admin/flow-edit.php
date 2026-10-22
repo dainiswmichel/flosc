@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $flosc_is_admin = current_user_can( 'manage_options' );
-$flosc_flow_id  = sanitize_key( wp_unslash( $_GET['flow_id'] ?? '' ) );
+$flosc_flow_id  = flosc_nav_param( 'flow_id', array(), '', 'sanitize_key' );
 $flosc_is_new   = ( 'new' === $flosc_flow_id );
 $flosc_flow     = $flosc_is_new ? null : flosc_flows()->get_flow( $flosc_flow_id );
 
@@ -34,7 +34,7 @@ if ( ! $flosc_is_new && ! $flosc_flow ) {
 }
 
 // Get current tab.
-$flosc_current_tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'identity' ) );
+$flosc_current_tab = flosc_nav_param( 'tab', array( 'identity', 'ivr', 'content', 'team' ), 'identity' );
 $flosc_flow_tabs   = array(
 	'identity' => 'Identity',
 	'ivr'      => 'IVR',

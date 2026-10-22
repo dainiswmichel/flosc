@@ -23,6 +23,7 @@ offer_currency: "USD"
 offer_processor: "paypal"
 offer_grants_level: "member"
 offer_active: 1
+guest_token_grant: 10000
 ```
 
 ---
@@ -33,7 +34,7 @@ offer_active: 1
 MessageName: dcsj_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Welcome to the **DA1 Catalog Sales Journey**. This DA1 catalog contains **50 extremely ordinary instruction manuals**. Freeline access includes Items **1, 11, 21, and 35**. I know. Four manuals at once. Please try to remain calm.
+MessageContent: Welcome to the **DA1 Catalog Sales Journey**. You're just visiting, eh? Freeline trust is Items **1, 11, 21, and 35**. Register or log in and the catalog offers four cooler, more "useful" manuals, Items **2, 12, 22, and 36**. The **$10 UberManual** is all fifty in **UberManual.pdf**. I'm DadJokesDan. The groan is free. Item 50 is not.
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -42,10 +43,43 @@ MessageConditions: is_visitor && first_show_session
 MessageName: dcsj_browse_freeline
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the Freeline manuals
+UserInput: Show all Freeline manuals
 MessageContent: Freeline Items **1, 11, 21, and 35** are available. Tell me which ordinary household problem deserves a disproportionate amount of documentation.
-MessageConditions: is_visitor || is_guest || is_member
+MessageConditions: is_visitor
 Keywords: freeline, catalog, manuals, da1, public manuals
+
+---
+
+## Inspect Refrigerator Shelf Procedure 11
+MessageName: dcsj_show_item_11
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Show me Item 11
+MessageContent: Item 11 is available on the Freeline. A refrigerator shelf is about to receive more procedural attention than it expected.
+MessageConditions: is_visitor
+Keywords: item 11, refrigerator shelf, freeline manual
+
+---
+
+## Recommend Three Free Manuals
+MessageName: dcsj_recommend_freeline
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Suggest 3 absurdly serious manuals
+MessageContent: Here are three Freeline catalog items selected with entirely disproportionate gravity.
+MessageConditions: is_visitor
+Keywords: recommend, three manuals, serious manuals, freeline
+
+---
+
+## Count My Free Manuals
+MessageName: dcsj_count_freeline
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: How many manuals am I trusted with?
+MessageContent: Visitors can access four catalog items. Guest registration adds four more, and the $10 UberManual opens the complete collection.
+MessageConditions: is_visitor
+Keywords: how many, count, access, manuals
 
 ---
 
@@ -53,9 +87,9 @@ Keywords: freeline, catalog, manuals, da1, public manuals
 MessageName: dcsj_login_prompt
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Unlock the Guest catalog samples
+UserInput: I'm just visiting. Unlock the cooler manuals
 Action: open_login_modal
-MessageContent: Guest access adds Items **2, 12, 22, and 36**, giving you eight catalog samples in total before the sales offer.
+MessageContent: Log in or register. Guest access adds Items **2, 12, 22, and 36**. I'll give you 10000 tokens if you register. That's 10k millicents, a 10 cent spend this site is willing to spend on you. I think it makes "cents" for you to try registering so you can view more of these great manuals. Guests guess less, Members know more!
 MessageConditions: is_visitor
 Keywords: guest, login, unlock, samples, catalog
 
@@ -67,7 +101,7 @@ Keywords: guest, login, unlock, samples, catalog
 MessageName: dcsj_guest_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Guest access confirmed. You now have **8 sample manuals**: the four Freeline items plus Items **2, 12, 22, and 36**. If that has created an urgent need for all fifty, the situation is functioning as designed.
+MessageContent: You're logged in. Cute. Guest access is eight manuals: Items **1, 11, 21, 35, 2, 12, 22, and 36**. The new ones are fitted sheets, a mini-wastebasket, a toilet paper roll, and a light switch cover. Member access is the other forty-two, including Item 50. The door is the **$10 UberManual**, file **UberManual.pdf**. Guests guess less, Members know more!
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -76,10 +110,55 @@ MessageConditions: is_guest && first_show_session
 MessageName: dcsj_browse_guest
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me another catalog sample
+UserInput: Show all eight catalog samples
 MessageContent: Tell me what you are dealing with: sheets, wastebaskets, toilet paper, light switch covers, or another household matter of grave procedural importance.
 MessageConditions: is_guest
 Keywords: guest samples, sample manual, browse catalog, manuals
+
+---
+
+## Inspect Guest Item 12
+MessageName: dcsj_show_item_12
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Show me Item 12
+MessageContent: Item 12 is one of the four additional Guest samples. The mini-wastebasket has requested qualified maintenance personnel.
+MessageConditions: is_guest
+Keywords: item 12, wastebasket, guest manual
+
+---
+
+## Recommend One Guest Manual
+MessageName: dcsj_recommend_guest
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Recommend one ordinary emergency manual
+MessageContent: Here is one accessible catalog item for an emergency that probably did not require a manual until now.
+MessageConditions: is_guest
+Keywords: recommend, one manual, ordinary emergency, guest
+
+---
+
+## Count My Guest Manuals
+MessageName: dcsj_count_guest
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: How many catalog items can I access?
+MessageContent: Guests can access eight catalog items. The $10 UberManual opens all fifty and compiles them into one PDF.
+MessageConditions: is_guest
+Keywords: how many, count, access, guest catalog
+
+---
+
+## Guest UberManual Invitation
+MessageName: dcsj_guest_ubermanual
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Show me the $10 UberManual
+Action: show_offer_dcsj_ubermanual
+MessageContent: Why did the **$10 UberManual** go to the library? It already holds fifty extremely ordinary manuals, and it still wanted to be checked out. Ten dollars. One PDF: **UberManual.pdf**. Member access to all **50**.
+MessageConditions: is_guest && !purchased
+Keywords: ubermanual, buy, purchase, all 50, pdf, full catalog, $10
 
 ---
 
@@ -92,7 +171,7 @@ MessageStyle: card
 OfferID: dcsj_ubermanual
 Price: 10.00
 DisplayFormat: card
-MessageContent: **The UberManual - $10 USD.** Get the compiled PDF containing **all 50 Extremely Ordinary Instruction Manuals**, and unlock Member access to the complete DA1 catalog. Fifty manuals. One PDF. Considerably more procedural certainty than most households require.
+MessageContent: **The UberManual - $10 USD.** What did the fitted sheet say to the manual? Cover me. All **50** Extremely Ordinary Instruction Manuals, one PDF, and Member access to the complete DA1 catalog.
 MessageConditions: !purchased
 
 ---
@@ -103,8 +182,8 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Show me the $10 UberManual
 Action: show_offer_dcsj_ubermanual
-MessageContent: The **$10 UberManual** compiles all 50 catalog items into one PDF and unlocks the complete Member catalog.
-MessageConditions: !purchased
+MessageContent: You're still visiting. Four manuals is a tour, not a library. **$10 USD** buys **UberManual.pdf** and Member access to all fifty, Item 50 included. The shelf can wait.
+MessageConditions: is_visitor && !purchased
 Keywords: ubermanual, buy, purchase, all 50, pdf, full catalog, $10
 
 ---
@@ -115,7 +194,7 @@ Keywords: ubermanual, buy, purchase, all 50, pdf, full catalog, $10
 MessageName: dcsj_purchase_complete
 MessageType: auto
 MessageStyle: card
-MessageContent: Purchase complete. **Member access is now active for all 50 DA1 catalog items.** The product for this starter journey is **UberManual.pdf**, the compiled collection of all fifty manuals.
+MessageContent: You're a Member. The withholding is over. All **50** manuals are open, including Item 50, **A Practical Guide for Sipping Hot Beverages**. The file on the counter is **UberManual.pdf**.
 MessageConditions: is_member && first_message_after_purchase
 
 ---
@@ -126,7 +205,7 @@ MessageConditions: is_member && first_message_after_purchase
 MessageName: dcsj_browse_member
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Browse all 50 manuals
+UserInput: Show all 50 manuals
 MessageContent: All fifty catalog items are available. Give me a title, identifier, subject, or ordinary household problem and I will find the relevant manual.
 MessageConditions: is_member
 Keywords: all manuals, full catalog, all 50, browse, da1
@@ -137,7 +216,40 @@ Keywords: all manuals, full catalog, all 50, browse, da1
 MessageName: dcsj_featured_manual
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Find me a ridiculously serious manual
-MessageContent: Excellent. I can search the full DA1 catalog by title, description, subject, or intent. We have procedures for fitted sheets, remote controls, crooked frames, hot beverages, and other areas of civilization that have gone dangerously under-documented.
+UserInput: Suggest one ridiculously serious manual
+MessageContent: Excellent. Here is one item from the full DA1 catalog, selected with a level of gravity ordinarily reserved for emergency legislation.
 MessageConditions: is_member
 Keywords: serious manual, ridiculous, ordinary, find manual
+
+---
+
+## Finish with Item 50
+MessageName: dcsj_show_item_50
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Show me Item 50
+MessageContent: Item 50 concerns sipping hot beverages. The collection ends as it lived: cautiously, methodically, and with a beverage nearby.
+MessageConditions: is_member
+Keywords: item 50, hot beverages, member manual
+
+---
+
+## Recommend Three Member Manuals
+MessageName: dcsj_recommend_member
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Suggest 3 absurdly serious manuals
+MessageContent: Here are three items from the complete catalog, because Member access should be used irresponsibly but accurately.
+MessageConditions: is_member
+Keywords: recommend, three manuals, serious manuals, member
+
+---
+
+## Find a Hot Beverage Manual
+MessageName: dcsj_find_hot_beverage
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Find one manual about hot beverages
+MessageContent: The complete catalog contains a hot-beverage procedure for anyone unwilling to leave sipping to chance.
+MessageConditions: is_member
+Keywords: find manual, hot beverages, sipping, catalog

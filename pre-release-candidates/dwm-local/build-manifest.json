@@ -1,52 +1,38 @@
 {
  "plugin": "flosc",
  "version": "8.0.0",
- "internal_iteration": "v167",
- "agent": "Grok",
+ "internal_iteration": "v184.2",
+ "agent": "Dainis W. Michel",
  "folder": "pre-release-candidates/dwm-local",
  "baseline": {
-  "iteration": "v166",
-  "commit": "61dc75ebf2c729a7948200302b2a2aa3b5d68be8",
-  "agent": "ClaudeCode"
+  "iteration": "v184",
+  "commit": "a1d9c1310b46777bb269d95425d093f5b88e0e01",
+  "note": "Canonical local tree at that commit, plus the uncommitted starter-packs/da1-catalog-sales/flow_ivr.md."
  },
  "artifact": {
   "name": "flosc.zip",
-  "sha256": "56b2dd9c1bab77ff069c2dc1c80f0fc1ac2a9bcca57fc358919c3a13e0977b4e",
-  "bytes": 2839867,
-  "entries": 283,
-  "shipped_files": 243,
-  "built_with": "./build-dist-zip.sh",
-  "digest_note": "Zip digest includes timestamps. Compare the 243 file hashes, not a rebuild digest from another machine."
+  "sha256": "273029a7548c50a7adba64aaed4578003d6899a080af0977901f2041d1773448",
+  "bytes": 2838949,
+  "entries": 282,
+  "shipped_files": 242,
+  "built_with": "zip -X -r -9 of the candidate source tree",
+  "digest_note": "Zip digest includes timestamps. Compare the file hashes, not a rebuild digest from another machine."
  },
  "changed_from_baseline": [
   {
    "path": "flosc.php",
-   "change": "Internal Iteration v166 -> v167. Github HashID left as none yet."
+   "change": "Internal Iteration v184 -> v184.2. Github HashID set to a1d9c1310b46777bb269d95425d093f5b88e0e01. Author remains Dainis W. Michel. Version remains 8.0.0."
   },
   {
-   "path": "readme.txt",
-   "change": "Added the Screenshots section, 36 captions."
-  },
-  {
-   "path": "admin/flow.php",
-   "change": "Data set and personality tables sit in a scroll container so they stay inside the card."
-  },
-  {
-   "path": "assets/css/flosc-portability-admin.css",
-   "change": "Scroll container rules for those two tables. No inline styles."
-  },
-  {
-   "path": "admin/ai-configuration.php",
-   "change": "Section titles and hints on the AI tab."
-  },
-  {
-   "path": "includes/flosc-available-providers.php",
-   "change": "AssemblyAI hint text."
+   "path": "starter-packs/da1-catalog-sales/flow_ivr.md",
+   "change": "Local uncommitted DA1 sales copy: state-aware visitor and guest lines, Guests guess less, Members know more!, and the 10000-token registration line on the login pill only. guest_token_grant 10000."
   }
  ],
  "verification": {
-  "php_lint": "flow.php, ai-configuration.php, flosc-available-providers.php, flosc.php: no syntax errors",
-  "unzip_test": "no errors",
-  "plugin_check": "not run"
+  "da1_chat_routing": "php tests/check-da1-chat-routing.php on the canonical tree returned DA1 chat routing: ok",
+  "plugin_check": "not run",
+  "phpcs": "not run",
+  "promoted": false,
+  "deployed": false
  }
 }

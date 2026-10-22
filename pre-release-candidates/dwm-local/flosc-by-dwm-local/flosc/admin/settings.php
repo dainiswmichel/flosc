@@ -2493,7 +2493,15 @@ if ( ! empty( $GLOBALS['flosc_settings_early_post_running'] ) ) {
 }
 
 // Build flow URL.
-$flosc_flow_url = home_url( '/' . ( $flosc_flow_settings['slug'] ?? 'flosc' ) . '/' );
+$flosc_flow_for_url = array_merge(
+	$flosc_flow_settings,
+	array(
+		'ivr_file' => $flosc_selected_ivr,
+		'slug'     => $flosc_flow_settings['slug'] ?? 'flosc',
+	)
+);
+
+$flosc_flow_url = flosc()->get_app_url( $flosc_flow_for_url );
 
 // Set global context for tab includes.
 $GLOBALS['flosc_current_ivr']      = $flosc_selected_ivr;
@@ -2926,7 +2934,14 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					// v1.3.5: Preserve underscores in default slug.
 					$flosc_default_slug       = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_ivr_file, PATHINFO_FILENAME ) ) );
 					$flosc_slug               = $flosc_settings['slug'] ?? $flosc_default_slug;
-					$flosc_flow_url           = home_url( '/' . $flosc_slug . '/' );
+					$flosc_flow_for_url       = array_merge(
+						$flosc_settings,
+						array(
+							'ivr_file' => $flosc_ivr_file,
+							'slug'     => $flosc_slug,
+						)
+					);
+					$flosc_flow_url           = flosc()->get_app_url( $flosc_flow_for_url );
 					$flosc_full_url           = ! empty( $flosc_settings['domain'] ) ? 'https://' . $flosc_settings['domain'] . '/' : $flosc_flow_url;
 					$flosc_status_value       = $flosc_settings['status'] ?? 'active';
 					$flosc_status_badge_class = 'flosc-flow-status-badge' . ( 'active' === $flosc_status_value ? ' is-active' : ' is-draft' );
@@ -3342,7 +3357,14 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				// v1.3.5: Preserve underscores in default slug.
 				$flosc_default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) ) );
 				$flosc_current_slug = $flosc_flow_settings['slug'] ?? $flosc_default_slug;
-				$flosc_flow_url     = home_url( '/' . $flosc_current_slug . '/' );
+				$flosc_flow_for_url = array_merge(
+					$flosc_flow_settings,
+					array(
+						'ivr_file' => $flosc_selected_ivr,
+						'slug'     => $flosc_current_slug,
+					)
+				);
+				$flosc_flow_url     = flosc()->get_app_url( $flosc_flow_for_url );
 				?>
 				<div class="flosc-flow-url-box">
 					<div class="flosc-flow-url-box__label">This flow is accessible at:</div>

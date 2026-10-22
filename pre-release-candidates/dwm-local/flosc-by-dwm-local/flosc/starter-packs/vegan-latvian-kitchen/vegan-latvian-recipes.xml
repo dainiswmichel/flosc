@@ -4,7 +4,7 @@
   Bodies restored from virtulielatviei.WordPress.2026-08-10.xml export.
   Model: 14 recipes · 2 visitor · 2 guest · 10 member + PDF
   Member: $10 one-time or access code garšīgs
-  PDF: https://www.vlat.lv/wp-content/uploads/2026/08/vegan-latvian-kitchen-cookbook-r.pdf
+  PDF: bundled as vegan-latvian-kitchen-cookbook.pdf
 -->
 <rss version="2.0"
 	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
@@ -1054,8 +1054,8 @@
 		<guid isPermaLink="false">https://example.com/?p=2015</guid>
 		<description></description>
 		<content:encoded><![CDATA[<p><strong>Member pack:</strong> full 14-recipe bilingual cookbook (PDF).</p>
-<p>After import: upload <code>vegan-latvian-kitchen-cookbook.pdf</code> to Media Library, then replace the link below with that Media URL (or insert the Media file into this post).</p>
-<p><a class="flosc-member-pdf" href="https://www.vlat.lv/wp-content/uploads/2026/08/vegan-latvian-kitchen-cookbook-r.pdf">Download Vegan Latvian Kitchen cookbook (PDF)</a></p>
+<p>The bundled cookbook is installed in this site's Media Library with this starter pack.</p>
+	<p><a class="flosc-member-pdf" href="{{flosc_asset_url:vegan-latvian-kitchen-cookbook.pdf}}">Download Vegan Latvian Kitchen cookbook (PDF)</a></p>
 <!--flosc_read_more-->
 <p>This post is <code>protected</code> in the FLOSC content category. Visitors and unpaid guests do not get the file. Members (purchase / member grant for this flow) do.</p>
 ]]></content:encoded>

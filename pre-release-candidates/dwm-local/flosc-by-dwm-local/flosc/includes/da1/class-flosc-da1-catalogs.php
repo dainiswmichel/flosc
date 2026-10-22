@@ -37,6 +37,58 @@ class FLOSC_DA1_Catalogs {
 	);
 
 	/**
+	 * Resolve a submitted catalog key against the catalogs on disk.
+	 *
+	 * @param mixed $raw        Submitted catalog key.
+	 * @param array $known_keys Catalog keys present on disk.
+	 * @return string
+	 */
+	public static function save_catalog_key( $raw, array $known_keys ) {
+		if ( ! is_string( $raw ) ) {
+			return '';
+		}
+
+		$key = preg_replace( '/[^a-z0-9._-]/', '', strtolower( trim( $raw ) ) );
+		if ( '' === $key || ! in_array( $key, $known_keys, true ) ) {
+			return '';
+		}
+
+		return $key;
+	}
+
+	/**
+	 * Confirm that submitted catalog columns and cells are text.
+	 *
+	 * @param mixed $columns Submitted column names.
+	 * @param mixed $rows    Submitted rows.
+	 * @return bool
+	 */
+	public static function table_is_text( $columns, $rows ) {
+		if ( ! is_array( $columns ) || ! is_array( $rows ) ) {
+			return false;
+		}
+
+		foreach ( $columns as $column ) {
+			if ( ! is_string( $column ) ) {
+				return false;
+			}
+		}
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				return false;
+			}
+			foreach ( $row as $cell ) {
+				if ( ! is_string( $cell ) ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Build a deterministic catalog reply when the user clearly asks about an
 	 * assigned DA1 catalog or names an available item.
 	 *
@@ -52,7 +104,8 @@ class FLOSC_DA1_Catalogs {
 			return '';
 		}
 
-		$items = $this->extract_items( $rows );
+		$items            = $this->extract_items( $rows );
+		$referenced_items = $this->find_explicit_item_references( $message, $items );
 		if ( empty( $items ) || ! $this->is_catalog_query( $message, $items ) ) {
 			return '';
 		}
@@ -77,7 +130,7 @@ class FLOSC_DA1_Catalogs {
 			$slice = array_slice( $items, 0, 20 );
 			$lines = array();
 			foreach ( $slice as $index => $item ) {
-				$lines[] = ( $index + 1 ) . '. ' . $this->get_item_label( $item );
+				$lines[] = $this->get_item_reference( $item, $index + 1 ) . '. ' . $this->get_item_label( $item );
 			}
 			if ( count( $items ) > count( $slice ) ) {
 				$lines[] = sprintf(
@@ -91,7 +144,11 @@ class FLOSC_DA1_Catalogs {
 		}
 
 		$max_items = $this->detect_batch_size( $message );
-		$slice     = ! empty( $matches ) ? array_slice( $matches, 0, $max_items ) : array_slice( $items, 0, $max_items );
+		if ( ! empty( $referenced_items ) ) {
+			$slice = array_slice( $referenced_items, 0, 20 );
+		} else {
+			$slice = ! empty( $matches ) ? array_slice( $matches, 0, $max_items ) : array_slice( $items, 0, $max_items );
+		}
 
 		$lines = array(
 			1 === count( $slice )
@@ -121,6 +178,9 @@ class FLOSC_DA1_Catalogs {
 		$text = $this->normalize_search_text( $message );
 		if ( '' === $text ) {
 			return false;
+		}
+		if ( ! empty( $this->find_explicit_item_references( $message, $items ) ) ) {
+			return true;
 		}
 
 		if ( preg_match( '/\b(catalog|catalogue|item|items|browse|recommend|recommendation|recommendations|suggest|suggestion|suggestions|full list|complete list|show all|how many|count|total)\b/u', $text ) ) {
@@ -487,6 +547,53 @@ class FLOSC_DA1_Catalogs {
 	}
 
 	/**
+	 * Find catalog rows named explicitly by Row Key or Identifier.
+	 *
+	 * Short follow-up requests such as "show me 11" are common after a catalog
+	 * list. They must resolve against the accessible catalog rows instead of
+	 * falling through to an AI provider that does not have authoritative row data.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $items   Accessible catalog items.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function find_explicit_item_references( $message, $items ) {
+		$text = $this->normalize_search_text( $message );
+		if ( '' === $text ) {
+			return array();
+		}
+
+		$selection_intent = (bool) preg_match( '/\b(show|open|read|view|display|give|find|get)\b/u', $text );
+		$matches          = array();
+
+		foreach ( (array) $items as $item ) {
+			$row_key    = $this->normalize_search_text( (string) ( $item['controls']['Row Key'] ?? '' ) );
+			$identifier = $this->normalize_search_text( (string) ( $item['dublin_core']['identifier'] ?? '' ) );
+			$row_match  = false;
+
+			if ( '' !== $row_key ) {
+				$quoted_row_key = preg_quote( $row_key, '/' );
+				$row_match      = (bool) preg_match(
+					'/\b(item|row|record|entry|manual|number|no)\s+' . $quoted_row_key . '\b/u',
+					$text
+				);
+				if ( ! $row_match && $selection_intent ) {
+					$row_match = (bool) preg_match( '/(?:^|\s)' . $quoted_row_key . '(?:\s|$)/u', $text );
+				}
+			}
+
+			$identifier_match = '' !== $identifier
+				&& false !== strpos( ' ' . $text . ' ', ' ' . $identifier . ' ' );
+
+			if ( $row_match || $identifier_match ) {
+				$matches[] = $item;
+			}
+		}
+
+		return $matches;
+	}
+
+	/**
 	 * Parse TSV content.
 	 *
 	 * @param mixed $content Content.
@@ -740,9 +847,10 @@ class FLOSC_DA1_Catalogs {
 	 * @return mixed
 	 */
 	private function render_item_lines( $item, $number ) {
-		$label = $this->get_item_label( $item );
-		$dc    = (array) ( $item['dublin_core'] ?? array() );
-		$lines = array( $number . '. ' . $label );
+		$label     = $this->get_item_label( $item );
+		$dc        = (array) ( $item['dublin_core'] ?? array() );
+		$reference = $this->get_item_reference( $item, $number );
+		$lines     = array( $reference . '. ' . $label );
 
 		if ( ! empty( $dc['creator'] ) ) {
 			$lines[0] .= ' — ' . $dc['creator'];
@@ -758,6 +866,18 @@ class FLOSC_DA1_Catalogs {
 		}
 
 		return $lines;
+	}
+
+	/**
+	 * Return the catalog's own Row Key for display, with list position fallback.
+	 *
+	 * @param mixed $item     Item.
+	 * @param int   $fallback List position.
+	 * @return string
+	 */
+	private function get_item_reference( $item, $fallback ) {
+		$row_key = trim( (string) ( $item['controls']['Row Key'] ?? '' ) );
+		return '' !== $row_key ? $row_key : (string) $fallback;
 	}
 
 	/**

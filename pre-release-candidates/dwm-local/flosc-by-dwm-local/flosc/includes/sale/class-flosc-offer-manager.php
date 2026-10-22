@@ -469,9 +469,6 @@ class FLOSC_Offer_Manager {
 				'tokens'       => array(
 					'cost' => 0,            // Cost in tokens.
 				),
-				'affiliate'    => array(
-					'credit_amount' => 0,   // How much affiliate credit unlocks this.
-				),
 				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL.
 			),
 
@@ -545,7 +542,6 @@ class FLOSC_Offer_Manager {
 					'processor' => 'free',
 					'stripe'    => array( 'price_id' => '' ),
 					'tokens'    => array( 'cost' => 0 ),
-					'affiliate' => array( 'credit_amount' => 0 ),
 				),
 				'grants'         => array(
 					'features'      => array( 'quiz', 'free_lesson' ),
@@ -581,7 +577,6 @@ class FLOSC_Offer_Manager {
 						'product_id' => '',
 					),
 					'tokens'    => array( 'cost' => 1000 ),
-					'affiliate' => array( 'credit_amount' => 50 ),
 				),
 				'grants'         => array(
 					'features'      => array( 'quiz', 'all_lessons', 'ai_coach', 'certificates' ),
@@ -607,9 +602,8 @@ class FLOSC_Offer_Manager {
 				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
-					'stripe'    => array( 'price_id' => '' ),
-					'tokens'    => array( 'cost' => 0 ),
-					'affiliate' => array( 'credit_amount' => 5 ),
+					'stripe' => array( 'price_id' => '' ),
+					'tokens' => array( 'cost' => 0 ),
 				),
 				'tokens'        => array(
 					'amount' => 100,
@@ -632,9 +626,8 @@ class FLOSC_Offer_Manager {
 				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
-					'stripe'    => array( 'price_id' => '' ),
-					'tokens'    => array( 'cost' => 0 ),
-					'affiliate' => array( 'credit_amount' => 10 ),
+					'stripe' => array( 'price_id' => '' ),
+					'tokens' => array( 'cost' => 0 ),
 				),
 				'subscription'  => array(
 					'interval'       => self::INTERVAL_MONTHLY,
@@ -670,7 +663,6 @@ class FLOSC_Offer_Manager {
 						'product_id' => '',
 					),
 					'tokens'       => array( 'cost' => 0 ),
-					'affiliate'    => array( 'credit_amount' => 20 ),
 					'redirect_url' => '',
 				),
 				'display_format' => 'featured',
@@ -711,7 +703,6 @@ class FLOSC_Offer_Manager {
 						'product_id' => '',
 					),
 					'tokens'       => array( 'cost' => 0 ),
-					'affiliate'    => array( 'credit_amount' => 30 ),
 					'redirect_url' => '',
 				),
 				'subscription'   => array(
