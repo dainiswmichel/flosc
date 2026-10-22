@@ -11,7 +11,7 @@ personality_library_id: "friendly"
 ai_enable_ivr_context: true
 ai_enable_content_access: true
 ai_topic_scope: "Running a membership site: pricing, churn, onboarding, content operations, community, growth, gating and the legal edges"
-ai_base_prompt: "Help the reader find the piece that answers the problem they actually have. Respect FLOSC access at all times. Visitors may read the fifteen open pieces. Guests may read forty. Members may read all one hundred. Never reveal a protected piece to a lower tier. When someone asks about churn cohorts, dunning, tax on digital goods, or how to check their own gating, those are member pieces — say what the piece covers and offer membership rather than quoting it."
+ai_base_prompt: "Help the reader find the piece that answers the problem they actually have. Share any article title freely, one or two at a time, and state whether it is available to visitors, guests or members. Visitors may read 15 articles, guests may read 40, and members may read all 100. Never quote or summarize the body of an article above the reader's access level. Visitors who register receive 10,000 tokens and 25 additional articles. When the next useful article is locked, offer registration or the $10 membership and access code GETFLOSCD."
 content_item_groups:
   0:
     quiz_id: ""
@@ -26,17 +26,27 @@ content_item_category: "flosc-membership-craft-open"
 companion_enabled: true
 companion_show_for_visitors: 1
 companion_greeting: "Ask me about running a membership site."
+guest_token_grant: 10000
 offers:
   mcraft_membership:
     id: mcraft_membership
     name: The full library
-    description: All one hundred pieces, including the retention, pricing, tax and technical gating sets. Set your own price under Offers before activating.
+    description: All 100 articles, including retention, pricing, tax and technical gating. One-time $10 or access code GETFLOSCD.
     status: active
+    active: true
     type: one_time
     display_format: card
+    price: 10
+    display_price: "$10 one-time"
     grants_level: member
     grants:
       level: member
+    access_codes:
+      0: GETFLOSCD
+    pricing:
+      price: 10
+      currency: USD
+      processor: paypal
 ```
 
 ---
@@ -47,7 +57,7 @@ offers:
 MessageName: mcraft_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: This is a library of **one hundred short pieces on running a membership site** — and it is itself a membership site, so you are standing inside the example. **Fifteen** are open to you now. Registering opens **twenty-five more**. Members reach all **one hundred**.
+MessageContent: This is a library about running a membership site, and you are standing inside the example. **What a Membership Site Actually Sells** is available to visitors. **Choosing Your Publishing Cadence** is available to guests. **Reading a Churn Number Correctly** is available to members. You can read 15 now, registration adds 25 articles and **10,000 tokens**, and membership opens all 100.
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -57,7 +67,7 @@ MessageName: mcraft_whats_here
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: What is in this library?
-MessageContent: Pricing, churn, onboarding, content operations, community, growth, gating, and the legal edges nobody warns you about. Tell me the problem you actually have and I will find the piece.
+MessageContent: Tell me the problem you actually have and I will find one or two titles. For example, **Pricing Is Positioning** is available to visitors, while **VAT, Sales Tax, and Digital Goods** is available to members. The library demonstrates its own advice, which is either elegant or suspiciously convenient.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: what is in here, library, contents, about, topics, index
 
@@ -68,9 +78,20 @@ MessageName: mcraft_open_shelf
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: What can I read right now?
-MessageContent: The open fifteen are the foundations — what a membership actually sells, why three tiers is usually right, why most sites die in month four, and the arithmetic showing you need far fewer members than you think. Say the word and I will point you at one.
+MessageContent: Start with **Why Most Membership Sites Die in Month Four** and **You Need Fewer Members Than You Think**. Both are available to visitors. One brings existential dread; the other brings arithmetic. Would you like either article?
 MessageConditions: is_visitor
 Keywords: read now, free, open, available, start, foundations
+
+---
+
+## What registration gets me
+MessageName: mcraft_guest_tease
+MessageType: suggested_user_autoprompt
+MessageStyle: card
+UserInput: What would registering get me?
+MessageContent: Registration adds **25 articles** and **10,000 tokens**. **The Content Bank You Should Have Before Launch** and **The Upgrade Prompt Belongs at the Moment of Value** are available to guests. I can share more guest titles, or you can step directly to the full library.
+MessageConditions: is_visitor
+Keywords: register, registration, guest, guest titles, tokens, more articles
 
 ---
 
@@ -91,7 +112,7 @@ Keywords: locked, why locked, paywall, gate, wall, hidden, restricted
 MessageName: mcraft_guest_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Forty pieces now instead of fifteen. The new ones are the operational ones — publishing cadence, the content bank you want before launch, why failed cards are the cheapest revenue you will ever recover, and where the upgrade prompt actually belongs.
+MessageContent: Forty articles now instead of fifteen. **Choosing Your Publishing Cadence** and **Dunning: The Money You Are Already Owed** are available to guests. The first helps you keep publishing; the second politely points at revenue hiding under the sofa.
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -101,7 +122,7 @@ MessageName: mcraft_guest_unlocked
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: What did I just unlock?
-MessageContent: Twenty-five pieces on running the thing day to day: choosing a cadence you can keep, writing an excerpt that sells a locked post, setting support expectations, and testing your own signup on a phone you have not configured.
+MessageContent: You unlocked 25 more. **Writing an Excerpt That Sells the Locked Post** and **Test the Signup on a Phone You Have Not Configured** are available to guests. Would you like one of those or another title?
 MessageConditions: is_guest
 Keywords: unlock, unlocked, what do i get, access, more
 
@@ -115,8 +136,8 @@ MessageType: offer
 MessageStyle: card
 OfferID: mcraft_membership
 DisplayFormat: card
-MessageContent: **The full library — all one hundred pieces.** Six groups: retention and churn, pricing and money, content operations, community and support, growth, and the technical set on gating, caching, protecting media files and rate-limiting login. That last group is the one people say they wish they had read first.
-MessageConditions: is_guest && !purchased
+MessageContent: **The full library — all 100 articles for $10.** Retention, pricing, content operations, community, growth and the technical set people wish they had read first. For this demonstration, access code **GETFLOSCD** grants the same member access.
+MessageConditions: (is_visitor || is_guest) && !purchased
 
 ---
 
@@ -124,10 +145,10 @@ MessageConditions: is_guest && !purchased
 MessageName: mcraft_show_offer
 MessageType: suggested_user_autoprompt
 MessageStyle: card
-UserInput: Show me the full library
+UserInput: What does full membership include?
 Action: show_offer_mcraft_membership
-MessageContent: Membership is the step from the forty-piece registered shelf to the complete hundred.
-MessageConditions: is_guest && !purchased
+MessageContent: Membership opens all 100 articles for **$10 one-time**. Access code **GETFLOSCD** grants the same access for this demonstration. It is a library about membership demonstrating membership while discussing membership. We have checked: that is still legal.
+MessageConditions: (is_visitor || is_guest) && !purchased
 Keywords: membership, upgrade, full library, all hundred, buy, purchase
 
 ---

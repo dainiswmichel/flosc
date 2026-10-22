@@ -1,44 +1,40 @@
-# FLOSC 8.0.0 — Codex home-run candidate v185
+# FLOSC 8.0.0 — Codex home-run candidate v186
 
 Installable artifact: `flosc.zip`. Full source snapshot:
 `flosc-by-codex-gpt5/flosc/`.
 
 | Field | Value |
 |---|---|
-| Internal iteration | v185 |
+| Internal iteration | v186 |
 | Plugin version / stable tag | 8.0.0 |
-| Code commit | `96e3c15a30c3ea2533af611f5a4fea5aeeeacdb4` |
-| Source identity commit | `ac6332387d773029b36825b144c27637c8a44e58` |
-| ZIP SHA-256 | `5b53b2b29124932bd2acf836dbc70eddb0a9aa7299643b2011fe8417858aacb1` |
+| Code commit | `dd8116a4cf572a4282e1607157a0ff43e8c57eb7` |
+| Source identity commit | `e11e8fe16a34906ce098d6667e56961bba008ba3` |
+| ZIP SHA-256 | `6cbb793b0e9a665d08d9521360fe9e1124d2006cabf77d38e4f2a255e94c2475` |
 | ZIP entries | 282 files; 153 PHP files |
 
 ## Scope
 
-- Repair the pre-login quiz-result transfer so it calls the bridge-data
-  manager's existing creation method for an already authenticated user.
-- Reject non-string DA1 catalog selections before sanitization while preserving
-  every valid string selection.
-- Correct four indentation-only WPCS findings in the token provider.
-- Carry forward the DA1 starter-pack flow already present in v184.2.
-- Add a CLI regression for the bridge-data method contract.
-
-No registration, user-creation, role, SSO, OAuth, request-guard, proxy, readme,
-or external-service behavior was changed.
+- Make all four starter-pack journeys enjoyable and explicit about the
+  Visitor → Guest → Member progression.
+- Add the 10,000-token guest grant and `GETFLOSCD` reviewer access route where
+  required.
+- Preserve article and recipe body gating while allowing the audience to hear
+  real titles with their availability.
+- Give DA1 and Vegan catalog rows public title/teaser visibility while retaining
+  their original access level in the description.
+- Route genuine purchase intent to an available offer before DA1 catalog
+  matching, without changing ordinary catalog searches.
+- Place each bundled PDF in the local Media Library and expose its link from
+  member content; standard WordPress Media Library URLs remain ordinary URLs.
 
 ## Verification
 
-- All 153 shipping PHP files pass `php -l`.
-- PHPCompatibilityWP passes for PHP 7.4.
-- Project WPCS: 0 errors. Existing warnings remain separately reported.
-- Built-ZIP WordPress.org security gate: 0 errors and the 22 documented nonce
-  recommendations.
+- Changed PHP files pass syntax checks and focused regression tests.
+- Changed PHP paths have 0 PHPCS errors; existing documented warnings remain.
+- Pack manifests are valid JSON; revised catalog rows carry availability labels.
+- Built-ZIP WordPress.org gate passes every local gate: 0 security errors and
+  the 22 documented nonce recommendations. Official Plugin Check is verified
+  separately on the burner installation.
 - Built ZIP has one `flosc/` root and excludes tests, development tools,
   dependencies, and candidate trees.
-- Burner Plugin Check 2.1.0: 0 errors and the same 22 documented nonce
-  recommendations.
-- Clean WordPress 7.1.3 burner: v185 active, `WP_DEBUG` true, home and pretty
-  permalink requests successful, and no PHP/runtime errors in the logs.
-
-One local development assertion, `tests/check_provider_identity.php`, still
-objects to three headings in the already validated `readme.txt`. The readme and
-that disputed assertion were deliberately left unchanged.
+- Runtime starter-pack testing remains the operator acceptance step.

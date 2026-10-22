@@ -10,7 +10,7 @@ personality_library_id: "bubblybetty"
 ai_enable_ivr_context: true
 ai_enable_content_access: true
 ai_topic_scope: "FLOSC WordPress Content Membership Journey starter library"
-ai_base_prompt: "Help visitors explore the 100 deliberately silly WordPress posts in this starter journey. Respect FLOSC access at all times. Visitors may access Items 1-10. Guests may access Items 1-30. Members may access all 100. Never reveal protected post content to a lower access tier. When a Guest wants more than the Guest collection, explain that Membership unlocks the complete 100-post library and surface the configured membership offer when appropriate."
+ai_base_prompt: "You are Bubbly Betty. Help the audience explore 100 deliberately silly WordPress posts with warm, playful, slightly elaborate replies. Share any title freely, one to three at a time, and state whether it is available to visitors, guests or members. Visitors may read 10 posts, guests may read 30, and members may read all 100. Never quote or summarize a post body above the reader's access level. Registration grants 10,000 tokens and 20 additional posts. Encourage registration or the $10 membership when useful; access code GETFLOSCD grants the same member access for this demonstration."
 content_types:
   0:
     singular: "Content Item"
@@ -30,6 +30,27 @@ companion_enabled: true
 companion_show_for_visitors: 1
 companion_greeting: "Welcome to the WordPress Content Membership Journey."
 guest_access_days: 0
+guest_token_grant: 10000
+offers:
+  wcmj_membership:
+    id: wcmj_membership
+    name: The complete gloriously unnecessary library
+    description: All 100 posts, from the mysterious second sock to the final content item. One-time $10 or access code GETFLOSCD.
+    status: active
+    active: true
+    type: one_time
+    price: 10
+    display_price: "$10 one-time"
+    display_format: card
+    grants_level: member
+    grants:
+      level: member
+    access_codes:
+      0: GETFLOSCD
+    pricing:
+      price: 10
+      currency: USD
+      processor: paypal
 ```
 
 ---
@@ -40,7 +61,7 @@ guest_access_days: 0
 MessageName: wcmj_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: 🎉 Welcome to the **WordPress Content Membership Journey**. This starter library contains **100 gloriously unnecessary WordPress posts**. Items **1-10** are open in the Freeline. Create or use a Guest login to unlock Items **11-30**. Membership unlocks the complete collection, Items **1-100**.
+MessageContent: 🎉 Welcome! **The Mysterious Second Sock** is available to visitors. **The Emotional Journey of a Forgotten Banana** is available to guests. **Why Pigeons Never Pay Parking Tickets** is available to members, because municipal accountability must start somewhere. You can read 10 posts now; registration adds 20 more and **10,000 tokens**; membership opens all 100.
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -49,8 +70,8 @@ MessageConditions: is_visitor && first_show_session
 MessageName: wcmj_browse_freeline
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the Freeline posts
-MessageContent: Absolutely. Items **1-10** are public. Pick a title and we can give it considerably more attention than it deserves.
+UserInput: Show me something I can read now
+MessageContent: Absolutely! **A Field Guide to Refrigerator Magnets** and **The Great Kitchen Sponge Debate** are available to visitors. One concerns magnetic curation; the other may divide your household. Which deserves considerably more attention than it deserves?
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: freeline, public, posts, content, items 1-10
 
@@ -62,7 +83,7 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Unlock the Guest posts
 Action: open_login_modal
-MessageContent: Guest access opens Items **11-30** while keeping the ten Freeline posts available too.
+MessageContent: Registration adds **20 guest posts** and **10,000 tokens**. **A Taxonomy of Leftover Containers**, **An Introduction to Sock Drawer Diplomacy**, and **The Great Question of Which Tupperware Lid Fits** are available to guests. The container situation has escalated; shall we log you in?
 MessageConditions: is_visitor
 Keywords: guest, login, unlock, items 11-30
 
@@ -74,7 +95,7 @@ Keywords: guest, login, unlock, items 11-30
 MessageName: wcmj_guest_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: 🎊 Guest access confirmed. You can now explore **Items 1-30**. That is thirty pieces of carefully organized nonsense. The remaining **70 posts** are reserved for Members.
+MessageContent: 🎊 Guest access confirmed. You can now read 30 pieces of carefully organized nonsense. **The Last Ice Cube and Other Household Dramas** and **An Inquiry into Remote Control Migration** are available to guests. The remaining 70 posts are available to members, and yes, the pigeons are among them.
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -84,7 +105,7 @@ MessageName: wcmj_browse_guest
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Show me something from the Guest library
-MessageContent: You now have the Freeline plus Guest Items **11-30**. Tell me what sort of unnecessary topic sounds promising and I will find something suitably ridiculous.
+MessageContent: Try **Why Pens Disappear During Meetings**, **How to Choose a Favorite Spoon**, or **What Houseplants Think About on Tuesdays**. All three are available to guests. Choose a crisis and I will treat it with inappropriate enthusiasm.
 MessageConditions: is_guest
 Keywords: guest library, guest posts, items 11-30, browse
 
@@ -98,8 +119,8 @@ MessageType: offer
 MessageStyle: card
 OfferID: wcmj_membership
 DisplayFormat: card
-MessageContent: **Membership unlocks all 100 WordPress posts.** You already have a sample of the library; Membership opens Items **31-100** as well, including the municipal mystery known as **Item 46 - Why Pigeons Never Pay Parking Tickets**.
-MessageConditions: is_guest && !purchased
+MessageContent: **Membership unlocks all 100 WordPress posts for $10.** That includes **Why Pigeons Never Pay Parking Tickets**, available to members, plus 69 other investigations the authorities have declined to pursue. For this demonstration, access code **GETFLOSCD** grants the same member access. 🎉
+MessageConditions: (is_visitor || is_guest) && !purchased
 
 ---
 
@@ -109,8 +130,8 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Show me Membership access
 Action: show_offer_wcmj_membership
-MessageContent: Membership is the step from the 30-post Guest library to the complete **100-post collection**.
-MessageConditions: is_guest && !purchased
+MessageContent: Membership opens the complete **100-post collection** for **$10 one-time**. Access code **GETFLOSCD** grants the same access for this demonstration. Somewhere inside, a spare button is building a secret career. We should probably investigate.
+MessageConditions: (is_visitor || is_guest) && !purchased
 Keywords: membership, upgrade, all posts, full access, unlock all
 
 ---
@@ -121,7 +142,7 @@ Keywords: membership, upgrade, all posts, full access, unlock all
 MessageName: wcmj_member_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: 🚨🎉 **ALL ONE HUNDRED.** Membership is active, so Items **1-100** are available. Somewhere in there is Item 46: **Why Pigeons Never Pay Parking Tickets**. Municipal accountability has finally reached the bird sector.
+MessageContent: 🚨🎉 **ALL ONE HUNDRED.** Membership is active. **Why Pigeons Never Pay Parking Tickets** is yours, along with **How to Lose Your Glasses While Wearing Them** and **The Final Content Item: Congratulations, You Found It**. Municipal accountability has finally reached the bird sector.
 MessageConditions: is_member && first_message_after_purchase
 
 ---

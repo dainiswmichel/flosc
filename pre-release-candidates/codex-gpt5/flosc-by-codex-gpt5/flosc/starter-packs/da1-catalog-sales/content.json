@@ -90,7 +90,7 @@
     },
     {
       "title": "The Full Shelf",
-      "content": "All fifty manuals are open to you. Getting a duvet, a cat, and yourself into bed — the cat is a fixed variable. Opening a tin without a tin opener, three methods in ascending order of alarm. Carrying a mattress up a staircase alone, which ends by recommending you ask a friend.\n\nAsk the assistant for any of them by name.",
+      "content": "All fifty manuals are open to you. Getting a duvet, a cat, and yourself into bed — the cat is a fixed variable. Opening a tin without a tin opener, three methods in ascending order of alarm. Carrying a mattress up a staircase alone, which ends by recommending you ask a friend.\n\n<a class=\"flosc-member-pdf\" href=\"{{flosc_asset_url:UberManual.pdf}}\">Download the complete UberManual PDF</a>\n\nAsk the assistant for any manual by name.",
       "excerpt": "All fifty manuals, including the ones we hesitated over.",
       "slug": "",
       "item": 8,
