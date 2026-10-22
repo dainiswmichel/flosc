@@ -23,6 +23,7 @@ offer_currency: "USD"
 offer_processor: "paypal"
 offer_grants_level: "member"
 offer_active: 1
+guest_token_grant: 10000
 ```
 
 ---
@@ -33,7 +34,7 @@ offer_active: 1
 MessageName: dcsj_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Welcome to the **DA1 Catalog Sales Journey**. I'm DadJokesDan. I told Item 11 a joke. The refrigerator shelf said it does not do standup. It does shelf. Freeline access is Items **1, 11, 21, and 35**. The **$10 UberManual** has all fifty. Four manuals are free. The groan is free too.
+MessageContent: Welcome to the **DA1 Catalog Sales Journey**. You're just visiting, eh? Freeline trust is Items **1, 11, 21, and 35**. Register or log in and the catalog offers four cooler, more "useful" manuals, Items **2, 12, 22, and 36**. The **$10 UberManual** is all fifty in **UberManual.pdf**. I'm DadJokesDan. The groan is free. Item 50 is not.
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -86,9 +87,9 @@ Keywords: how many, count, access, manuals
 MessageName: dcsj_login_prompt
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Unlock four more suspiciously useful manuals
+UserInput: I'm just visiting. Unlock the cooler manuals
 Action: open_login_modal
-MessageContent: Guest access adds Items **2, 12, 22, and 36**, giving you eight catalog samples before the **$10 UberManual** attempts to become the most thoroughly documented impulse purchase of your day.
+MessageContent: Log in or register. Guest access adds Items **2, 12, 22, and 36**. I'll give you 10000 tokens if you register. That's 10k millicents, a 10 cent spend this site is willing to spend on you. I think it makes "cents" for you to try registering so you can view more of these great manuals. Guests guess less, Members know more!
 MessageConditions: is_visitor
 Keywords: guest, login, unlock, samples, catalog
 
@@ -100,7 +101,7 @@ Keywords: guest, login, unlock, samples, catalog
 MessageName: dcsj_guest_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Guest access confirmed. You now have **8 sample manuals**: Items **1, 11, 21, 35, 2, 12, 22, and 36**. What do eight manuals and a dad make? A shelf-help group. The **$10 UberManual** is **UberManual.pdf**, plus Member access to all fifty.
+MessageContent: You're logged in. Cute. Guest access is eight manuals: Items **1, 11, 21, 35, 2, 12, 22, and 36**. The new ones are fitted sheets, a mini-wastebasket, a toilet paper roll, and a light switch cover. Member access is the other forty-two, including Item 50. The door is the **$10 UberManual**, file **UberManual.pdf**. Guests guess less, Members know more!
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -181,8 +182,8 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Show me the $10 UberManual
 Action: show_offer_dcsj_ubermanual
-MessageContent: What do you call fifty household manuals in one PDF? A dad's idea of a vacation. **$10 USD**. The file is **UberManual.pdf**. Purchase grants Member access to all fifty.
-MessageConditions: !purchased
+MessageContent: You're still visiting. Four manuals is a tour, not a library. **$10 USD** buys **UberManual.pdf** and Member access to all fifty, Item 50 included. The shelf can wait.
+MessageConditions: is_visitor && !purchased
 Keywords: ubermanual, buy, purchase, all 50, pdf, full catalog, $10
 
 ---
@@ -193,7 +194,7 @@ Keywords: ubermanual, buy, purchase, all 50, pdf, full catalog, $10
 MessageName: dcsj_purchase_complete
 MessageType: auto
 MessageStyle: card
-MessageContent: Purchase complete. **Member access is now active for all 50 DA1 catalog items.** The product for this starter journey is **UberManual.pdf**, the compiled collection of all fifty manuals.
+MessageContent: You're a Member. The withholding is over. All **50** manuals are open, including Item 50, **A Practical Guide for Sipping Hot Beverages**. The file on the counter is **UberManual.pdf**.
 MessageConditions: is_member && first_message_after_purchase
 
 ---

@@ -330,7 +330,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		} else {
 			// No row yet: create zero balance under the same transaction path.
 			$current = 0;
-            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- atomic usermeta balance row under transaction (user_id + key, not open meta scans)
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- atomic usermeta balance row under transaction (user_id + key, not open meta scans)
 			$wpdb->insert(
 				$wpdb->usermeta,
 				array(
@@ -340,7 +340,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 				),
 				array( '%d', '%s', '%s' )
 			);
-            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 			$row = $wpdb->get_row(
 				$wpdb->prepare(
@@ -368,7 +368,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$new_balance = $current - $amount;
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- atomic debit by umeta_id under row lock
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- atomic debit by umeta_id under row lock
 		$updated = $wpdb->update(
 			$wpdb->usermeta,
 			array( 'meta_value' => (string) $new_balance ),
@@ -376,7 +376,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 			array( '%s' ),
 			array( '%d' )
 		);
-        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
 		if ( false === $updated ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic token ledger under transaction; no WP API for row lock.
 			$wpdb->query( 'ROLLBACK' );

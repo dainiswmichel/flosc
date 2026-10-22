@@ -8834,7 +8834,7 @@ Example good response:
 				// Merge with any existing bridge data.
 				$existing = $bridge_manager->get_flosc_bridge_data( $user_id );
 				if ( ! $existing ) {
-					$bridge_manager->update_flosc_bridge_data( $user_id, array( 'score' => $score ) );
+					$bridge_manager->flosc_create_bridge_data( $user_id, $quiz_id, $score_data );
 				}
 			}
 
