@@ -42,9 +42,9 @@ MessageConditions: is_visitor && first_show_session
 MessageName: dcsj_browse_freeline
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the Freeline manuals
+UserInput: Show all Freeline manuals
 MessageContent: Freeline Items **1, 11, 21, and 35** are available. Tell me which ordinary household problem deserves a disproportionate amount of documentation.
-MessageConditions: is_visitor || is_guest || is_member
+MessageConditions: is_visitor
 Keywords: freeline, catalog, manuals, da1, public manuals
 
 ---
@@ -76,7 +76,7 @@ MessageConditions: is_guest && first_show_session
 MessageName: dcsj_browse_guest
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me another catalog sample
+UserInput: Show all eight catalog samples
 MessageContent: Tell me what you are dealing with: sheets, wastebaskets, toilet paper, light switch covers, or another household matter of grave procedural importance.
 MessageConditions: is_guest
 Keywords: guest samples, sample manual, browse catalog, manuals
@@ -126,7 +126,7 @@ MessageConditions: is_member && first_message_after_purchase
 MessageName: dcsj_browse_member
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Browse all 50 manuals
+UserInput: Show all 50 manuals
 MessageContent: All fifty catalog items are available. Give me a title, identifier, subject, or ordinary household problem and I will find the relevant manual.
 MessageConditions: is_member
 Keywords: all manuals, full catalog, all 50, browse, da1
