@@ -1,87 +1,64 @@
-# FLOSC candidate — claude-opus-5
+# FLOSC home run candidate v185 — coded by ClaudeCode
 
-**Iteration:** v166
-**Baseline:** v164, commit `f051f94abd9f8768b51544f3d60d925d3ac8a522` (Codex)
-**Source tree:** `flosc-by-claude-opus-5/flosc/`
-**ZIP:** `flosc.zip`, SHA-256 `28248f35fb5004234d091d663b71b49c68cb6a73d9b0ae8430c99eb4a52fa7a5`
-**Source commit:** `fd00517470507e20caa35fbe3ae006a1842bafcd`
+Built from canonical v184 (`a1d9c13`). Five code defects fixed, one test list
+corrected. No feature change, no rename, no refactor beyond the named lines.
 
-## Scope
+## Artifact
 
-Issue 10 only, the `sanitize_file_name()` class. Four handler entry conditions in
-`admin/ivr-messages.php` now require their file-name field to be one text value:
+- `flosc.zip` — 242 files, 153 PHP, one top-level `flosc/` directory
+- `SHA256SUMS` — digest of the zip above
+- `build-manifest.json` — per-file SHA-256 of every shipped file
+- `flosc-by-claude-opus-5/flosc/` — the shipped tree, byte-identical to the zip
 
-| line | field | handler | iteration |
-|---|---|---|---|
-| 765 | `import_ivr_file` | import selected IVR file | v166 |
-| 806 | `ivr_file_select` | change active IVR file | v165 |
-| 903 | `duplicate_ivr_file` | duplicate IVR file | v165 |
-| 940 | `delete_ivr_file` | delete IVR file | v165 |
+## What changed
 
-`sanitize_file_name()` opens at `remove_accents()`, which calls `preg_match()`. A posted
-list raised `preg_match(): Argument #2 ($subject) must be of type string, array given` —
-a fatal on PHP 8, in three of the four cases after the nonce and capability checks had
-already passed. A list now means the handler does not run and the stored state is
-unchanged. A normal file name still works.
+1. **`includes/class-flosc-framework.php`** — a call to
+   `FLOSC_Bridge_Data_Manager::update_flosc_bridge_data()`, a method that does not
+   exist on that class, was a guaranteed fatal on the one path that reaches it
+   (`process_prelogin_data_for_user()`, called from the magic-link login). It now
+   calls `flosc_create_bridge_data( $user_id, $quiz_id, ... )`, the method that
+   exists and that the surrounding `if ( ! $existing )` guard already intends.
+   `$quiz_id` was already in scope.
 
-No new helper: these use `flosc_submitted_fields_are_text()`, added in v164, and match the
-pattern already at `admin/ivr-messages.php:1250`. No suppression was added. The handler
-bodies were not re-indented.
+2. **`includes/class-flosc-framework.php`** — added `request_guard()`, a public
+   accessor. The guard was private, so no class outside the framework could
+   rate-limit, which is why item 3 below was possible.
 
-## Retained journeys
+3. **`includes/sso/class-oauth2-handler.php`** — `check_public_sso_permission()`
+   returned bare `true`, so both public OAuth routes had no rate limit at all.
+   It now applies the same 30-per-15-minutes budget already used by
+   `magic_consume` and `login_token_consume`, returning HTTP 429 over it.
+   Reachable without a login is not the same as unmetered.
 
-Registration, login, flow editing, IVR, SSO, offers and content access are untouched.
-Only the four entry conditions and the iteration header changed.
+4. **`includes/request-guard/class-flosc-request-guard.php`** — `get_client_ip()`
+   trusted `HTTP_CF_CONNECTING_IP`, `HTTP_X_FORWARDED_FOR` and `HTTP_X_REAL_IP`
+   with no validation, and `check_rate_limit()` keyed its counter on the result.
+   Any client can send those headers on a request no proxy rewrote, so every
+   rate limit in the plugin could be bypassed by rotating one header per
+   request. A header value is now honoured only when `FILTER_VALIDATE_IP`
+   accepts it, and the counter key also carries `REMOTE_ADDR`, so a rotated
+   header subdivides the sender's own allowance instead of escaping it.
+   Sites behind a real proxy keep per-visitor counting; no configuration is
+   required and no existing deployment changes behaviour.
 
-## Tests actually run
+5. **`admin/da1.php`** — the catalog key read cast to `(string)` before calling
+   `sanitize_text_field()`, which turned a posted list into the five-character
+   string `Array`. The cast is gone; `sanitize_text_field()` refuses a list on
+   its own and the existing fallback picks a real catalog.
 
-- `php -l` on all 154 shipping PHP files — 0 failures.
-- PHPCS 3.13.6 / WPCS 3.4.1, stock `WordPress` standard, `--ignore-annotations`, sniffs
-  `WordPress.Security.ValidatedSanitizedInput` and `WordPress.Security.EscapeOutput` —
-  0 errors, 0 warnings, 154 files, exit 0.
-- PHPCompatibilityWP, `testVersion 7.4` — 0 findings, exit 0.
-- Executed against WordPress 7.1.3's real `sanitize_file_name()`: for all four handlers an
-  array payload would have raised the TypeError before the change and does not run after
-  it; a normal file name still runs and resolves to `flosc_default_ivr.md`.
-- Repository suite — 53 of 55.
+6. **`includes/sale/providers/class-flosc-token-provider.php`** — four
+   space-indented lines, corrected with `phpcbf`. Whitespace only.
 
-## Failures and unverified items
+7. **`tests/check_provider_identity.php`** — `$intentional` now lists the three
+   readme headings added since v169 (`Code standard`, `Support & Contribution`,
+   `Stay Connected`). Their words were already inside the passing 2500-word
+   Description budget; the assertion exists so they are counted deliberately
+   rather than by accident. Not shipped.
 
-- `tests/check_provider_identity.php` and `tests/check_request_protection.php` fail. They
-  fail identically on v164 and reference no changed file, so they pre-date this work and
-  are not addressed here.
-- **Plugin Check has not run.** No ZIP, no checksum, no manifest, no WordPress page load.
-  This candidate carries no artifact-specific guarantee.
-- The `Github HashID` header still carries v164's value. It was not authored here.
+## Verification
 
-## Full-codebase enumerations behind the claim
+Every file above: `php -l` clean, and 0 errors under the project ruleset's
+`WordPress` standard with `--ignore-annotations`.
 
-Both run mechanically, then every hit opened and read:
-
-- **Issue 10** — 387 request-to-sanitizer call sites. 0 fatal-on-array paths, 0 unguarded
-  paths that write a wrong value. Guards come from named-field checks, the whole-request
-  check, inline `is_string()`/`is_scalar()`, and `flosc_nav_params()`
-  (`includes/flosc-request.php:215-216`), which drops any `$_GET` key that is an array.
-- **Issue 11** — every `echo`/`print`/`<?=` emitting a non-literal. 0 unescaped sites.
-
-Behaviour measured against real WordPress 7.1.3, not assumed: `sanitize_file_name`,
-`sanitize_title`, `sanitize_email`, `sanitize_hex_color`, `esc_url_raw`, `esc_url`, `trim`,
-`strtolower` and `strtoupper` are fatal on an array; `sanitize_text_field`,
-`sanitize_textarea_field` and `sanitize_key` return `''`; `intval` returns `1`;
-`wp_kses_post` and `sanitize_html_class` return the array unchanged.
-
-Selection of a winning candidate, promotion and deployment remain solely with
-Dainis W. Michel.
-
-## Governance files deliberately absent from this candidate
-
-`agents.md`, `CLAUDE.md`, `.cursorrules`, `WORDPRESS-ORG-RELEASE.md` and `handoff*.md` are
-not in `flosc-by-claude-opus-5/flosc/`. They are not plugin source, `.distignore` already
-keeps every one of them out of the zip, and carrying them in a candidate means promoting
-that candidate would overwrite whatever sits on the canonical machine.
-
-This matters for `agents.md` specifically. That file has exactly one commit in this
-repository's history — `3e7234b`, the v160 Codex candidate commit of 2026-10-18 — and no
-commit touches it afterwards. Any edit made to it on the canonical machine since then
-exists nowhere in this repository, so copying the repository's version onto that machine
-destroys those edits silently, with no diff to show for it.
+Not verified here, and not claimed: official Plugin Check, and the reviewer
+journeys on a booting WordPress install. Those are Dainis's runtime steps.

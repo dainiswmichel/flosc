@@ -726,7 +726,8 @@ trait FLOSC_Chat_Turn_Trait {
 
 		// DA1 catalog path: content-agnostic and access-aware across all phases.
 		// Rows are filtered by Status, parent Status, Flow Scope, and VGM before
-		// any catalog payload can reach the conversational layer.
+		// any catalog payload can reach the conversational layer. The resulting
+		// reply is authoritative catalog data, not guidance for a model to rewrite.
 		$da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
 			$message,
 			$flow_id,
@@ -739,8 +740,9 @@ trait FLOSC_Chat_Turn_Trait {
 				'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
 				'phase_change'     => null,
 			);
-			$flosc_response_source = 'da1_catalog_seed';
+			$flosc_response_source = 'da1_catalog';
 		}
+		$flosc_da1_catalog_answer = ( 'da1_catalog' === $flosc_response_source );
 
 		// v1.9.4: Chatpack — compute session tracking metadata (backend-authoritative)
 		// FloscHash: permanent installation ID (generated once, stored in wp_options)
@@ -912,7 +914,8 @@ trait FLOSC_Chat_Turn_Trait {
 
 		// v1.9.0: AI Interpreter Layer
 		// IVR tells us WHAT to communicate. AI decides HOW to say it.
-		// AI always manages the conversation — IVR is guidance, not a direct pipeline.
+		// AI manages IVR guidance. A DA1 catalog answer is already a complete,
+		// access-filtered response and bypasses provider interpretation.
 		$ai_provider         = flosc_get_setting( 'ai_provider', 'ivr' );
 		$ai_available        = ( 'ivr' !== $ai_provider && $this->ai_chat_dispatch );
 		$token_provider      = $this->sale_manager->get_provider( 'tokens' );
@@ -920,7 +923,7 @@ trait FLOSC_Chat_Turn_Trait {
 		$flow_token_enforced = $this->flosc_is_flow_chat_token_enforced( $flow_id );
 		// Charge only AI-backed turns. IVR/default scripted responses should not
 		// debit wallets unless a separate explicit model is added for them.
-		$charge_applies        = ( $ai_available && $token_provider && ! $is_system_generated && $flow_token_enforced );
+		$charge_applies        = ( $ai_available && ! $flosc_da1_catalog_answer && $token_provider && ! $is_system_generated && $flow_token_enforced );
 		$concierge_desk_active = ( '' !== trim( (string) $concierge_guidance ) );
 		if ( $concierge_desk_active ) {
 			$charge_applies = false;
@@ -987,7 +990,7 @@ trait FLOSC_Chat_Turn_Trait {
 		}
 
 		try {
-			if ( $response_message && $ai_available ) {
+			if ( $response_message && $ai_available && ! $flosc_da1_catalog_answer ) {
 				// IVR matched AND AI is configured — AI interprets the IVR guidance
 				// v1.9.2: Chatpack — unified prompt with session tracking + conversation history.
 				$chatpack_prompt = $chatpack_is_first
@@ -1146,8 +1149,8 @@ trait FLOSC_Chat_Turn_Trait {
 
 		// v1.9.0: Log chat exchange for admin monitoring.
 		$flosc_chat_elapsed  = round( ( microtime( true ) - $flosc_chat_start_time ) * 1000 );
-		$flosc_provider_used = $ai_available ? flosc_get_setting( 'ai_provider', 'ivr' ) : 'ivr';
-		$flosc_chain_detail  = ( $this->ai_chat_dispatch && ! empty( $this->ai_chat_dispatch->last_chain_detail ) )
+		$flosc_provider_used = ( $ai_available && ! $flosc_da1_catalog_answer ) ? flosc_get_setting( 'ai_provider', 'ivr' ) : 'ivr';
+		$flosc_chain_detail  = ( ! $flosc_da1_catalog_answer && $this->ai_chat_dispatch && ! empty( $this->ai_chat_dispatch->last_chain_detail ) )
 			? $this->ai_chat_dispatch->last_chain_detail : array();
 		// Persist browsing context markers in the same row so Chat Logs can
 		// show where a visitor session message originated.
@@ -1190,7 +1193,9 @@ trait FLOSC_Chat_Turn_Trait {
 		// served by the dispatch class. Reading the wrong source leaves
 		// real_millicents at 0, which silently collapses the decrement to the
 		// 1-token "billing unavailable" fallback.
-		if ( 'rag' === $flosc_response_source && $flosc_rag_handler && method_exists( $flosc_rag_handler, 'get_last_billing_meta' ) ) {
+		if ( $flosc_da1_catalog_answer ) {
+			$billing_meta = array();
+		} elseif ( 'rag' === $flosc_response_source && $flosc_rag_handler && method_exists( $flosc_rag_handler, 'get_last_billing_meta' ) ) {
 			$billing_meta = (array) $flosc_rag_handler->get_last_billing_meta();
 		} else {
 			$billing_meta = method_exists( $this->ai_chat_dispatch, 'get_last_billing_meta' )
@@ -1209,7 +1214,7 @@ trait FLOSC_Chat_Turn_Trait {
 				// turn was answered without calling a provider — an IVR reply has
 				// no provider request to point at, and inventing one would put a
 				// value in the ledger that no provider can look up.
-				'provider_request_id'     => function_exists( 'flosc_provider_last_request_id' )
+				'provider_request_id'     => ! $flosc_da1_catalog_answer && function_exists( 'flosc_provider_last_request_id' )
 					? flosc_provider_last_request_id()
 					: '',
 				'user_id'                 => is_user_logged_in() ? get_current_user_id() : 0,

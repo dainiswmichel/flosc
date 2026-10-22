@@ -167,7 +167,7 @@
     },
     {
       "title": "Cookbook PDF — full pack",
-      "content": "<p><strong>Member pack:</strong> full 14-recipe bilingual cookbook (PDF).</p>\n<p>After import: upload <code>vegan-latvian-kitchen-cookbook.pdf</code> to Media Library, then replace the link below with that Media URL (or insert the Media file into this post).</p>\n<p><a class=\"flosc-member-pdf\" href=\"https://www.vlat.lv/wp-content/uploads/2026/08/vegan-latvian-kitchen-cookbook-r.pdf\">Download Vegan Latvian Kitchen cookbook (PDF)</a></p>\n<!--flosc_read_more-->\n<p>This post is <code>protected</code> in the FLOSC content category. Visitors and unpaid guests do not get the file. Members (purchase / member grant for this flow) do.</p>\n",
+      "content": "<p><strong>Member pack:</strong> full 14-recipe bilingual cookbook (PDF).</p>\n<p>The bundled cookbook is installed in this site's Media Library with this starter pack.</p>\n<p><a class=\"flosc-member-pdf\" href=\"{{flosc_asset_url:vegan-latvian-kitchen-cookbook.pdf}}\">Download Vegan Latvian Kitchen cookbook (PDF)</a></p>\n<!--flosc_read_more-->\n<p>This post is <code>protected</code> in the FLOSC content category. Visitors and unpaid guests do not get the file. Members (purchase / member grant for this flow) do.</p>\n",
       "excerpt": "Member pack: full 14-recipe bilingual cookbook (PDF).",
       "slug": "vegan-latvian-kitchen-pdf",
       "item": 15,

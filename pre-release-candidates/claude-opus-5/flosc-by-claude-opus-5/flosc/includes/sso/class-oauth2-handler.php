@@ -130,11 +130,23 @@ class OAuth2_Handler {
 
 	/**
 	 * Intentionally public: OAuth authorization and callbacks must be reachable
-	 * before a WordPress login exists.
+	 * before a WordPress login exists. Reachable without a login is not the same
+	 * as unmetered, so the per-client budget below is the same one the magic-link
+	 * and login-token consume paths already apply.
 	 *
-	 * @return bool
+	 * @param WP_REST_Request|null $request Request being authorized.
+	 * @return bool|\WP_Error True when under the budget, error at 429 when over.
 	 */
-	public function check_public_sso_permission() {
+	public function check_public_sso_permission( $request = null ) {
+		$route = $request instanceof WP_REST_Request ? $request->get_route() : 'sso';
+		$guard = function_exists( 'flosc' ) ? \flosc()->request_guard() : null;
+		if ( $guard && ! $guard->check_rate_limit( 'sso_' . $route, 30, 15 * MINUTE_IN_SECONDS ) ) {
+			return new \WP_Error(
+				'flosc_sso_rate_limited',
+				__( 'Too many sign-in attempts. Please try again shortly.', 'flosc' ),
+				array( 'status' => 429 )
+			);
+		}
 		return true;
 	}
 

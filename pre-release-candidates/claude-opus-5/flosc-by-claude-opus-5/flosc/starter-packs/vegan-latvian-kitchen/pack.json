@@ -30,7 +30,7 @@
       "description": "All fourteen recipes as one bilingual PDF."
     }
   ],
-  "needs_configuration": "The $10 offer ships priced but unpaid-for: add your payment credentials under Payments, and connect the cookbook PDF now in your Media Library to post-purchase delivery.",
+  "needs_configuration": "The $10 offer ships priced but unpaid-for: add your payment credentials under Payments.",
   "ships": [
     "catalog.txt",
     "content.json",

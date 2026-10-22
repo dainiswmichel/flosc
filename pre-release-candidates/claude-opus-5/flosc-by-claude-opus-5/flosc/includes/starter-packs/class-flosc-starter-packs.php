@@ -27,6 +27,9 @@ class FLOSC_Starter_Packs {
 	/** Post meta holding the pack's own item number, 1..N. */
 	const POST_ITEM_STAMP = '_flosc_starter_pack_item';
 
+	/** Post meta holding the shipped filename for a Media Library asset. */
+	const ASSET_STAMP = '_flosc_starter_pack_asset';
+
 	/** Term meta stamped on the category a pack creates. */
 	const TERM_STAMP = '_flosc_starter_pack';
 
@@ -350,6 +353,24 @@ class FLOSC_Starter_Packs {
 			$detail[] = sprintf( __( 'Flow installed: %s', 'flosc' ), basename( $target ) );
 		}
 
+		// --- product files ---
+		// Install these before posts so content can point at this site's own Media
+		// Library URL instead of a developer or sample-site URL.
+		if ( ! empty( $pack['assets'] ) ) {
+			$assets = self::install_assets( $pack );
+
+			if ( ! $assets['ok'] ) {
+				self::rollback( $record );
+				return self::result( false, $assets['message'] );
+			}
+
+			if ( ! empty( $assets['ids'] ) ) {
+				$record['attachment_ids'] = $assets['ids'];
+				$pack['asset_urls']       = $assets['urls'];
+				$detail[]                 = $assets['message'];
+			}
+		}
+
 		// --- category and posts ---
 		if ( ! empty( $pack['content']['file'] ) ) {
 			$installed = self::install_content( $pack );
@@ -433,21 +454,6 @@ class FLOSC_Starter_Packs {
 
 				$assignments[ $record['flow_file'] ] = array( $catalog_key );
 				update_option( 'flosc_da1_flow_catalogs', $assignments, false );
-			}
-		}
-
-		// --- product files ---
-		if ( ! empty( $pack['assets'] ) ) {
-			$assets = self::install_assets( $pack );
-
-			if ( ! $assets['ok'] ) {
-				self::rollback( $record );
-				return self::result( false, $assets['message'] );
-			}
-
-			if ( ! empty( $assets['ids'] ) ) {
-				$record['attachment_ids'] = $assets['ids'];
-				$detail[]                 = $assets['message'];
 			}
 		}
 
@@ -646,6 +652,8 @@ class FLOSC_Starter_Packs {
 				continue;
 			}
 
+			$entry = self::resolve_asset_placeholders( $entry, (array) ( $pack['asset_urls'] ?? array() ) );
+
 			$slug    = sanitize_title( (string) ( $entry['category'] ?? '' ) );
 			$term_id = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
 			$item    = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
@@ -702,16 +710,18 @@ class FLOSC_Starter_Packs {
 	 * is present without the operator uploading it by hand.
 	 *
 	 * @param array<string,mixed> $pack Manifest.
-	 * @return array{ok:bool,message:string,ids:array<int,int>}
+	 * @return array{ok:bool,message:string,ids:array<int,int>,urls:array<string,string>}
 	 */
 	private static function install_assets( $pack ) {
-		$ids = array();
+		$ids  = array();
+		$urls = array();
 
 		if ( empty( $pack['assets'] ) || ! is_array( $pack['assets'] ) ) {
 			return array(
 				'ok'      => true,
 				'message' => '',
 				'ids'     => $ids,
+				'urls'    => $urls,
 			);
 		}
 
@@ -722,6 +732,7 @@ class FLOSC_Starter_Packs {
 				'ok'      => false,
 				'message' => (string) $uploads['error'],
 				'ids'     => $ids,
+				'urls'    => $urls,
 			);
 		}
 
@@ -738,6 +749,7 @@ class FLOSC_Starter_Packs {
 					/* translators: %s: file name. */
 					'message' => sprintf( __( 'The pack is missing %s.', 'flosc' ), basename( (string) $asset['file'] ) ),
 					'ids'     => $ids,
+					'urls'    => $urls,
 				);
 			}
 
@@ -749,6 +761,7 @@ class FLOSC_Starter_Packs {
 					'ok'      => false,
 					'message' => __( 'A pack file could not be written to the uploads directory.', 'flosc' ),
 					'ids'     => $ids,
+					'urls'    => $urls,
 				);
 			}
 
@@ -759,7 +772,10 @@ class FLOSC_Starter_Packs {
 					'post_title'     => sanitize_text_field( (string) ( $asset['title'] ?? $file_name ) ),
 					'post_content'   => sanitize_text_field( (string) ( $asset['description'] ?? '' ) ),
 					'post_status'    => 'inherit',
-					'meta_input'     => array( self::POST_STAMP => $pack['slug'] ),
+					'meta_input'     => array(
+						self::POST_STAMP  => $pack['slug'],
+						self::ASSET_STAMP => basename( (string) $asset['file'] ),
+					),
 				),
 				$target,
 				0,
@@ -772,10 +788,24 @@ class FLOSC_Starter_Packs {
 					'ok'      => false,
 					'message' => $post_id->get_error_message(),
 					'ids'     => $ids,
+					'urls'    => $urls,
 				);
 			}
 
-			$ids[] = (int) $post_id;
+			$asset_url = wp_get_attachment_url( (int) $post_id );
+
+			if ( ! is_string( $asset_url ) || '' === $asset_url ) {
+				wp_delete_attachment( (int) $post_id, true );
+				return array(
+					'ok'      => false,
+					'message' => __( 'A pack file was added, but WordPress could not create its Media Library URL.', 'flosc' ),
+					'ids'     => $ids,
+					'urls'    => $urls,
+				);
+			}
+
+			$ids[]                                       = (int) $post_id;
+			$urls[ basename( (string) $asset['file'] ) ] = esc_url_raw( $asset_url );
 		}
 
 		return array(
@@ -783,7 +813,59 @@ class FLOSC_Starter_Packs {
 			/* translators: %d: number of files. */
 			'message' => sprintf( __( '%d product file(s) added to the media library.', 'flosc' ), count( $ids ) ),
 			'ids'     => $ids,
+			'urls'    => $urls,
 		);
+	}
+
+	/**
+	 * Resolve bundled-asset placeholders in one content entry.
+	 *
+	 * @param array<string,mixed>  $entry      Content entry.
+	 * @param array<string,string> $asset_urls Shipped filename to local URL.
+	 * @return array<string,mixed>
+	 */
+	private static function resolve_asset_placeholders( $entry, $asset_urls ) {
+		$content = (string) ( $entry['content'] ?? '' );
+
+		foreach ( $asset_urls as $file_name => $asset_url ) {
+			$placeholder = '{{flosc_asset_url:' . basename( (string) $file_name ) . '}}';
+			$content     = str_replace( $placeholder, esc_url_raw( $asset_url ), $content );
+		}
+
+		$entry['content'] = $content;
+		return $entry;
+	}
+
+	/**
+	 * Build the filename-to-URL map for assets already owned by a pack.
+	 *
+	 * @param array<string,mixed> $pack           Manifest.
+	 * @param array<int,int>      $attachment_ids Attachment IDs.
+	 * @return array<string,string>
+	 */
+	private static function asset_urls_from_attachments( $pack, $attachment_ids ) {
+		$urls       = array();
+		$asset_rows = array_values( (array) ( $pack['assets'] ?? array() ) );
+
+		foreach ( array_values( $attachment_ids ) as $index => $attachment_id ) {
+			if ( 'attachment' !== get_post_type( (int) $attachment_id ) ) {
+				continue;
+			}
+
+			$file_name = (string) get_post_meta( (int) $attachment_id, self::ASSET_STAMP, true );
+
+			if ( '' === $file_name && isset( $asset_rows[ $index ]['file'] ) ) {
+				$file_name = basename( (string) $asset_rows[ $index ]['file'] );
+			}
+
+			$asset_url = wp_get_attachment_url( (int) $attachment_id );
+
+			if ( '' !== $file_name && is_string( $asset_url ) && '' !== $asset_url ) {
+				$urls[ basename( $file_name ) ] = esc_url_raw( $asset_url );
+			}
+		}
+
+		return $urls;
 	}
 
 	/**
@@ -1244,6 +1326,30 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
+		// --- product files ---
+		// Restore and map these before posts so a recreated post receives the
+		// local Media Library URL while existing, operator-edited posts stay alone.
+		$live = array();
+
+		foreach ( (array) ( $record['attachment_ids'] ?? array() ) as $attachment_id ) {
+			if ( 'attachment' === get_post_type( (int) $attachment_id ) ) {
+				$live[] = (int) $attachment_id;
+			}
+		}
+
+		if ( ! empty( $pack['assets'] ) && count( $live ) < count( (array) $pack['assets'] ) ) {
+			$assets = self::install_assets( $pack );
+
+			if ( ! $assets['ok'] ) {
+				return self::result( false, $assets['message'] );
+			}
+
+			$record['attachment_ids'] = array_values( array_unique( array_merge( $live, $assets['ids'] ) ) );
+			$detail[]                 = $assets['message'];
+		}
+
+		$pack['asset_urls'] = self::asset_urls_from_attachments( $pack, (array) ( $record['attachment_ids'] ?? array() ) );
+
 		// --- categories and posts ---
 		$restored = self::repair_content( $pack );
 
@@ -1300,24 +1406,6 @@ class FLOSC_Starter_Packs {
 						$detail[] = __( 'Catalog reassigned to its flow.', 'flosc' );
 					}
 				}
-			}
-		}
-
-		// --- product files ---
-		$live = array();
-
-		foreach ( (array) ( $record['attachment_ids'] ?? array() ) as $attachment_id ) {
-			if ( 'attachment' === get_post_type( (int) $attachment_id ) ) {
-				$live[] = (int) $attachment_id;
-			}
-		}
-
-		if ( ! empty( $pack['assets'] ) && count( $live ) < count( (array) $pack['assets'] ) ) {
-			$assets = self::install_assets( $pack );
-
-			if ( $assets['ok'] ) {
-				$record['attachment_ids'] = array_values( array_unique( array_merge( $live, $assets['ids'] ) ) );
-				$detail[]                 = $assets['message'];
 			}
 		}
 
@@ -1459,6 +1547,8 @@ class FLOSC_Starter_Packs {
 			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
 				continue;
 			}
+
+			$entry = self::resolve_asset_placeholders( $entry, (array) ( $pack['asset_urls'] ?? array() ) );
 
 			$item = isset( $entry['item'] ) ? (int) $entry['item'] : $index + 1;
 

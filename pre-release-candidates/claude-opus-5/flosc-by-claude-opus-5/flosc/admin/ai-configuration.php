@@ -194,8 +194,8 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 
 <details class="flosc-ai-acc" id="flosc-personality-section" open>
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?> <?php echo esc_html( $flosc_personality_label ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Choose from the dropdown list to attach an AI personality to this flow’s API.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Attached Personality', 'flosc' ); ?> <?php echo esc_html( $flosc_personality_label ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attach personality. Input Sticky Aspects. Enable Sticky for Users.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <table class="form-table">
@@ -258,8 +258,8 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 
 <details class="flosc-ai-acc">
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider, keys, and test', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'This flow’s API. Install-wide keys live under All Flows.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider, Keys, and Test', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'This flow’s AI API. Fetch, describe, tune, and chain available AI models.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 
@@ -894,7 +894,7 @@ endif;
 
 <details class="flosc-ai-acc">
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Response, context, and phases', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Response, Context, and Phase Settings', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'How this flow talks across Freeline, Login, Offer, Sale, Content.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
@@ -1142,8 +1142,8 @@ jQuery(document).ready(function($) {
 	 * from the attached row.
 	 *
 	 * So the confirmation is stashed before reloading and shown afterwards,
-	 * beside a dropdown that now reads the same name. Choose DadJokeDan, reload,
-	 * see DadJokeDan attached and a line saying when it was written.
+	 * beside a dropdown that now reads the same name. Choose DadJokesDan, reload,
+	 * see DadJokesDan attached and a line saying when it was written.
 	 */
 	var floscAttachStash = 'flosc_attach_confirmation';
 
@@ -2938,7 +2938,7 @@ jQuery(document).ready(function($) {
 <details class="flosc-ai-acc">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Speech-to-text', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Only needed for audio quizzes.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Speech input settings.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 
@@ -2947,7 +2947,7 @@ jQuery(document).ready(function($) {
 
 <h2>🎤 Speech-to-Text Configuration</h2>
 <p class="description flosc-ai-intro">
-	Configure speech-to-text for audio-based quiz questions (pronunciation quizzes, audio-response scoring). <strong>Only needed if you're using audio quizzes.</strong>
+	Configure transcription for recorded voice input and audio-based quiz responses.
 </p>
 
 <table class="form-table">
@@ -2955,11 +2955,11 @@ jQuery(document).ready(function($) {
 		<th scope="row"><label for="flow_stt_provider">Speech-to-Text Provider</label></th>
 		<td>
 			<select name="flow_stt_provider" id="flow_stt_provider" class="flosc-ai-provider-select">
-				<option value="assemblyai" <?php selected( $flosc_flow_settings['stt_provider'] ?? '', 'assemblyai' ); ?>>AssemblyAI (High Accuracy)</option>
-				<option value="openai" <?php selected( $flosc_flow_settings['stt_provider'] ?? '', 'openai' ); ?>>OpenAI Whisper (Multilingual)</option>
-				<option value="custom" <?php selected( $flosc_flow_settings['stt_provider'] ?? '', 'custom' ); ?>>Custom Endpoint (Self-hosted)</option>
+				<option value="assemblyai" <?php selected( $flosc_flow_settings['stt_provider'] ?? '', 'assemblyai' ); ?>>AssemblyAI</option>
+				<option value="openai" <?php selected( $flosc_flow_settings['stt_provider'] ?? '', 'openai' ); ?>>OpenAI Whisper</option>
+				<option value="custom" <?php selected( $flosc_flow_settings['stt_provider'] ?? '', 'custom' ); ?>>Custom endpoint</option>
 			</select>
-			<p class="description">Choose the service that will transcribe audio recordings from quiz takers.</p>
+			<p class="description">Choose the service that transcribes recorded audio for this flow.</p>
 		</td>
 	</tr>
 	<tr>
@@ -2972,7 +2972,7 @@ jQuery(document).ready(function($) {
 				<a href="https://www.assemblyai.com/dashboard/signup" target="_blank" class="button button-secondary flosc-ai-key-link">
 					📥 Get Your AssemblyAI API Key Here
 				</a><br>
-				<span class="flosc-ai-key-desc">Industry-leading accuracy for speech recognition.</span>
+				<span class="flosc-ai-key-desc">AssemblyAI transcription credentials for this flow.</span>
 			</p>
 		</td>
 	</tr>
@@ -2982,7 +2982,7 @@ jQuery(document).ready(function($) {
 		</th>
 		<td>
 			<input type="url" id="flow_custom_stt_endpoint" name="flow_custom_stt_endpoint" value="<?php echo esc_attr( $flosc_flow_settings['custom_stt_endpoint'] ?? '' ); ?>" class="regular-text flosc-ai-stt-input" placeholder="https://your-stt-endpoint.com/transcribe">
-			<p class="description">Only required if using "Custom Endpoint" option above. URL to your self-hosted speech-to-text service.</p>
+			<p class="description">URL for a self-hosted or third-party speech-to-text service.</p>
 		</td>
 	</tr>
 </table>
@@ -3058,8 +3058,8 @@ if ( 'rebuilt' === $flosc_sci_action ) {
 ?>
 <details class="flosc-ai-acc" id="flosc-site-index-section"<?php echo '' !== $flosc_sci_msg ? ' open' : ''; ?>>
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Site content index', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Posts this flow’s chat may cite.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Site Content Index', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Index selected site content for access-aware retrieval in chat.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <hr class="flosc-section-divider">
@@ -3428,7 +3428,7 @@ if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 <details class="flosc-ai-acc" id="flosc-kb-section">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attached on the Knowledge Base tab.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Review knowledge base files.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <hr class="flosc-section-divider">
@@ -3603,7 +3603,7 @@ $flosc_accuracy_personality_label = '' !== $flosc_personality_label
 
 <details class="flosc-ai-acc" id="flosc-accuracy-test">
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider Accuracy Test', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint">
 	<?php
 	/* translators: %s: selected personality label. */

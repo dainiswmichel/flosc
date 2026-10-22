@@ -25,18 +25,45 @@ class FLOSC_Request_Guard {
 	public function get_client_ip() {
 		// Cloudflare (most specific, hardest to spoof when CF is in use).
 		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-			return sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) );
+			$forwarded = self::valid_ip( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
+			if ( '' !== $forwarded ) {
+				return $forwarded;
+			}
 		}
 		// Standard proxy header (X-Forwarded-For can be comma-separated; first = real client).
 		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-			return sanitize_text_field( trim( $ips[0] ) );
+			$ips       = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+			$forwarded = self::valid_ip( trim( $ips[0] ) );
+			if ( '' !== $forwarded ) {
+				return $forwarded;
+			}
 		}
 		// AWS ALB / generic proxy.
 		if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-			return sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
+			$forwarded = self::valid_ip( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
+			if ( '' !== $forwarded ) {
+				return $forwarded;
+			}
 		}
 		return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' ) );
+	}
+
+	/**
+	 * A value from a proxy header, kept only when it really is an IP address.
+	 *
+	 * The three headers above are supplied by the client on any request that no
+	 * proxy rewrote, so an arbitrary string in one of them would otherwise
+	 * become a counter bucket of its own.
+	 *
+	 * @param string $candidate Header value.
+	 * @return string The address, or '' when the value is not one.
+	 */
+	private static function valid_ip( $candidate ) {
+		$candidate = is_string( $candidate ) ? trim( $candidate ) : '';
+		if ( '' === $candidate || ! filter_var( $candidate, FILTER_VALIDATE_IP ) ) {
+			return '';
+		}
+		return $candidate;
 	}
 
 	/**
@@ -49,8 +76,13 @@ class FLOSC_Request_Guard {
 	 */
 	public function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
 		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.).
-		$ip    = $this->get_client_ip();
-		$key   = 'flosc_rate_' . md5( $endpoint . $ip );
+		$ip = $this->get_client_ip();
+		// The peer address joins the key because the forwarded headers above are
+		// client-supplied on any request no proxy rewrote. Keying on both means a
+		// rotated header splits the sender's own allowance rather than escaping it,
+		// while a real proxy still counts each visitor separately.
+		$peer  = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+		$key   = 'flosc_rate_' . md5( $endpoint . '|' . $ip . '|' . $peer );
 		$count = get_transient( $key );
 		if ( ! $count ) {
 			$count = 0;

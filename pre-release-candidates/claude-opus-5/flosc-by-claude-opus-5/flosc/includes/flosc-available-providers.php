@@ -85,7 +85,7 @@ if ( ! function_exists( 'flosc_install_provider_catalog' ) ) {
 			'assemblyai' => array(
 				'label' => __( 'AssemblyAI', 'flosc' ),
 				'kind'  => 'stt',
-				'hint'  => __( 'Speech-to-text only (audio quizzes — not a chat personality).', 'flosc' ),
+				'hint'  => __( 'Speech-to-text for voice input and audio quizzes; not a chat personality.', 'flosc' ),
 				'url'   => 'https://www.assemblyai.com/app/account',
 			),
 		);

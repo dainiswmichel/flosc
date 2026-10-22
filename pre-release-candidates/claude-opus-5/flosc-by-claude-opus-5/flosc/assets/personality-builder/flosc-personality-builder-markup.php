@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="identity-row">
 		<div class="field">
 			<label for="soulName">Name</label>
-			<input id="soulName" type="text" placeholder="e.g. DadJokeDan" autocomplete="off">
+			<input id="soulName" type="text" placeholder="e.g. DadJokesDan" autocomplete="off">
 		</div>
 		<div class="field field--wide">
 			<label for="soulRole">Role</label>

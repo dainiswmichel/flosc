@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Auth-cookie inventory (remaining justified paths when MagicLink OFF):
  * - SSO OAuth success → log_user_in + short-lived flosc_login_token (cross-domain).
  * - User registration + email verification (cookie set when the user clicks the verify URL).
- * - Purchase-driven wp_create_user after payment/IPN proof (PayPal/ClickBank).
+ * - Purchase-driven wp_insert_user after payment/IPN proof (PayPal/ClickBank).
  * - Post-purchase instant cookie / emailed login token: default OFF
  *   (flosc_post_purchase_instant_login / flosc_post_purchase_login_token).
  * - Logged-in guest profile password set (re-issues cookie after wp_set_password).
@@ -415,7 +415,8 @@ trait FLOSC_Magic_Link_Trait {
 			$is_privileged = user_can( $user_id, 'manage_options' ) || user_can( $user_id, 'edit_users' );
 			$is_bare       = empty( $roles_now )
 				|| ( 1 === count( $roles_now ) && in_array( 'subscriber', $roles_now, true ) );
-			if ( ! $has_member && ! $has_guest && '' !== $guest_level && ! $is_privileged && $is_bare ) {
+			$safe_guest    = flosc_registration_role( $guest_level );
+			if ( ! $has_member && ! $has_guest && '' !== $guest_level && ! $is_privileged && $is_bare && $guest_level === $safe_guest ) {
 				$existing_user->set_role( $guest_level );
 			}
 
@@ -699,25 +700,32 @@ trait FLOSC_Magic_Link_Trait {
 
 		$username = $this->generate_username_from_email( $email );
 		$password = wp_generate_password( 16, true, true );
+		$role     = flosc_registration_role( 'subscriber' );
+		if ( is_wp_error( $role ) ) {
+			return $role;
+		}
 		// Skip user_register token grants until email activation.
 		$this->flosc_skip_registration_token_grants = true;
-		$user_id                                    = wp_create_user( $username, $password, $email );
+		$user_id                                    = wp_insert_user(
+			array(
+				'user_login' => wp_slash( $username ),
+				'user_pass'  => $password,
+				'user_email' => wp_slash( $email ),
+				'role'       => $role,
+			)
+		);
 		$this->flosc_skip_registration_token_grants = false;
 		if ( is_wp_error( $user_id ) ) {
 			return $user_id;
 		}
 
-		$user_id  = (int) $user_id;
-		$new_user = get_user_by( 'id', $user_id );
-		$flow_id  = sanitize_key( (string) $flow_id );
+		$user_id = (int) $user_id;
+		$flow_id = sanitize_key( (string) $flow_id );
 
 		update_user_meta( $user_id, '_flosc_registration_method', 'email' );
 		update_user_meta( $user_id, '_flosc_registered_at', current_time( 'mysql' ) );
 		if ( '' !== $flow_id ) {
 			update_user_meta( $user_id, '_flosc_registration_flow', $flow_id );
-		}
-		if ( $new_user ) {
-			$new_user->set_role( 'subscriber' );
 		}
 		update_user_meta( $user_id, '_flosc_email_account_status', 'pending' );
 
@@ -839,7 +847,8 @@ trait FLOSC_Magic_Link_Trait {
 		$is_privileged = user_can( $user_id, 'manage_options' ) || user_can( $user_id, 'edit_users' );
 		$is_bare       = empty( $roles )
 			|| ( 1 === count( $roles ) && in_array( 'subscriber', $roles, true ) );
-		if ( ! $has_member && ! $has_guest && '' !== $guest_level && ! $is_privileged && $is_bare ) {
+		$safe_guest    = flosc_registration_role( $guest_level );
+		if ( ! $has_member && ! $has_guest && '' !== $guest_level && ! $is_privileged && $is_bare && $guest_level === $safe_guest ) {
 			$user->set_role( $guest_level );
 		}
 
