@@ -296,6 +296,16 @@ trait FLOSC_Admin_Trait {
 			'flosc-da1',
 			array( $this, 'redirect_to_da1_tab' )
 		);
+
+		// Starter Packs — global screen directly beneath DA1.
+		add_submenu_page(
+			'flosc-settings',
+			'Starter Packs',
+			'Starter Packs',
+			'manage_options',
+			'flosc-starter-packs',
+			array( $this, 'redirect_to_starter_packs_tab' )
+		);
 	}
 
 	/**
@@ -1044,6 +1054,7 @@ trait FLOSC_Admin_Trait {
 			'flosc-documentation'    => 'documentation',
 			'flosc-docs'             => 'documentation',
 			'flosc-da1'              => 'da1',
+			'flosc-starter-packs'    => 'starter-packs',
 		);
 
 		if ( ! isset( $map[ $page ] ) ) {
@@ -1683,6 +1694,13 @@ trait FLOSC_Admin_Trait {
 	 */
 	public function redirect_to_da1_tab() {
 		$this->redirect_to_settings_tab( 'da1' );
+	}
+
+	/**
+	 * Redirect to Starter Packs tab.
+	 */
+	public function redirect_to_starter_packs_tab() {
+		$this->redirect_to_settings_tab( 'starter-packs' );
 	}
 
 	/**
