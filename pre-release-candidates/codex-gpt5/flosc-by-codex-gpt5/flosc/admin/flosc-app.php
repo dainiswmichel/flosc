@@ -19,7 +19,7 @@ if ( '' === $flosc_visitor_name ) {
 // Resolved at render time from the personality attached right now, so an IVR
 // greeting written once introduces whoever is currently attached. The welcome
 // bubble is flow-owned, not model-generated: without this a flow that switched
-// from Br3nda to DadJokeDan still opened in Br3nda's name.
+// from Br3nda to DadJokesDan still opened in Br3nda's name.
 $flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field' )
 	? trim( (string) flosc_personality_library_resolve_field( 'ai_personality_role', '' ) )
 	: '';

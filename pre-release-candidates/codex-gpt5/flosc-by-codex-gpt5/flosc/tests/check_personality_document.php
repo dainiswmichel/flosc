@@ -124,7 +124,7 @@ foreach ( $rungs as $gain => $word ) {
 		strpos( $code, '{ g: ' . $gain . ', word: "' . $word . '" }' ) !== false, true );
 }
 /* Every word a shipped profile uses has to be a rung. "often" was written into
-   Dad Joke Dan by hand and is not on the ladder any more, so the designer
+   Dad Jokes Dan by hand and is not on the ladder any more, so the designer
    would never produce it and a Save would silently change the document. */
 $flosc_lib_src = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
 preg_match_all( "/'frequency: ([a-z ]+)'/", $flosc_lib_src, $flosc_used );

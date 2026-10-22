@@ -1142,8 +1142,8 @@ jQuery(document).ready(function($) {
 	 * from the attached row.
 	 *
 	 * So the confirmation is stashed before reloading and shown afterwards,
-	 * beside a dropdown that now reads the same name. Choose DadJokeDan, reload,
-	 * see DadJokeDan attached and a line saying when it was written.
+	 * beside a dropdown that now reads the same name. Choose DadJokesDan, reload,
+	 * see DadJokesDan attached and a line saying when it was written.
 	 */
 	var floscAttachStash = 'flosc_attach_confirmation';
 

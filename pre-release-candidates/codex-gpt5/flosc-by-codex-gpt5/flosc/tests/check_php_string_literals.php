@@ -91,7 +91,7 @@ $expected = array(
 	'friendly'     => '65504c279fbfd6ff4fb58da922af230fa778c60ba022f7927997226ea2e91762',
 	'tech'         => '7ebc8e7e369bb62e5a5cc710be3c12d2c3b7279a09b4a5340c6882e8916dba38',
 	'bubblybetty'  => '45d038547aeb399f7dc23cf9a04fd6a8083946c1e4be577ee7df5b04354c18e3',
-	'dadjokedan'   => 'b7293376b83588031e67e653758eef298921dbece39b67a5c97802493010d05b',
+	'dadjokedan'   => '26d7bf2941d6ec02e10b22315227163a3c98beb813bde220c1514552be7da590',
 );
 $defaults = flosc_personality_library_defaults();
 foreach ( $expected as $id => $hash ) {

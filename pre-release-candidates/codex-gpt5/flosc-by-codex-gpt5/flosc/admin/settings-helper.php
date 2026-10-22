@@ -233,8 +233,11 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 
 	// Iframe chat route: flow slug on this host, else full-page app URL from get_app_url.
 	$chat_app = '';
-	if ( '' !== $flow_slug ) {
-		$chat_app = esc_url_raw( home_url( '/' . $flow_slug . '/' ), array( 'http', 'https' ) );
+	if ( '' !== $flow_slug && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_app_url' ) ) {
+		$chat_flow         = $flow_settings;
+		$chat_flow['slug'] = $flow_slug;
+		unset( $chat_flow['domain'], $chat_flow['custom_domain'] );
+		$chat_app = esc_url_raw( (string) flosc()->get_app_url( $chat_flow ), array( 'http', 'https' ) );
 	}
 	if ( '' === $chat_app && '' !== $fullscreen ) {
 		$chat_app = $fullscreen;

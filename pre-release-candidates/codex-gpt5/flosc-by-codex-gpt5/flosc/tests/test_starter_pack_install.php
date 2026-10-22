@@ -205,7 +205,7 @@ ok('catalog assigned to its flow', $assign['dcsj_ivr.md'] ?? null, ['dcsj_extrem
 ok('catalog listed in the DA1 index',
     get_option('flosc_da1_catalogs')['dcsj_extremely_ordinary_manuals']['filename'] ?? null,
     'flosc_da1_catalog_dcsj_extremely_ordinary_manuals.tsv');
-ok('DA1 flow references DadJokeDan',
+ok('DA1 flow references DadJokesDan',
     get_option('flosc_flow_dcsj_ivr')['personality_library_id'] ?? null, 'dadjokedan');
 ok('DA1 flow points at its own category',
     get_option('flosc_flow_dcsj_ivr')['content_item_category'] ?? null, 'flosc-da1-catalog-posts');
