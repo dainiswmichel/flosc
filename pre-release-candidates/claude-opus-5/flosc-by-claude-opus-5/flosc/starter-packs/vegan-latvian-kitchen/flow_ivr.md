@@ -121,8 +121,8 @@ Keywords: pankukas, pankūkas, potato pancakes, kartupelu, kartupeļu
 MessageName: vlkit_member_piragi
 MessageType: suggested_user_autoprompt
 MessageStyle: card
-UserInput: I want pīrāgi!
-MessageContent: **Vegānie pīrāgi** — soft yeast dough, smoky mushroom–tofu filling, crescent shape, golden bake. Full method is in the member recipe post on the site.
+UserInput: Recommend one recipe involving suspicious dough
+MessageContent: Dough with a secret. The catalog will own up to it below, and the full method is in the member recipe post.
 MessageConditions: is_member
 Keywords: piragi, pīrāgi, spekrausi, buns, pastries
 
@@ -267,8 +267,8 @@ Keywords: menu, all, list, catalog, recipes, fourteen, 14
 MessageName: vlkit_member_pdf
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Download the PDF
-MessageContent: Your member pack is **Cookbook PDF — full pack** (slug `vegan-latvian-kitchen-pdf`). Open that post for the download link.
+UserInput: Suggest the catalog item that is just a PDF
+MessageContent: One catalog entry is not a recipe at all. It is the whole book.
 MessageConditions: is_member
 Keywords: pdf, download, ebook, cookbook pack, print
 

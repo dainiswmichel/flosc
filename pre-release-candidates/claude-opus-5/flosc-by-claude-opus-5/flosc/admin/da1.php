@@ -961,7 +961,7 @@ if ( isset( $flosc_da1_post['flosc_da1_attach_flows'] ) ) {
 	$flosc_da1_rendered_catalogs = array();
 	if ( isset( $flosc_da1_post['flosc_da1_rendered_catalogs'] ) && is_array( $flosc_da1_post['flosc_da1_rendered_catalogs'] ) ) {
 		foreach ( $flosc_da1_post['flosc_da1_rendered_catalogs'] as $flosc_da1_rc ) {
-			$flosc_da1_rc_key = flosc_da1_normalize_key( sanitize_text_field( (string) $flosc_da1_rc ) );
+			$flosc_da1_rc_key = flosc_da1_normalize_key( sanitize_text_field( $flosc_da1_rc ) );
 			if ( '' !== $flosc_da1_rc_key && isset( $flosc_da1_catalogs[ $flosc_da1_rc_key ] ) && ! in_array( $flosc_da1_rc_key, $flosc_da1_rendered_catalogs, true ) ) {
 				$flosc_da1_rendered_catalogs[] = $flosc_da1_rc_key;
 			}
