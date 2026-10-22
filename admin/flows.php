@@ -24,7 +24,7 @@ $flosc_get      = flosc_nav_params();
 	<?php endif; ?>
 	<hr class="wp-header-end">
 	
-	<?php if ( isset( $_GET['deleted'] ) ) : ?>
+	<?php if ( flosc_nav_param_present( 'deleted' ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p>Flow deleted.</p></div>
 	<?php endif; ?>
 	<?php settings_errors( 'flosc' ); ?>
