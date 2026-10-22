@@ -1960,6 +1960,78 @@ if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_library_migrate_dadjokesdan_name' ) ) {
+	/**
+	 * Rename the shipped DadJokeDan identity without replacing saved custom work.
+	 *
+	 * The stable library id remains dadjokedan. Only exact legacy display-name
+	 * strings are changed, so every other saved field remains administrator-owned.
+	 *
+	 * @return void
+	 */
+	function flosc_personality_library_migrate_dadjokesdan_name() {
+		$marker = 'flosc_dadjokesdan_name_migrated';
+		if ( '1' === get_option( $marker, '' ) ) {
+			return;
+		}
+
+		$option_key = flosc_personality_library_option_key();
+		$library    = get_option( $option_key, false );
+		if ( ! is_array( $library ) || ! isset( $library['dadjokedan'] ) || ! is_array( $library['dadjokedan'] ) ) {
+			update_option( $marker, '1', false );
+			return;
+		}
+
+		$row     = $library['dadjokedan'];
+		$changed = false;
+		if ( isset( $row['label'] ) && 'Dad Joke Dan' === $row['label'] ) {
+			$row['label'] = 'Dad Jokes Dan';
+			$changed      = true;
+		}
+		if ( isset( $row['ai_personality_name'] ) && 'DadJokeDan' === $row['ai_personality_name'] ) {
+			$row['ai_personality_name'] = 'DadJokesDan';
+			$changed                    = true;
+		}
+
+		foreach ( array( 'ai_base_prompt', 'workshop_json' ) as $field ) {
+			if ( ! isset( $row[ $field ] ) || ! is_string( $row[ $field ] ) ) {
+				continue;
+			}
+			$renamed = str_replace(
+				array( 'Dad Joke Dan', 'DadJokeDan' ),
+				array( 'Dad Jokes Dan', 'DadJokesDan' ),
+				$row[ $field ]
+			);
+			if ( $renamed !== $row[ $field ] ) {
+				$row[ $field ] = $renamed;
+				$changed       = true;
+			}
+		}
+
+		if ( $changed ) {
+			$previous_hash = isset( $row['profile_hash'] ) ? (string) $row['profile_hash'] : '';
+			$profile       = isset( $row['ai_base_prompt'] ) ? (string) $row['ai_base_prompt'] : '';
+			$workshop      = isset( $row['workshop_json'] ) ? (string) $row['workshop_json'] : '';
+			$current_hash  = flosc_personality_fingerprint( $workshop, $profile );
+			if ( $current_hash !== $previous_hash ) {
+				$previous_version            = max( 1, (int) ( $row['profile_version'] ?? 0 ) );
+				$row['profile_version']      = (string) ( '' === $previous_hash ? $previous_version : $previous_version + 1 );
+				$row['profile_hash']         = $current_hash;
+				$row['profile_modified_gmt'] = gmdate( 'Y-m-d H:i:s' );
+			}
+			$library['dadjokedan'] = $row;
+			update_option( $option_key, $library, false );
+			if ( get_option( $option_key, null ) !== $library ) {
+				return;
+			}
+		}
+
+		update_option( $marker, '1', false );
+	}
+
+	add_action( 'init', 'flosc_personality_library_migrate_dadjokesdan_name', 3 );
+}
+
 if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 	/**
 	 * Personality library save all.

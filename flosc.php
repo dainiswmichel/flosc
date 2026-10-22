@@ -5,7 +5,7 @@
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
  * Internal Iteration: v181
- * Github HashID: 3dd926a03eb7516e3fbba0f14a920417cd9f5999
+ * Github HashID: 08bf32a19299211fcb148240248021e4e97ba510
  * Requires at least: 7.1
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
