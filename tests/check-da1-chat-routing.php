@@ -178,6 +178,92 @@ flosc_da1_chat_check(
 	'The Guest catalog count was not eight.'
 );
 
+$flosc_da1_item_eleven = $flosc_da1_catalogs->build_catalog_reply(
+	'show me 11',
+	'dcsj_ivr',
+	'dcsj_ivr.md',
+	'visitor'
+);
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_item_eleven, "11. Beginner's Guide to Refrigerator Shelf Adjustment" ),
+	'A short Row Key request did not return the literal catalog title for Item 11.'
+);
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_item_eleven, 'Instructions for removing, repositioning, leveling, and reinstalling adjustable refrigerator shelves.' ),
+	'A short Row Key request did not deliver the catalog description in chat.'
+);
+flosc_da1_chat_check(
+	false === strpos( $flosc_da1_item_eleven, 'Household Three-Hole Punch User Manual for Beginners' ),
+	'A short Row Key request returned an unrelated accessible item.'
+);
+flosc_da1_chat_check(
+	false === strpos( $flosc_da1_item_eleven, '/content/' ),
+	'A short Row Key request fabricated a WordPress content URL.'
+);
+
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_visitor_list, "11. Beginner's Guide to Refrigerator Shelf Adjustment" ),
+	'The catalog list replaced Item 11 with its visible list position.'
+);
+
+flosc_da1_chat_check(
+	'You currently have access to 4 catalog items.' === $flosc_da1_catalogs->build_catalog_reply(
+		'How many manuals am I trusted with?',
+		'dcsj_ivr',
+		'dcsj_ivr.md',
+		'visitor'
+	),
+	'The playful Visitor count prompt did not use the authoritative catalog count.'
+);
+
+$flosc_da1_three_recommendations = $flosc_da1_catalogs->build_catalog_reply(
+	'Suggest 3 absurdly serious manuals',
+	'dcsj_ivr',
+	'dcsj_ivr.md',
+	'visitor'
+);
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_three_recommendations, 'Here are 3 catalog items:' ),
+	'The three-item recommendation prompt did not return three accessible catalog items. Actual: ' . $flosc_da1_three_recommendations
+);
+flosc_da1_chat_check(
+	false === strpos( $flosc_da1_three_recommendations, 'Advanced Techniques for Folding Fitted Sheets' ),
+	'The Visitor recommendation prompt exposed a Guest catalog item.'
+);
+
+$flosc_da1_guest_item_twelve = $flosc_da1_catalogs->build_catalog_reply(
+	'Show me Item 12',
+	'dcsj_ivr',
+	'dcsj_ivr.md',
+	'guest'
+);
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_guest_item_twelve, '12. Effortless Mini-Wastebasket Maintenance and Repair' ),
+	'The Guest Item 12 AutoPrompt did not resolve its literal catalog row.'
+);
+
+$flosc_da1_member_item_fifty = $flosc_da1_catalogs->build_catalog_reply(
+	'Show me Item 50',
+	'dcsj_ivr',
+	'dcsj_ivr.md',
+	'member'
+);
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_member_item_fifty, '50. A Practical Guide for Sipping Hot Beverages' ),
+	'The Member Item 50 AutoPrompt did not resolve its literal catalog row.'
+);
+
+$flosc_da1_hot_beverage = $flosc_da1_catalogs->build_catalog_reply(
+	'Find one manual about hot beverages',
+	'dcsj_ivr',
+	'dcsj_ivr.md',
+	'member'
+);
+flosc_da1_chat_check(
+	false !== strpos( $flosc_da1_hot_beverage, '50. A Practical Guide for Sipping Hot Beverages' ),
+	'The hot-beverage discovery AutoPrompt did not find the matching catalog item.'
+);
+
 $flosc_da1_turn_path = dirname( __DIR__ ) . '/includes/chat-turn/trait-flosc-chat-turn.php';
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- CLI regression test inspects one local source file.
 $flosc_da1_turn_file   = file_get_contents( $flosc_da1_turn_path );
