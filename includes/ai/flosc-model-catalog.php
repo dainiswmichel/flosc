@@ -28,7 +28,7 @@
  *                                    generativelanguage.googleapis.com discovery doc
  *   xAI        GET /v1/language-models   Bearer auth, no pagination
  *                                    → { models: [ { id, aliases } ] }
- *                                    docs.x.ai rest-api-reference/inference/models
+ *                                    docs.x.ai/developers/rest-api-reference/inference/models
  *                                    Not /v1/models: that one lists image and
  *                                    video generation models alongside the chat
  *                                    ones, and offering grok-imagine-image as a

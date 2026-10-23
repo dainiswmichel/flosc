@@ -93,7 +93,7 @@ trait FLOSC_Chat_Turn_Trait {
 	private function handle_chat_turn( $request ) {
 		$flosc_chat_start_time = microtime( true );
 		$flosc_response_source = 'ivr'; // Track how response was generated.
-		$context_raw            = $request->get_param( 'context' );
+		$context_raw           = $request->get_param( 'context' );
 		if ( ! flosc_rest_fields_are_text(
 			$request,
 			array( 'message', 'turn_id', 'resume_turn_id', 'session_id', 'journey_id', 'flow_id', 'ivr_file', 'ivr_guidance', 'ivr_message_name' )

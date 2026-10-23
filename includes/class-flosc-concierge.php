@@ -741,7 +741,7 @@ class FLOSC_Concierge {
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
-		$map = array(
+		$map        = array(
 			'flow'               => 'flosc_cncrg_flow',
 			'keyword'            => 'flosc_cncrg_keyword',
 			'password'           => 'flosc_cncrg_password',

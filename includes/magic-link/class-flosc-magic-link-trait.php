@@ -1962,7 +1962,7 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post  = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
 		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
@@ -2070,7 +2070,7 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post  = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
 		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
@@ -2105,7 +2105,7 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post  = wp_unslash( $_POST );
+		$post = wp_unslash( $_POST );
 		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
