@@ -1443,7 +1443,7 @@ class FLOSC_AI_Chat_Dispatch {
 					$help_text .= "1. The model ID is retired or not enabled on your xAI account (requested: {$model})\n";
 					$help_text .= "2. AI tab → xAI Model → choose Grok 4.5 (or another current ID)\n";
 					$help_text .= "3. Click Save Settings, then Test again\n";
-					$help_text .= '4. Model catalog: https://docs.x.ai/developers/models';
+					$help_text .= '4. Model catalog: https://docs.x.ai/developers/rest-api-reference/inference/models';
 				} else {
 					$help_text .= "1. Check the error message above for details\n";
 					$help_text .= "2. Verify your API key at https://console.x.ai\n";

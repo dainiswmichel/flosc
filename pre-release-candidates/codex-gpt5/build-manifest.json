@@ -1,16 +1,14 @@
 {
   "schema_version": 13,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 home-run candidate v188",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v189",
   "owner": "Codex (OpenAI)",
   "created_michel_date": "2026-10m-23d",
-  "code_commit": "8365fe94536334ce17a3627c1284205d444614ca",
-  "source_identity_commit": "cd3ddffd58889d9e64ed18744aa6fceece4d9939",
-  "code_commit_subject": "Home run candidate v188 coded by Codex.",
+  "release_commit": "61f57e3",
+  "release_commit_subject": "Prepare FLOSC 8.0.0 v189 submission header.",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v188",
-  "github_hashid_at_pack": "8365fe94536334ce17a3627c1284205d444614ca",
+  "candidate_iteration": "v189",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
@@ -19,8 +17,8 @@
     "root": "flosc/",
     "entries": 282,
     "php_files": 153,
-    "bytes": 2842201,
-    "sha256": "03f1e2e6c1ee7beac8c46d8d0f7d478eb4ffbabba095f7ce48dd9cb08224721a",
+    "bytes": 2842163,
+    "sha256": "b1546d4a62b39d85a7c15afbb4b748203c68c5b0518fc6b50eef02e960f7540f",
     "tests_entries": 0
   },
   "verification": {
@@ -28,8 +26,8 @@
     "changed_php_wordpress_standard": "0 errors; documented nonce recommendations only",
     "focused_regressions": "passed",
     "artifact_security_gate": "passed: 0 errors; 22 documented nonce recommendations",
-    "plugin_check": "passed on fresh burner: 0 errors; 22 documented nonce recommendations",
-    "burner_install": "passed: fresh WordPress 7.1.3, FLOSC v188 active, WP_DEBUG true, pretty permalinks",
+    "plugin_check": "pending fresh-burner verification",
+    "burner_install": "pending fresh-burner reconstruction from this exact ZIP",
     "runtime_browser_test": "pending operator starter-pack and AI-provider acceptance test"
   }
 }

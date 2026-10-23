@@ -206,7 +206,7 @@ class FLOSC_Trajectory {
 			return;
 		}
 
-		$map = array(
+		$map        = array(
 			'flow'               => 'flosc_trj_flow',
 			'keywords'           => 'flosc_trj_keywords',
 			'instructions'       => 'flosc_trj_instructions',

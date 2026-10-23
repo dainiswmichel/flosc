@@ -1,15 +1,14 @@
-# FLOSC 8.0.0 — Codex home-run candidate v188
+# FLOSC 8.0.0 — Codex home-run candidate v189
 
 Installable artifact: `flosc.zip`. Full source snapshot:
 `flosc-by-codex-gpt5/flosc/`.
 
 | Field | Value |
 |---|---|
-| Internal iteration | v188 |
+| Candidate iteration | v189 |
 | Plugin version / stable tag | 8.0.0 |
-| Code commit | `8365fe94536334ce17a3627c1284205d444614ca` |
-| Source identity commit | `cd3ddffd58889d9e64ed18744aa6fceece4d9939` |
-| ZIP SHA-256 | `03f1e2e6c1ee7beac8c46d8d0f7d478eb4ffbabba095f7ce48dd9cb08224721a` |
+| Release commit | `61f57e3` |
+| ZIP SHA-256 | `b1546d4a62b39d85a7c15afbb4b748203c68c5b0518fc6b50eef02e960f7540f` |
 | ZIP entries | 282 files; 153 PHP files |
 
 ## Scope
@@ -24,6 +23,10 @@ Installable artifact: `flosc.zip`. Full source snapshot:
   Membership Journey, and refine the DA1 journey's autoprompt wording.
 - Keep all existing access conditions, login actions, offers, prices, catalog
   permissions, and starter-pack installation behavior unchanged.
+- Correct the final six WPCS assignment-alignment warnings and update the two
+  xAI help links to their current official documentation locations.
+- Exclude private iteration and Git commit bookkeeping from the public plugin
+  header and distributable ZIP.
 
 ## Verification
 
@@ -32,11 +35,11 @@ Installable artifact: `flosc.zip`. Full source snapshot:
 - Pack manifests are valid JSON; revised catalog rows carry availability labels.
 - Built-ZIP WordPress.org gate passes every local gate: 0 security errors and
   the 22 documented nonce recommendations.
-- Official Plugin Check 2.1.0 passes on a fresh WordPress 7.1.3 burner with 0
-  errors and the same 22 documented nonce recommendations.
+- Official Plugin Check verification is recorded after the v189 ZIP is installed
+  on the fresh WordPress burner.
 - Built ZIP has one `flosc/` root and excludes tests, development tools,
   dependencies, and candidate trees.
-- The burner was rebuilt from empty WordPress and database volumes, with
-  `WP_DEBUG` enabled and normal pretty permalinks working without `index.php`.
+- The burner verification record is completed after reconstruction from empty
+  WordPress and database volumes.
 - Runtime starter-pack and AI-provider testing remains the operator acceptance
   step.
