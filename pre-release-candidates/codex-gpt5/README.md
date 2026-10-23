@@ -1,18 +1,21 @@
-# FLOSC 8.0.0 — Codex home-run candidate v189
+# FLOSC 8.0.0 — Codex home-run candidate v190
 
 Installable artifact: `flosc.zip`. Full source snapshot:
 `flosc-by-codex-gpt5/flosc/`.
 
 | Field | Value |
 |---|---|
-| Candidate iteration | v189 |
+| Candidate iteration | v190 |
 | Plugin version / stable tag | 8.0.0 |
-| Release commit | `61f57e3` |
-| ZIP SHA-256 | `b1546d4a62b39d85a7c15afbb4b748203c68c5b0518fc6b50eef02e960f7540f` |
+| Release commit | `5fb1c3b` |
+| ZIP SHA-256 | `3379855c54a5dfa64781f70b5dbaa0aa42bda054bf2cba8928886e6fd8281e3b` |
 | ZIP entries | 282 files; 153 PHP files |
 
 ## Scope
 
+- Supply DA1's missing public identity: “The Extremely Ordinary Instruction
+  Manual Collection” and “Fifty overly-serious manuals for ordinary household
+  tasks.”
 - Remember each floscAdmin's selected working flow separately from the initial
   default flow, including across FLOSC sidebar navigation.
 - Use a working Gemini default while directing floscAdmins to Google's current

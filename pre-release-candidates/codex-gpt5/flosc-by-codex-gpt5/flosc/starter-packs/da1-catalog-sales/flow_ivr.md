@@ -6,6 +6,8 @@
 ## Settings (YAML)
 ```yaml
 name: "DA1 Catalog Sales Journey"
+title: "The Extremely Ordinary Instruction Manual Collection"
+tagline: "Fifty overly-serious manuals for ordinary household tasks."
 personality_library_id: "dadjokedan"
 ai_enable_ivr_context: true
 ai_enable_content_access: true
