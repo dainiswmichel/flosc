@@ -26,8 +26,8 @@
     "changed_php_wordpress_standard": "0 errors; documented nonce recommendations only",
     "focused_regressions": "passed",
     "artifact_security_gate": "passed: 0 errors; 22 documented nonce recommendations",
-    "plugin_check": "pending fresh-burner verification",
-    "burner_install": "pending fresh-burner reconstruction from this exact ZIP",
+    "plugin_check": "completed on fresh burner: 0 errors; 22 documented nonce recommendations; operator acceptance remains independent",
+    "burner_install": "passed: fresh WordPress 7.1.3, FLOSC active, WP_DEBUG true, pretty permalinks",
     "runtime_browser_test": "pending operator starter-pack and AI-provider acceptance test"
   }
 }

@@ -35,11 +35,11 @@ Installable artifact: `flosc.zip`. Full source snapshot:
 - Pack manifests are valid JSON; revised catalog rows carry availability labels.
 - Built-ZIP WordPress.org gate passes every local gate: 0 security errors and
   the 22 documented nonce recommendations.
-- Official Plugin Check verification is recorded after the v189 ZIP is installed
-  on the fresh WordPress burner.
+- Official Plugin Check 2.1.0 completed on the fresh WordPress 7.1.3 burner
+  with 0 errors and the same 22 documented nonce recommendations.
 - Built ZIP has one `flosc/` root and excludes tests, development tools,
   dependencies, and candidate trees.
-- The burner verification record is completed after reconstruction from empty
-  WordPress and database volumes.
+- The burner was reconstructed from empty WordPress and database volumes with
+  `WP_DEBUG` enabled and normal pretty permalinks working without `index.php`.
 - Runtime starter-pack and AI-provider testing remains the operator acceptance
   step.
