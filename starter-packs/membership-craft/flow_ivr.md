@@ -7,6 +7,8 @@
 ## Settings (YAML)
 ```yaml
 name: "Membership Craft"
+title: "Membership Craft"
+tagline: "Build a membership community people value — and keep."
 personality_library_id: "friendly"
 ai_enable_ivr_context: true
 ai_enable_content_access: true

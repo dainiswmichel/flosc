@@ -63,7 +63,7 @@ MessageConditions: is_visitor && first_show_session
 MessageName: dcsj_browse_freeline
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me a visitor manual
+UserInput: Please show me a visitor manual
 MessageContent: **Beginner's Guide to Refrigerator Shelf Adjustment** is available to visitors. Finally, the shelf can stop freelancing. Would you like the whole thing, another title, or the way to get all 50?
 MessageConditions: is_visitor
 Keywords: freeline, catalog, manuals, da1, public manuals
@@ -74,7 +74,7 @@ Keywords: freeline, catalog, manuals, da1, public manuals
 MessageName: dcsj_show_item_11
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the refrigerator shelf manual
+UserInput: I'm curious about the refrigerator shelf manual
 MessageContent: **Beginner's Guide to Refrigerator Shelf Adjustment** is available to visitors. A refrigerator shelf is about to receive more procedural attention than it expected. Would you like the whole thing or another title?
 MessageConditions: is_visitor
 Keywords: item 11, refrigerator shelf, freeline manual
@@ -85,7 +85,7 @@ Keywords: item 11, refrigerator shelf, freeline manual
 MessageName: dcsj_recommend_freeline
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Suggest 3 absurdly serious manuals
+UserInput: Suggest 3 absurdly serious manuals, please
 MessageContent: Start with **Effective Wobbly Table De-Wobbling Techniques**, available to visitors. It restores stability to furniture and, briefly, to society. Want the whole thing or one more title?
 MessageConditions: is_visitor
 Keywords: recommend, three manuals, serious manuals, freeline
@@ -96,7 +96,7 @@ Keywords: recommend, three manuals, serious manuals, freeline
 MessageName: dcsj_count_freeline
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: How many manuals am I trusted with?
+UserInput: How many manuals can you show me now?
 MessageContent: Visitors can open four manuals. Registering gives you **10,000 tokens** and opens four more, for eight total. The **$10 UberManual** opens all 50. I can share any title now; the titles have escaped containment.
 MessageConditions: is_visitor
 Keywords: how many, count, access, manuals
@@ -130,7 +130,7 @@ MessageConditions: is_guest && first_show_session
 MessageName: dcsj_browse_guest
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Share another guest title
+UserInput: Share another title please
 MessageContent: **The Complete Guide to Replacing a Light Switch Cover** is available to guests. The switch has been covered; the case remains open. Want the whole thing, another title, or the complete collection?
 MessageConditions: is_guest
 Keywords: guest samples, sample manual, browse catalog, manuals
@@ -141,7 +141,7 @@ Keywords: guest samples, sample manual, browse catalog, manuals
 MessageName: dcsj_show_item_12
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the mini-wastebasket manual
+UserInput: I'd like to see the mini-wastebasket manual
 MessageContent: **Effortless Mini-Wastebasket Maintenance and Repair** is available to guests. The mini-wastebasket has requested qualified maintenance personnel. Would you like the whole thing?
 MessageConditions: is_guest
 Keywords: item 12, wastebasket, guest manual
@@ -152,7 +152,7 @@ Keywords: item 12, wastebasket, guest manual
 MessageName: dcsj_recommend_guest
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Recommend one ordinary emergency manual
+UserInput: Please recommend one ordinary emergency manual
 MessageContent: **The Complete Beginner's Guide to Replacing a Toilet Paper Roll** is available to guests. At last, a rotating paper system with documented continuity planning. Want the whole thing or another title?
 MessageConditions: is_guest
 Keywords: recommend, one manual, ordinary emergency, guest
@@ -174,7 +174,7 @@ Keywords: how many, count, access, guest catalog
 MessageName: dcsj_guest_ubermanual
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Show me the $10 UberManual
+UserInput: Show me the $10 UberManual Offer
 Action: show_offer_dcsj_ubermanual
 MessageContent: Why did the **$10 UberManual** go to the library? It holds 50 manuals and still wanted to be checked out. Ten dollars, one **UberManual.pdf**, and member access to all 50. For this demonstration, use access code **GETFLOSCD**.
 MessageConditions: (is_visitor || is_guest) && !purchased
@@ -225,7 +225,7 @@ MessageConditions: is_member && first_message_after_purchase
 MessageName: dcsj_browse_member
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Share a title from the full collection
+UserInput: Share a title from the full collection, please
 MessageContent: All 50 manuals are available to members. Give me an ordinary household problem and I will reveal one or two titles with the gravity the matter does not deserve.
 MessageConditions: is_member
 Keywords: all manuals, full catalog, all 50, browse, da1
@@ -236,7 +236,7 @@ Keywords: all manuals, full catalog, all 50, browse, da1
 MessageName: dcsj_featured_manual
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Suggest one ridiculously serious manual
+UserInput: Please suggest one ridiculously serious manual
 MessageContent: Excellent. Here is one item from the full DA1 catalog, selected with a level of gravity ordinarily reserved for emergency legislation.
 MessageConditions: is_member
 Keywords: serious manual, ridiculous, ordinary, find manual
@@ -269,7 +269,7 @@ Keywords: recommend, three manuals, serious manuals, member
 MessageName: dcsj_find_hot_beverage
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
-UserInput: Find one manual about hot beverages
+UserInput: Is there a manual about hot beverages available?
 MessageContent: The complete catalog contains a hot-beverage procedure for anyone unwilling to leave sipping to chance.
 MessageConditions: is_member
 Keywords: find manual, hot beverages, sipping, catalog

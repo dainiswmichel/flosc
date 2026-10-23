@@ -2191,6 +2191,7 @@ class FLOSC_Framework {
 
 		// Set default flow (must run before admin HTML — not inside settings.php render).
 		add_action( 'admin_post_flosc_set_default_flow', array( $this, 'handle_set_default_flow' ) );
+		add_action( 'admin_post_flosc_set_working_flow', array( $this, 'handle_set_working_flow' ) );
 
 		// Settings Save / trajectory / concierge POSTs redirect — must run before admin HTML
 		// or wp_safe_redirect fails and exit leaves a white content pane.
@@ -3666,8 +3667,8 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$post  = wp_unslash( $_POST );
-		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+		$post               = wp_unslash( $_POST );
+		$ivr                = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
 			? sanitize_file_name( $post['flosc_return_ivr'] )
 			: '';
 		$flosc_kb_label_raw = $post['kb_label'] ?? '';
@@ -3780,10 +3781,18 @@ The Team',
 		// Run through AI — force fresh (no cache) by using test_mode=true.
 		$response = $this->ai_chat_dispatch->get_response( $message, $system_prompt, $history, true );
 		if ( is_wp_error( $response ) ) {
-			wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+			wp_send_json_error( array( 'message' => $response->get_error_message() ), 502 );
+		}
+		if ( ! is_string( $response ) || '' === trim( $response ) ) {
+			wp_send_json_error( array( 'message' => __( 'The AI provider returned an empty response.', 'flosc' ) ), 502 );
 		}
 
-		$response_text = $response ?? '(no response)';
+		$response_text = $response;
+		$billing_meta  = method_exists( $this->ai_chat_dispatch, 'get_last_billing_meta' )
+			? (array) $this->ai_chat_dispatch->get_last_billing_meta()
+			: array();
+		$usage         = is_array( $billing_meta['usage'] ?? null ) ? $billing_meta['usage'] : array();
+		$tokens_in     = max( 0, intval( $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? 0 ) );
 
 		// Pass/fail evaluation.
 		$pass      = true;
@@ -3800,7 +3809,7 @@ The Team',
 		wp_send_json_success(
 			array(
 				'response'  => $response_text,
-				'tokens_in' => 0, // Token counts need provider-specific response parsing; not done yet.
+				'tokens_in' => $tokens_in,
 				'pass'      => $pass,
 				'corrected' => $corrected,
 			)
@@ -12167,7 +12176,7 @@ Example good response:
 		if ( isset( $_POST['provider'] ) && ( is_string( $_POST['provider'] ) || is_numeric( $_POST['provider'] ) ) ) {
 			$provider = sanitize_key( wp_unslash( $_POST['provider'] ) );
 		}
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 
 		// Same flow context the connection test establishes. admin-ajax has no
 		// URL to detect the flow from, so without this the per-flow key is
@@ -12317,8 +12326,8 @@ Example good response:
 		if ( isset( $_POST['provider'] ) && ( is_string( $_POST['provider'] ) || is_numeric( $_POST['provider'] ) ) ) {
 			$provider = sanitize_key( wp_unslash( $_POST['provider'] ) );
 		}
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-		$model    = '';
+		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model = '';
 		if ( isset( $_POST['model'] ) && ( is_string( $_POST['model'] ) || is_numeric( $_POST['model'] ) ) ) {
 			$model = sanitize_text_field( wp_unslash( $_POST['model'] ) );
 		}

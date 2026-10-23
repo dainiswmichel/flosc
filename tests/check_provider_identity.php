@@ -329,11 +329,11 @@ ok( 'the Changelog is under its own 5000-word budget', ( $buckets['changelog'] ?
  * The official sample readme.txt carries "== A brief Markdown Example ==", so a
  * section name outside the seven is sanctioned -- the parser re-emits its title
  * as an <h3> and charges its words to Description. The risk is not that it
- * happens, it is that it happens without anyone counting the words. These two
- * are deliberate and counted by the budget assertions above; anything else
+ * happens, it is that it happens without anyone counting the words. These
+ * headings are deliberate and counted by the budget assertions above; anything else
  * appearing here is not.
  */
-$intentional = array( 'External Services', 'FLOSC Site Policies' );
+$intentional = array( 'External Services', 'FLOSC Site Policies', 'Code standard', 'Support & Contribution', 'Stay Connected' );
 $unexpected  = array_values( array_diff( $routed, $intentional ) );
 ok( '  no heading is routed into Description without being counted', $unexpected, array() );
 

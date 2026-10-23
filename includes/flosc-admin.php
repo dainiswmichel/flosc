@@ -1463,6 +1463,60 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
+	 * Remember the flow this floscAdmin selected for the current body of work.
+	 *
+	 * The default flow answers only the first visit. Once an administrator uses
+	 * Switch Flow, sidebar shortcuts and global tabs return to this per-user
+	 * working flow until another flow is selected.
+	 *
+	 * @return void
+	 */
+	public function handle_set_working_flow() {
+		if ( ! is_user_logged_in() || ! current_user_can( 'edit_others_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to select a FLOSC flow.', 'flosc' ) );
+		}
+
+		check_admin_referer( 'flosc_set_working_flow', 'flosc_working_flow_nonce' );
+
+		$post = wp_unslash( $_POST );
+		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'ivr', 'tab', 'view' ) ) ) {
+			wp_die( esc_html__( 'Missing flow selection.', 'flosc' ) );
+		}
+
+		$ivr  = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$tab  = isset( $post['tab'] ) ? sanitize_key( (string) $post['tab'] ) : 'identity';
+		$view = isset( $post['view'] ) ? sanitize_key( (string) $post['view'] ) : 'single';
+
+		if ( '' === $ivr ) {
+			wp_die( esc_html__( 'Missing flow selection.', 'flosc' ) );
+		}
+
+		$flow_id = sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		if ( ! flosc_flows()->can_access_flow_admin( $flow_id ) ) {
+			wp_die( esc_html__( 'You do not have permission to select that FLOSC flow.', 'flosc' ) );
+		}
+
+		if ( ! in_array( $view, array( 'single', 'all' ), true ) ) {
+			$view = 'single';
+		}
+
+		update_user_meta( get_current_user_id(), '_flosc_admin_working_ivr', $ivr );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page' => 'flosc-settings',
+					'ivr'  => $ivr,
+					'tab'  => $tab,
+					'view' => $view,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Redirect to a FLOSC Settings tab. Prefer HTTP redirect; if headers already
 	 * sent, render the settings shell so the admin never gets a blank pane.
 	 *
