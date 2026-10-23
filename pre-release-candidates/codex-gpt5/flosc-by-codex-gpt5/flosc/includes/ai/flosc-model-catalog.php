@@ -399,7 +399,7 @@ if ( ! function_exists( 'flosc_default_model' ) ) {
 			'anthropic' => 'claude-sonnet-4-5-20250929',
 			'openai'    => 'gpt-5.4-mini',
 			'xai'       => 'grok-4.6',
-			'gemini'    => 'gemini-3.7-flash',
+			'gemini'    => 'gemini-3.5-flash-lite',
 		);
 
 		return (string) ( $defaults[ sanitize_key( (string) $provider ) ] ?? '' );

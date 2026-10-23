@@ -240,7 +240,7 @@ if ( ! function_exists( 'flosc_provider_intricacies' ) ) {
 					'label'  => __( 'Google Gemini', 'flosc' ),
 					'wants'  => __( 'REST generateContent: systemInstruction parts text (text only). Conversation is contents with roles user and model — never assistant. First content must be user. Key in x-goog-api-key. Temperature lives in generationConfig, not in the personality.', 'flosc' ),
 					'path'   => __( 'POST generateContent · personality → systemInstruction', 'flosc' ),
-					'models' => __( 'FLOSC default gemini-3.7-flash. Fetch models this key can use keeps only ids that support generateContent. Gemini 3.x uses thinking_level; do not stuff chain-of-thought into the soul to fake it.', 'flosc' ),
+					'models' => __( 'FLOSC default gemini-3.5-flash-lite. Fetch models this key can use keeps only ids that support generateContent. Google changes model availability and capacity over time, so its model guide should inform the floscAdmin’s final choice. Gemini 3.x uses thinking_level; do not stuff chain-of-thought into the soul to fake it.', 'flosc' ),
 				),
 				'ivr'       => array(
 					'label' => __( 'IVR (scripted)', 'flosc' ),

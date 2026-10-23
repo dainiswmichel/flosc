@@ -604,7 +604,7 @@ endif;
 			// Stable text endpoints only. The image, TTS, embedding and video
 			// ids Google lists alongside these cannot hold a conversation.
 			$flosc_gemini_model_options = array(
-				'gemini-3.7-flash'      => 'Gemini 3.7 Flash',
+				'gemini-3.8-flash'      => 'Gemini 3.8 Flash',
 				'gemini-3.6-flash'      => 'Gemini 3.6 Flash',
 				'gemini-3.5-flash'      => 'Gemini 3.5 Flash',
 				'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash-Lite',
@@ -614,7 +614,7 @@ endif;
 				class="regular-text flosc-ai-model-select"
 				list="flosc-gemini-model-list"
 				value="<?php echo esc_attr( $flosc_ai_gemini_model ); ?>"
-				placeholder="gemini-3.7-flash">
+				placeholder="gemini-3.5-flash-lite">
 			<datalist id="flosc-gemini-model-list">
 				<?php foreach ( $flosc_gemini_model_options as $flosc_g_id => $flosc_g_label ) : ?>
 					<option value="<?php echo esc_attr( $flosc_g_id ); ?>"><?php echo esc_html( $flosc_g_label ); ?></option>
@@ -631,8 +631,8 @@ endif;
 			</p>
 			<div class="flosc-model-picker" data-for="flow_ai_gemini_model" hidden></div>
 			<p class="description">
-				The model ID sent through AI Provider for Google. Fetch lists what this key can use;
-				any current ID can also be typed in.
+				<?php echo esc_html__( 'The model ID sent through AI Provider for Google. Fetch lists what this key can use; any current ID can also be typed in. Google changes model availability and capacity over time, so its model guide can help match a model to this project’s speed, capability, and cost needs.', 'flosc' ); ?>
+				<a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" rel="noopener noreferrer"><?php echo esc_html__( 'Google Gemini model guide', 'flosc' ); ?></a>
 			</p>
 		</td>
 	</tr>
@@ -3803,6 +3803,28 @@ jQuery(document).ready(function($) {
 		var totalTokensIn = 0;
 		var passes = 0;
 		var feedback = 0;
+		function accuracyFailureMessage(payload, fallback) {
+			var data = payload && payload.data ? payload.data : payload;
+			if (typeof data === 'string' && data) {
+				return data;
+			}
+			if (data && typeof data.message === 'string' && data.message) {
+				return data.message;
+			}
+			return fallback;
+		}
+
+		function appendAccuracyFailure(idx, message) {
+			$('#flosc-accuracy-tbody').append(
+				'<tr>'
+				+ '<td>' + (idx + 1) + '</td>'
+				+ '<td class="flosc-text-12">' + $('<div>').text(testMessages[idx]).html() + '</td>'
+				+ '<td class="flosc-text-12 flosc-request-failed">' + $('<div>').text(message).html() + '</td>'
+				+ '<td>0</td>'
+				+ '<td class="flosc-pass-status flosc-pass-status--fail">✗</td>'
+				+ '</tr>'
+			);
+		}
 
 		function runMessage(idx) {
 			if (idx >= testMessages.length) {
@@ -3830,6 +3852,11 @@ jQuery(document).ready(function($) {
 					history: JSON.stringify(history)
 				},
 				success: function(resp) {
+					if (!resp || resp.success !== true) {
+						appendAccuracyFailure(idx, accuracyFailureMessage(resp, 'The AI provider request failed.'));
+						runMessage(idx + 1);
+						return;
+					}
 					var r = resp.data || {};
 					var response_text = r.response || '(no response)';
 					var tokens_in = r.tokens_in || 0;
@@ -3864,9 +3891,10 @@ jQuery(document).ready(function($) {
 
 					runMessage(idx + 1);
 				},
-				error: function() {
-					$('#flosc-accuracy-tbody').append(
-						'<tr><td>' + (idx + 1) + '</td><td>' + $('<div>').text(testMessages[idx]).html() + '</td><td colspan="3" class="flosc-request-failed">Request failed</td></tr>'
+				error: function(xhr) {
+					appendAccuracyFailure(
+						idx,
+						accuracyFailureMessage(xhr && xhr.responseJSON ? xhr.responseJSON : null, 'The AI provider request failed.')
 					);
 					runMessage(idx + 1);
 				}

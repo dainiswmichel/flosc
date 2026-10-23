@@ -6,6 +6,8 @@
 ## Settings (YAML)
 ```yaml
 name: "WordPress Content Membership Journey"
+title: "The Gloriously Unnecessary Library"
+tagline: "One hundred investigations into deeply unserious everyday mysteries."
 personality_library_id: "bubblybetty"
 ai_enable_ivr_context: true
 ai_enable_content_access: true

@@ -298,6 +298,7 @@ if ( empty( $flosc_ivr_files ) ) {
 $flosc_get = flosc_nav_params();
 
 $flosc_default_ivr_meta_key = '_flosc_admin_default_ivr';
+$flosc_working_ivr_meta_key = '_flosc_admin_working_ivr';
 $flosc_current_user_id      = get_current_user_id();
 
 // Selected IVR file (flow).
@@ -305,6 +306,11 @@ $flosc_selected_ivr  = '';
 $flosc_requested_ivr = isset( $flosc_get['ivr'] ) ? sanitize_file_name( $flosc_get['ivr'] ) : '';
 if ( '' !== $flosc_requested_ivr && in_array( $flosc_requested_ivr, $flosc_ivr_files, true ) ) {
 	$flosc_selected_ivr = $flosc_requested_ivr;
+}
+
+$flosc_user_working_ivr = sanitize_file_name( (string) get_user_meta( $flosc_current_user_id, $flosc_working_ivr_meta_key, true ) );
+if ( '' === $flosc_selected_ivr && '' !== $flosc_user_working_ivr && in_array( $flosc_user_working_ivr, $flosc_ivr_files, true ) ) {
+	$flosc_selected_ivr = $flosc_user_working_ivr;
 }
 
 $flosc_user_default_ivr = sanitize_file_name( (string) get_user_meta( $flosc_current_user_id, $flosc_default_ivr_meta_key, true ) );
@@ -854,7 +860,7 @@ if ( isset( $flosc_post['flosc_save'] ) ) {
 	$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
 	$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 	// Real multi-selects. Any other flow_ list is not a setting value.
-	$flosc_flow_list_keys           = array(
+	$flosc_flow_list_keys = array(
 		'companion_include_pages',
 		'companion_include_posts',
 		'companion_include_categories',
@@ -1037,12 +1043,12 @@ if ( isset( $flosc_post['flosc_save'] ) ) {
 				$flosc_new_settings[ $flosc_url_key ] = esc_url_raw( (string) $flosc_new_settings[ $flosc_url_key ] );
 			}
 		}
-		$flosc_login_mode_raw                          = $flosc_new_settings['login_destination_mode'] ?? 'auto';
+		$flosc_login_mode_raw = $flosc_new_settings['login_destination_mode'] ?? 'auto';
 		if ( ! flosc_submitted_value_is_text( $flosc_login_mode_raw ) ) {
 			$flosc_login_mode_raw = 'auto';
 		}
-		$flosc_mode_login                              = sanitize_key( (string) $flosc_login_mode_raw );
-		$flosc_new_settings['login_destination_mode']  = in_array( $flosc_mode_login, array( 'auto', 'buddyboss_profile', 'core_profile', 'custom_url' ), true )
+		$flosc_mode_login                             = sanitize_key( (string) $flosc_login_mode_raw );
+		$flosc_new_settings['login_destination_mode'] = in_array( $flosc_mode_login, array( 'auto', 'buddyboss_profile', 'core_profile', 'custom_url' ), true )
 			? $flosc_mode_login : 'auto';
 		$flosc_logout_mode_raw                        = $flosc_new_settings['logout_destination_mode'] ?? 'entry_flow';
 		if ( ! flosc_submitted_value_is_text( $flosc_logout_mode_raw ) ) {
@@ -1642,7 +1648,7 @@ if ( isset( $flosc_post['flosc_save'] ) ) {
 			'flow_companion_exclude_categories',
 			'flow_companion_exclude_tags',
 		);
-		$flosc_companion_fields_ok = true;
+		$flosc_companion_fields_ok   = true;
 		foreach ( $flosc_post as $flosc_companion_key => $flosc_companion_value ) {
 			if ( 0 !== strpos( (string) $flosc_companion_key, 'flow_companion_' ) ) {
 				continue;
@@ -2013,8 +2019,8 @@ if ( isset( $flosc_post['flosc_save'] ) ) {
 	// v3.0.0: Lessons tab — parse content_item_groups repeater
 	// Repeater fields are NOT flow_-prefixed (content_item_group_quiz[], content_item_group_category[]).
 	if ( in_array( $flosc_active_tab, array( 'lessons', 'content' ), true ) ) {
-		$flosc_group_quizzes       = $flosc_post['content_item_group_quiz'] ?? array();
-		$flosc_group_categories    = $flosc_post['content_item_group_category'] ?? array();
+		$flosc_group_quizzes    = $flosc_post['content_item_group_quiz'] ?? array();
+		$flosc_group_categories = $flosc_post['content_item_group_category'] ?? array();
 		if ( ! is_array( $flosc_group_quizzes ) ) {
 			$flosc_group_quizzes = array();
 		}
@@ -2162,8 +2168,8 @@ if ( isset( $flosc_post['flosc_save'] ) ) {
 
 		// v1.9.8: Guest menu — dynamic items from repeater
 		// Purchase/offer actions are the profile-bar Upgrade button, not plain menu rows.
-		$flosc_guest_labels   = $flosc_post['guest_menu_label'] ?? array();
-		$flosc_guest_actions  = $flosc_post['guest_menu_action'] ?? array();
+		$flosc_guest_labels  = $flosc_post['guest_menu_label'] ?? array();
+		$flosc_guest_actions = $flosc_post['guest_menu_action'] ?? array();
 		if ( flosc_submitted_list_is_text( $flosc_guest_labels ) && flosc_submitted_list_is_text( $flosc_guest_actions ) ) {
 			$flosc_new_guest_menu = array();
 			foreach ( $flosc_guest_labels as $flosc_i => $flosc_label ) {
@@ -2686,6 +2692,14 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				<?php flosc_permalink_status_indicator( $flosc_flow_settings['slug'] ?? '' ); ?>
 			</div>
 		</div>
+
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="flosc-working-flow-form" class="flosc-hidden">
+			<?php wp_nonce_field( 'flosc_set_working_flow', 'flosc_working_flow_nonce' ); ?>
+			<input type="hidden" name="action" value="flosc_set_working_flow">
+			<input type="hidden" name="ivr" id="flosc-working-flow-ivr" value="">
+			<input type="hidden" name="tab" value="<?php echo esc_attr( $flosc_active_tab ); ?>">
+			<input type="hidden" name="view" value="<?php echo esc_attr( $flosc_identity_view ); ?>">
+		</form>
 	</div>
 	
 	<?php
@@ -2695,9 +2709,13 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			static function () use ( $flosc_active_tab, $flosc_identity_view ) {
 				?>
 	function switchIVR(ivr) {
-		const tab = '<?php echo esc_js( $flosc_active_tab ); ?>';
-		const view = '<?php echo esc_js( $flosc_identity_view ); ?>';
-		window.location.href = '<?php echo esc_js( admin_url( 'admin.php?page=flosc-settings' ) ); ?>&ivr=' + encodeURIComponent(ivr) + '&tab=' + tab + '&view=' + encodeURIComponent(view);
+		const form = document.getElementById('flosc-working-flow-form');
+		const field = document.getElementById('flosc-working-flow-ivr');
+		if (!form || !field) {
+			return;
+		}
+		field.value = ivr;
+		form.submit();
 	}
 
 	(function () {

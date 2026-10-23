@@ -272,7 +272,7 @@ check( 'a provider with no measured endpoint returns none', flosc_provider_model
 check( '  and so does an empty model', flosc_provider_model_detail_url( 'anthropic', '' ), '' );
 
 echo "Defaults\n";
-check( 'every provider FLOSC offers has one', array_filter( array_map( 'flosc_default_model', array( 'anthropic', 'openai', 'xai', 'gemini' ) ) ) === array( 'claude-sonnet-4-5-20250929', 'gpt-5.4-mini', 'grok-4.6', 'gemini-3.7-flash' ), true );
+check( 'every provider FLOSC offers has one', array_filter( array_map( 'flosc_default_model', array( 'anthropic', 'openai', 'xai', 'gemini' ) ) ) === array( 'claude-sonnet-4-5-20250929', 'gpt-5.4-mini', 'grok-4.6', 'gemini-3.5-flash-lite' ), true );
 check( 'ivr has none', flosc_default_model( 'ivr' ), '' );
 
 echo $failures ? "\n$failures FAILED\n" : "\nAll model catalog checks passed.\n";
