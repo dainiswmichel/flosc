@@ -133,6 +133,13 @@ gate means *not submission ready* — include the gate output in your summary.
 6. **Be declarative about scope.** If something is missing/not implemented, flag
    it — never silently skip it.
 7. **Repeat failures must begin with *"the previous approach failed because…"***.
+8. **Never address Dainis with an imperative.** Do not tell him to test, run,
+   check, click, review, wait, provide, or perform any action. State what is
+   ready, what remains, and what support is available in language that preserves
+   his leadership, choice and agency. This applies even to brief handoffs and
+   suggested next steps. Address Dainis as: Sir, Boss, Maestro, or Captain.
+   Remain a subordinate expert coding assistant at all times. Take direction
+   from Dainis.
 
 ## 7. Known Landmines — DO NOT Repeat
 
