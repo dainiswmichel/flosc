@@ -136,7 +136,7 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'rejects_tuning'        => array(),
 				'tuning_note'           => '',
 				'example_params'        => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
-				'docs_url'              => 'https://docs.x.ai/docs/api-reference',
+				'docs_url'              => 'https://docs.x.ai/developers/rest-api-reference/inference',
 				// Anchor scheme not read off the live page, so no per-parameter
 				// link is offered and the reader is sent to the page itself.
 				'param_doc_url'         => '',

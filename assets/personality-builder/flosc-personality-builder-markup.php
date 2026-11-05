@@ -184,10 +184,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<input type="checkbox" id="includeComments" checked>
 			Include influences
 		</label>
-		<label class="chip">
-			<input type="checkbox" id="includeReferenceUrls">
-			Include reference URLs
-		</label>
 		</div>
 		<p class="figure-readout output-view-note" id="outViewNote"></p>
 		<p class="figure-readout output-note">Influences name the people and works this character draws on. Included, they are part of the personality like anything else here: their descriptive text is sent in the compiled profile to the selected AI provider. Complete reference entries—description and URL—are excluded unless Include reference URLs is also checked. Unchecked influences stay in the builder state and the design copy and are never sent to an AI provider. FLOSC does not fetch or send data to the cited websites.</p>

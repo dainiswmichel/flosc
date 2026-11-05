@@ -24,7 +24,7 @@ $flosc_get      = flosc_nav_params();
 	<?php endif; ?>
 	<hr class="wp-header-end">
 	
-	<?php if ( isset( $_GET['deleted'] ) ) : ?>
+	<?php if ( flosc_nav_param_present( 'deleted' ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p>Flow deleted.</p></div>
 	<?php endif; ?>
 	<?php settings_errors( 'flosc' ); ?>
@@ -53,12 +53,7 @@ $flosc_get      = flosc_nav_params();
 		<tbody>
 			<?php foreach ( $flosc_flows as $flosc_flow ) : ?>
 				<?php
-				$flosc_flow_url = '';
-				if ( ! empty( $flosc_flow['custom_domain'] ) ) {
-					$flosc_flow_url = ( is_ssl() ? 'https://' : 'http://' ) . rtrim( $flosc_flow['custom_domain'], '/' ) . '/';
-				} elseif ( ! empty( $flosc_flow['slug'] ) ) {
-					$flosc_flow_url = home_url( '/' . $flosc_flow['slug'] . '/' );
-				}
+				$flosc_flow_url = flosc()->get_app_url( $flosc_flow );
 				?>
 				<tr>
 					<td class="flosc-flows-color-cell">

@@ -82,7 +82,6 @@ class FLOSC_Sale_Manager {
 		require_once __DIR__ . '/class-flosc-payment-provider.php';
 		require_once __DIR__ . '/providers/class-flosc-stripe-provider.php';
 		require_once __DIR__ . '/providers/class-flosc-token-provider.php';
-		require_once __DIR__ . '/providers/class-flosc-affiliate-provider.php';
 		require_once __DIR__ . '/providers/class-flosc-clickbank-provider.php'; // v07.07.
 		require_once __DIR__ . '/providers/class-flosc-paypal-provider.php'; // v1.6.9.
 
@@ -98,7 +97,6 @@ class FLOSC_Sale_Manager {
 		// Register built-in payment providers.
 		$this->providers['stripe']    = new FLOSC_Stripe_Provider();
 		$this->providers['tokens']    = new FLOSC_Token_Provider();
-		$this->providers['affiliate'] = new FLOSC_Affiliate_Provider();
 		$this->providers['clickbank'] = new FLOSC_ClickBank_Provider(); // v07.07.
 		$this->providers['paypal']    = new FLOSC_PayPal_Provider(); // v1.6.9.
 

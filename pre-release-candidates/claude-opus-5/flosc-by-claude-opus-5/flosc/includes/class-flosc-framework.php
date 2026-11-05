@@ -2163,7 +2163,7 @@ class FLOSC_Framework {
 		// Chat Logs journey marks. These only observe -- they queue a note that the
 		// next logged turn turns into a row -- so no auth or purchase path changes.
 		// WordPress fires user_register from wp_insert_user(), which every FLOSC
-		// account-creation path goes through (wp_create_user() calls it), so one
+		// account-creation path calls, so one
 		// listener covers first-party registration, SSO linking, MagicLink and the
 		// purchase-driven creates without touching any of them.
 		add_action( 'user_register', array( $this, 'flosc_mark_journey_account_created' ), 20, 1 );
@@ -2191,6 +2191,7 @@ class FLOSC_Framework {
 
 		// Set default flow (must run before admin HTML — not inside settings.php render).
 		add_action( 'admin_post_flosc_set_default_flow', array( $this, 'handle_set_default_flow' ) );
+		add_action( 'admin_post_flosc_set_working_flow', array( $this, 'handle_set_working_flow' ) );
 
 		// Settings Save / trajectory / concierge POSTs redirect — must run before admin HTML
 		// or wp_safe_redirect fails and exit leaves a white content pane.
@@ -2614,14 +2615,11 @@ The Team',
 				'status'        => 'active',
 				'display_price' => '$97',
 				'pricing'       => array(
-					'stripe'    => array(
+					'stripe' => array(
 						'price_id' => '', // The operator sets this in the Payments tab; there is no usable default.
 					),
-					'tokens'    => array(
+					'tokens' => array(
 						'cost' => 1000,
-					),
-					'affiliate' => array(
-						'credit_amount' => 97.00,
 					),
 				),
 				'grants'        => array(
@@ -3669,8 +3667,8 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$post  = wp_unslash( $_POST );
-		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+		$post               = wp_unslash( $_POST );
+		$ivr                = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
 			? sanitize_file_name( $post['flosc_return_ivr'] )
 			: '';
 		$flosc_kb_label_raw = $post['kb_label'] ?? '';
@@ -3783,10 +3781,18 @@ The Team',
 		// Run through AI — force fresh (no cache) by using test_mode=true.
 		$response = $this->ai_chat_dispatch->get_response( $message, $system_prompt, $history, true );
 		if ( is_wp_error( $response ) ) {
-			wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+			wp_send_json_error( array( 'message' => $response->get_error_message() ), 502 );
+		}
+		if ( ! is_string( $response ) || '' === trim( $response ) ) {
+			wp_send_json_error( array( 'message' => __( 'The AI provider returned an empty response.', 'flosc' ) ), 502 );
 		}
 
-		$response_text = $response ?? '(no response)';
+		$response_text = $response;
+		$billing_meta  = method_exists( $this->ai_chat_dispatch, 'get_last_billing_meta' )
+			? (array) $this->ai_chat_dispatch->get_last_billing_meta()
+			: array();
+		$usage         = is_array( $billing_meta['usage'] ?? null ) ? $billing_meta['usage'] : array();
+		$tokens_in     = max( 0, intval( $usage['input_tokens'] ?? $usage['prompt_tokens'] ?? 0 ) );
 
 		// Pass/fail evaluation.
 		$pass      = true;
@@ -3803,7 +3809,7 @@ The Team',
 		wp_send_json_success(
 			array(
 				'response'  => $response_text,
-				'tokens_in' => 0, // Token counts need provider-specific response parsing; not done yet.
+				'tokens_in' => $tokens_in,
 				'pass'      => $pass,
 				'corrected' => $corrected,
 			)
@@ -5274,6 +5280,24 @@ The Team',
 	}
 
 	/**
+	 * Whether an offer should answer this message before the DA1 catalog.
+	 *
+	 * @param mixed  $message User message.
+	 * @param string $flow_id Current flow id.
+	 * @return bool
+	 */
+	private function flosc_purchase_intent_has_offer( $message, $flow_id ) {
+		if ( ! $this->da1_catalogs->has_purchase_intent( $message ) ) {
+			return false;
+		}
+
+		$offer_id = flosc_get_setting( 'offer_id', '', (string) $flow_id );
+		$offers   = flosc_get_setting( 'offers', array(), (string) $flow_id );
+
+		return '' !== trim( (string) $offer_id ) || ( is_array( $offers ) && ! empty( $offers ) );
+	}
+
+	/**
 	 * Whether a visitor's message is asking about this flow's catalog.
 	 *
 	 * Delegates to FLOSC_DA1_Catalogs. The rows are loaded and their items extracted first,
@@ -5458,12 +5482,15 @@ The Team',
 		$flosc_da1_access_level = is_array( $eval_context )
 			? (string) ( $eval_context['access_level'] ?? 'visitor' )
 			: 'visitor';
-		$catalog_reply          = $this->flosc_build_da1_catalog_reply(
-			$user_message,
-			$flow_id,
-			$ivr_file,
-			$flosc_da1_access_level
-		);
+		$catalog_reply          = '';
+		if ( ! $this->flosc_purchase_intent_has_offer( $user_message, $flow_id ) ) {
+			$catalog_reply = $this->flosc_build_da1_catalog_reply(
+				$user_message,
+				$flow_id,
+				$ivr_file,
+				$flosc_da1_access_level
+			);
+		}
 		if ( '' !== $catalog_reply ) {
 			return $catalog_reply;
 		}
@@ -8837,7 +8864,7 @@ Example good response:
 				// Merge with any existing bridge data.
 				$existing = $bridge_manager->get_flosc_bridge_data( $user_id );
 				if ( ! $existing ) {
-					$bridge_manager->update_flosc_bridge_data( $user_id, array( 'score' => $score ) );
+					$bridge_manager->flosc_create_bridge_data( $user_id, $quiz_id, $score_data );
 				}
 			}
 
@@ -9448,7 +9475,18 @@ Example good response:
 			} else {
 				$username = $this->generate_username_from_email( $subscriber_email );
 				$password = wp_generate_password( 16, true, true );
-				$created  = wp_create_user( $username, $password, $subscriber_email );
+				$role     = flosc_registration_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
+				if ( is_wp_error( $role ) ) {
+					return $role;
+				}
+				$created = wp_insert_user(
+					array(
+						'user_login' => wp_slash( $username ),
+						'user_pass'  => $password,
+						'user_email' => wp_slash( $subscriber_email ),
+						'role'       => $role,
+					)
+				);
 				if ( is_wp_error( $created ) ) {
 					return new WP_Error(
 						'user_creation_failed',
@@ -9457,10 +9495,6 @@ Example good response:
 					);
 				}
 				$user_id = (int) $created;
-				$user    = get_user_by( 'id', $user_id );
-				if ( $user ) {
-					$user->set_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
-				}
 				if ( '' !== $subscriber_name ) {
 					$name_parts = explode( ' ', $subscriber_name, 2 );
 					wp_update_user(
@@ -9949,17 +9983,24 @@ Example good response:
 			if ( $existing_user ) {
 				$user_id = (int) $existing_user->ID;
 			} else {
-				$username   = $this->generate_username_from_email( $payer_email );
-				$password   = wp_generate_password( 16, true, true );
-				$created_id = wp_create_user( $username, $password, $payer_email );
+				$username = $this->generate_username_from_email( $payer_email );
+				$password = wp_generate_password( 16, true, true );
+				$role     = flosc_registration_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
+				if ( is_wp_error( $role ) ) {
+					return $role;
+				}
+				$created_id = wp_insert_user(
+					array(
+						'user_login' => wp_slash( $username ),
+						'user_pass'  => $password,
+						'user_email' => wp_slash( $payer_email ),
+						'role'       => $role,
+					)
+				);
 				if ( is_wp_error( $created_id ) ) {
 					return new WP_Error( 'user_creation_failed', 'Could not create account: ' . $created_id->get_error_message(), array( 'status' => 500 ) );
 				}
 				$user_id = (int) $created_id;
-				$user    = get_user_by( 'id', $user_id );
-				if ( $user ) {
-					$user->set_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
-				}
 				if ( '' !== $payer_name ) {
 					$name_parts = explode( ' ', $payer_name, 2 );
 					wp_update_user(
@@ -10423,64 +10464,6 @@ Example good response:
 				'ledger'  => $token_provider->get_ledger( $user_id, 10 ),
 			)
 		);
-	}
-
-	/**
-	 * REST: record what a user is looking for, so offers can be matched to it.
-	 *
-	 * Part of the affiliate path: rather than guessing, the user says what they
-	 * want, roughly what they expect to pay and how soon, and offers are found
-	 * against that.
-	 *
-	 * @param WP_REST_Request $request Expects description, and optionally category,
-	 *                                 expected_price, timeframe and notes.
-	 * @return WP_REST_Response|WP_Error The stored intent, or an error when the
-	 *                                   affiliate provider is not configured.
-	 */
-	public function declare_intent( $request ) {
-		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
-
-		if ( ! $affiliate || ! $affiliate->is_configured() ) {
-			return new WP_Error( 'not_configured', __( 'Affiliate system not configured', 'flosc' ), array( 'status' => 500 ) );
-		}
-
-		$intent = $affiliate->declare_intent(
-			get_current_user_id(),
-			array(
-				'description'    => sanitize_text_field( $request->get_param( 'description' ) ),
-				'category'       => sanitize_text_field( $request->get_param( 'category' ) ?? 'general' ),
-				'expected_price' => floatval( $request->get_param( 'expected_price' ) ?? 0 ),
-				'timeframe'      => sanitize_text_field( $request->get_param( 'timeframe' ) ?? 'exploring' ),
-				'notes'          => sanitize_textarea_field( $request->get_param( 'notes' ) ?? '' ),
-			)
-		);
-
-		return new WP_REST_Response( array( 'intent' => $intent ) );
-	}
-
-	/**
-	 * REST: the offers matching one of the current user's declared intents.
-	 *
-	 * The intent must belong to the calling user: it is looked up in their own
-	 * intents rather than by id alone, so one user cannot read another's.
-	 *
-	 * @param WP_REST_Request $request Expects the intent id.
-	 * @return WP_REST_Response|WP_Error The matching offers, or a 404 when the
-	 *                                   intent is not theirs.
-	 */
-	public function get_intent_offers( $request ) {
-		$intent_id = $request->get_param( 'id' );
-		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
-
-		$intents = $affiliate->get_intents( get_current_user_id() );
-
-		if ( ! isset( $intents[ $intent_id ] ) ) {
-			return new WP_Error( 'not_found', __( 'Intent not found', 'flosc' ), array( 'status' => 404 ) );
-		}
-
-		$offers = $affiliate->find_offers_for_intent( $intents[ $intent_id ] );
-
-		return new WP_REST_Response( array( 'offers' => $offers ) );
 	}
 
 	/**
@@ -12193,7 +12176,7 @@ Example good response:
 		if ( isset( $_POST['provider'] ) && ( is_string( $_POST['provider'] ) || is_numeric( $_POST['provider'] ) ) ) {
 			$provider = sanitize_key( wp_unslash( $_POST['provider'] ) );
 		}
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 
 		// Same flow context the connection test establishes. admin-ajax has no
 		// URL to detect the flow from, so without this the per-flow key is
@@ -12343,8 +12326,8 @@ Example good response:
 		if ( isset( $_POST['provider'] ) && ( is_string( $_POST['provider'] ) || is_numeric( $_POST['provider'] ) ) ) {
 			$provider = sanitize_key( wp_unslash( $_POST['provider'] ) );
 		}
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-		$model    = '';
+		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model = '';
 		if ( isset( $_POST['model'] ) && ( is_string( $_POST['model'] ) || is_numeric( $_POST['model'] ) ) ) {
 			$model = sanitize_text_field( wp_unslash( $_POST['model'] ) );
 		}
@@ -13032,6 +13015,20 @@ Example good response:
 				static function ( $value ) {
 					$value = (string) $value;
 					$value = str_replace( array( "\r\n", "\r", "\n" ), "\\n", $value );
+
+					/*
+					 * Chat text is written by visitors, and a spreadsheet reads a
+					 * leading =, +, - or @ as a formula rather than as text. An
+					 * exported log is evidence, so a cell must read back as what
+					 * was typed. A leading apostrophe makes the cell literal.
+					 *
+					 * A value that is simply a number keeps its own form, so a
+					 * negative figure stays a figure instead of becoming text.
+					 */
+					if ( '' !== $value && ! is_numeric( $value ) && false !== strpos( "=+-@\t\r", $value[0] ) ) {
+						$value = "'" . $value;
+					}
+
 					if ( false !== strpos( $value, "\t" ) || false !== strpos( $value, '"' ) ) {
 						$value = '"' . str_replace( '"', '""', $value ) . '"';
 					}

@@ -13015,6 +13015,20 @@ Example good response:
 				static function ( $value ) {
 					$value = (string) $value;
 					$value = str_replace( array( "\r\n", "\r", "\n" ), "\\n", $value );
+
+					/*
+					 * Chat text is written by visitors, and a spreadsheet reads a
+					 * leading =, +, - or @ as a formula rather than as text. An
+					 * exported log is evidence, so a cell must read back as what
+					 * was typed. A leading apostrophe makes the cell literal.
+					 *
+					 * A value that is simply a number keeps its own form, so a
+					 * negative figure stays a figure instead of becoming text.
+					 */
+					if ( '' !== $value && ! is_numeric( $value ) && false !== strpos( "=+-@\t\r", $value[0] ) ) {
+						$value = "'" . $value;
+					}
+
 					if ( false !== strpos( $value, "\t" ) || false !== strpos( $value, '"' ) ) {
 						$value = '"' . str_replace( '"', '""', $value ) . '"';
 					}

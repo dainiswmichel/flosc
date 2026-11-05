@@ -1,87 +1,157 @@
-# FLOSC candidate — claude-opus-5
+# Home run candidate claude-code-v200
 
-**Iteration:** v166
-**Baseline:** v164, commit `f051f94abd9f8768b51544f3d60d925d3ac8a522` (Codex)
-**Source tree:** `flosc-by-claude-opus-5/flosc/`
-**ZIP:** `flosc.zip`, SHA-256 `28248f35fb5004234d091d663b71b49c68cb6a73d9b0ae8430c99eb4a52fa7a5`
-**Source commit:** `fd00517470507e20caa35fbe3ae006a1842bafcd`
+Review ID addressed: **R flosc/dainismichel/2Jun26/T15 24Oct26/4.3** (P0TDX321123HGN)
+Base: canonical v190 (`4ae041a`)
+Zip SHA-256: `bddc26d6f3e0a792753aefbfee5abd134434f20cb0ce1b8b9127fa1d7cae790b`
+233 files · 144 PHP · one top-level `flosc/` directory
 
-## Scope
+## Headline for human review
 
-Issue 10 only, the `sanitize_file_name()` class. Four handler entry conditions in
-`admin/ivr-messages.php` now require their file-name field to be one text value:
+The 24 October email lists five issue classes. **Two of them describe code that no longer
+exists in the canonical tree, and one asks for documentation that is already present.** That
+is not a complaint about the reviewer — it means the reviewed artifact was older than the
+tree, and it changes what should be said in the reply. The detail is below, with dates.
 
-| line | field | handler | iteration |
-|---|---|---|---|
-| 765 | `import_ivr_file` | import selected IVR file | v166 |
-| 806 | `ivr_file_select` | change active IVR file | v165 |
-| 903 | `duplicate_ivr_file` | duplicate IVR file | v165 |
-| 940 | `delete_ivr_file` | delete IVR file | v165 |
+| # | Class in the email | Disposition in this candidate |
+|---|---|---|
+| 1 | Undocumented 3rd party / external service (43 cited) | **Fixed in code.** 50 citation URLs removed from the shipped plugin. |
+| 2 | Creating / login users (16 cited) | **Already documented** at `readme.txt:196`. No change needed. |
+| 3 | Other possible issues — TSV formula injection (1 cited) | **Fixed in code.** Formula prefixes neutralised. |
+| 4 | Data must be sanitized/escaped/validated (47 + 6 cited) | **No code change, deliberately.** Measured clean; the change I tried made it worse. See below. |
+| 5 | Variables must be escaped when echo'd (30 cited) | **Already fixed on 2026-10-18**, five days before the submission. |
 
-`sanitize_file_name()` opens at `remove_accents()`, which calls `preg_match()`. A posted
-list raised `preg_match(): Argument #2 ($subject) must be of type string, array given` —
-a fatal on PHP 8, in three of the four cases after the nonce and capability checks had
-already passed. A list now means the handler does not run and the stored state is
-unchanged. A normal file name still works.
+## 1 — External service citations. Fixed.
 
-No new helper: these use `flosc_submitted_fields_are_text()`, added in v164, and match the
-pattern already at `admin/ivr-messages.php:1250`. No suppression was added. The handler
-bodies were not re-indented.
+`assets/js/flosc-personality-builder.js` carried 50 URLs in 30 `links:` arrays across the
+92 personality archetypes — Wikipedia, Project Gutenberg, Bible Gateway, Stanford
+Encyclopedia of Philosophy, the Rudolf Steiner Archive, BDK America, Nobel Prize, the
+Viktor Frankl Institute and the Sumerian text corpus.
 
-## Retained journeys
+These were never services. FLOSC makes no request to any of them: no `wp_remote_*`, no
+`fetch`, no embed. They were bibliography sitting in code, and a URL in plugin code reads
+to a reviewer as a dependency.
 
-Registration, login, flow editing, IVR, SSO, offers and content access are untouched.
-Only the four entry conditions and the iteration header changed.
+Per Dainis's instruction they were **moved, not deleted**. Each archetype's citation now
+sits with its character description in `docs/personality-archetype-sources.md` — 440 lines,
+all 50 citations, all 30 archetypes, every character explanation preserved. `docs/` is
+added to `.distignore`, so the reference material lives in the repository and not in the
+distributed plugin.
 
-## Tests actually run
+The archetypes keep their `works` lists — the titles of the source texts — so an author
+still sees what an archetype draws on inside the builder.
 
-- `php -l` on all 154 shipping PHP files — 0 failures.
-- PHPCS 3.13.6 / WPCS 3.4.1, stock `WordPress` standard, `--ignore-annotations`, sniffs
-  `WordPress.Security.ValidatedSanitizedInput` and `WordPress.Security.EscapeOutput` —
-  0 errors, 0 warnings, 154 files, exit 0.
-- PHPCompatibilityWP, `testVersion 7.4` — 0 findings, exit 0.
-- Executed against WordPress 7.1.3's real `sanitize_file_name()`: for all four handlers an
-  array payload would have raised the TypeError before the change and does not run after
-  it; a normal file name still runs and resolves to `flosc_default_ivr.md`.
-- Repository suite — 53 of 55.
+Verified: `grep` for all nine citation hosts across the unpacked zip returns **zero files**.
 
-## Failures and unverified items
+Two consequential details handled with it:
 
-- `tests/check_provider_identity.php` and `tests/check_request_protection.php` fail. They
-  fail identically on v164 and reference no changed file, so they pre-date this work and
-  are not addressed here.
-- **Plugin Check has not run.** No ZIP, no checksum, no manifest, no WordPress page load.
-  This candidate carries no artifact-specific guarantee.
-- The `Github HashID` header still carries v164's value. It was not authored here.
+- `readme.txt` previously listed those nine hosts and stated they were references. That
+  sentence is what the reviewer's scanner objected to ("Domain(s) mentioned in the readme
+  file. Links to service terms and/or privacy policy not found"). With the URLs gone from
+  the code, the list is gone from the readme too — so there is nothing left to disclose.
+- The "Include reference URLs" checkbox governed those arrays and now governed nothing. Its
+  markup is removed from `assets/personality-builder/flosc-personality-builder-markup.php`.
+  Its change listener in the builder used `getElementById(...).addEventListener(...)` with
+  **no null guard**, so removing the control without removing the listener would have thrown
+  on boot and taken the whole builder down. Both are removed together. The one remaining
+  reference, at builder line 4780, is already null-guarded and left alone.
 
-## Full-codebase enumerations behind the claim
+## 2 — Creating / login users. Already documented.
 
-Both run mechanically, then every hit opened and read:
+The email asks for an explanation of why these calls are technically necessary.
+`readme.txt:196` already gives it: why a subscriber account is required (binding purchased
+access, membership state, quiz results and protected-content permissions to the customer
+across sessions), the three journeys that create one (pending email registration, validated
+SSO profile, verified PayPal or ClickBank purchase), the role assigned (subscriber, or
+another nonprivileged role an administrator configured), and the explicit negatives —
+FLOSC does not create an administrator account, a MagicLink never creates an account, and a
+server-to-server payment notification does not log a browser in.
 
-- **Issue 10** — 387 request-to-sanitizer call sites. 0 fatal-on-array paths, 0 unguarded
-  paths that write a wrong value. Guards come from named-field checks, the whole-request
-  check, inline `is_string()`/`is_scalar()`, and `flosc_nav_params()`
-  (`includes/flosc-request.php:215-216`), which drops any `$_GET` key that is an array.
-- **Issue 11** — every `echo`/`print`/`<?=` emitting a non-literal. 0 unescaped sites.
+No code change. Worth pointing the reviewer at the line in the reply.
 
-Behaviour measured against real WordPress 7.1.3, not assumed: `sanitize_file_name`,
-`sanitize_title`, `sanitize_email`, `sanitize_hex_color`, `esc_url_raw`, `esc_url`, `trim`,
-`strtolower` and `strtoupper` are fatal on an array; `sanitize_text_field`,
-`sanitize_textarea_field` and `sanitize_key` return `''`; `intval` returns `1`;
-`wp_kses_post` and `sanitize_html_class` return the array unchanged.
+## 3 — TSV formula injection. Fixed.
 
-Selection of a winning candidate, promotion and deployment remain solely with
-Dainis W. Michel.
+`includes/class-flosc-framework.php`, the chat-log TSV export. The encoder escaped tabs,
+quotes and newlines but not spreadsheet formula prefixes, so a visitor could type
+`=HYPERLINK(...)` or the DDE form `-2+3+cmd|'/C calc'!A0` into a chat and have it execute
+when an administrator opened the exported log.
 
-## Governance files deliberately absent from this candidate
+A value that is not numeric and begins with `=`, `+`, `-`, `@`, tab or carriage return now
+gets a leading apostrophe, which makes the cell literal. The `is_numeric` test is there on
+purpose: an export is evidence, and `-5` should still read as the number minus five rather
+than as text.
 
-`agents.md`, `CLAUDE.md`, `.cursorrules`, `WORDPRESS-ORG-RELEASE.md` and `handoff*.md` are
-not in `flosc-by-claude-opus-5/flosc/`. They are not plugin source, `.distignore` already
-keeps every one of them out of the zip, and carrying them in a candidate means promoting
-that candidate would overwrite whatever sits on the canonical machine.
+Measured:
 
-This matters for `agents.md` specifically. That file has exactly one commit in this
-repository's history — `3e7234b`, the v160 Codex candidate commit of 2026-10-18 — and no
-commit touches it afterwards. Any edit made to it on the canonical machine since then
-exists nowhere in this repository, so copying the repository's version onto that machine
-destroys those edits silently, with no diff to show for it.
+```
+'=1+1'                    -> '=1+1
+'+cmd|calc'               -> '+cmd|calc
+"-2+3+cmd|'/C calc'!A0"   -> '-2+3+cmd|'/C calc'!A0
+'@SUM(A1)'                -> '@SUM(A1)
+'-5'                      -> -5          (still a number)
+'-5.25'                   -> -5.25       (still a number)
+'hello'                   -> hello
+'=HYPERLINK("http://x")'  -> "'=HYPERLINK(""http://x"")"
+```
+
+## 4 — Sanitize / escape / validate. No code change, and why.
+
+The email's six `filter_var` / `filter_input` examples all use `FILTER_CALLBACK` with a
+named sanitising callback. The email's stated rule is about leaving the filter parameter
+empty, where PHP applies `FILTER_DEFAULT` and nothing is sanitised. These calls do not do
+that.
+
+I converted all six to call the sanitiser directly, which is unambiguous to a human reader.
+Then I ran the gate: **that change introduced 6 PHPCS errors** where v190 had none, because
+WPCS recognises `filter_var(..., FILTER_CALLBACK, ...)` as a sanitising boundary but does
+not credit a project's own function unless the ruleset declares it — and the bare
+`WordPress` standard, which is closer to what the reviewer's tooling applies, does not read
+`phpcs.xml.dist`.
+
+So the conversion traded a scanner's misreading for six real standard violations. **It is
+reverted.** All six sites are byte-identical to v190.
+
+The 47 `wp_unslash( $_POST )` examples are whole-array reads, each followed immediately by
+`flosc_submitted_fields_are_text()` — the email quotes that guard line itself in four of
+its own examples. Values are sanitised individually downstream. The artifact measures
+0 errors under `WordPress.Security.ValidatedSanitizedInput` with annotations disabled.
+
+This class needs a reply to the reviewer, not a patch. Changing verified, standard-clean
+code to satisfy a false positive is how a regression gets shipped.
+
+## 5 — Escaped when echo'd. Already fixed, five days before submission.
+
+Every example in this section is a `phpcs:ignore WordPress.Security.EscapeOutput` line on a
+`flosc_vgm_options_markup()` echo. Those were replaced with
+`wp_kses( flosc_vgm_options_markup( ... ), flosc_vgm_option_allowed_html() )` in **v160,
+committed 2026-10-18T16:11:17+03:00**. Every revision from v160 to the current tip carries
+the `wp_kses` form; the shipped tree contains **zero** `phpcs:ignore` on `EscapeOutput`.
+
+The email's other examples in this section are `flosc_capture_output()` blocks. That helper
+is a balanced try/finally buffer whose captured string is passed to
+**`wp_add_inline_script()`** — the mechanism the October 7 review asked for — with
+`esc_js()` on every interpolated value. No raw `<script>` tag is emitted.
+
+The cited line numbers match the frozen lane copies under `pre-release-candidates/`, not the
+canonical tree. Worth saying in the reply, politely, so the next review looks at the right
+artifact.
+
+## Verification
+
+On the unpacked zip, 144 shipped PHP files, count asserted on every run:
+
+| gate | result |
+|---|---|
+| `php -l` × 144 | 0 failures |
+| Full `WordPress` standard, errors, annotations respected | **0 errors** |
+| Full `WordPress` standard, errors, `--ignore-annotations` | **0 errors** |
+| `ValidatedSanitizedInput` + `EscapeOutput`, `--ignore-annotations` | **0 errors** |
+| `PHPCompatibilityWP`, `testVersion 7.4-` | **0 findings** |
+| `node --check` on the edited builder JS | passes |
+| Citation hosts anywhere in the zip | **0 files** |
+
+PHPCS 3.13.2 · WPCS 3.1.0 · PHPCSExtra 1.2.1 · PHPCompatibilityWP 2.1.6.
+
+**Not run, not claimed:** official Plugin Check, and the clean-WordPress journeys with
+`WP_DEBUG`. Those need a booting install. In particular the personality builder should be
+opened once in a browser to confirm the removed checkbox left the chip row intact — the
+markup and listener were removed together and the JS parses, but layout is a visual check.

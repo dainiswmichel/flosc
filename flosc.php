@@ -5,6 +5,7 @@
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
  * Requires at least: 7.1
+ * Internal Iteration: v200
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
  * Author URI: https://dainis.net

@@ -244,7 +244,7 @@ class FLOSC_STT_Dispatch {
 		 * The endpoint is named on its own line so the suppression below stays
 		 * attached to it. It used to sit inline in the wp_remote_post() call, and
 		 * a WordPress Coding Standards pass split that call across lines --
-		 * leaving the phpcs:ignore above `wp_remote_post(` and the host it
+		 * leaving the suppression above `wp_remote_post(` and the host it
 		 * annotates one line further down, where the suppression does not reach.
 		 */
 		// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- the official AI Provider for OpenAI plugin does not implement transcription, so Whisper STT is FLOSC-owned. Service declared in readme.txt External Services.

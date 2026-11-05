@@ -28,7 +28,7 @@
  *                                    generativelanguage.googleapis.com discovery doc
  *   xAI        GET /v1/language-models   Bearer auth, no pagination
  *                                    → { models: [ { id, aliases } ] }
- *                                    docs.x.ai rest-api-reference/inference/models
+ *                                    docs.x.ai/developers/rest-api-reference/inference/models
  *                                    Not /v1/models: that one lists image and
  *                                    video generation models alongside the chat
  *                                    ones, and offering grok-imagine-image as a
@@ -399,7 +399,7 @@ if ( ! function_exists( 'flosc_default_model' ) ) {
 			'anthropic' => 'claude-sonnet-4-5-20250929',
 			'openai'    => 'gpt-5.4-mini',
 			'xai'       => 'grok-4.6',
-			'gemini'    => 'gemini-3.7-flash',
+			'gemini'    => 'gemini-3.5-flash-lite',
 		);
 
 		return (string) ( $defaults[ sanitize_key( (string) $provider ) ] ?? '' );

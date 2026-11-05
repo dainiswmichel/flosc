@@ -953,27 +953,6 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Purchase intents (affiliate system).
-		register_rest_route(
-			'flosc/v1',
-			'/intents',
-			array(
-				'methods'             => 'POST',
-				'callback'            => array( $this, 'declare_intent' ),
-				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
-			)
-		);
-
-		register_rest_route(
-			'flosc/v1',
-			'/intents/(?P<id>[a-z0-9_]+)/offers',
-			array(
-				'methods'             => 'GET',
-				'callback'            => array( $this, 'get_intent_offers' ),
-				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
-			)
-		);
-
 		// Referral.
 		register_rest_route(
 			'flosc/v1',

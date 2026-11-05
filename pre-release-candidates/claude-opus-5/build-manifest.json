@@ -1,75 +1,11 @@
 {
- "plugin": "flosc",
- "version": "8.0.0",
- "internal_iteration": "v166",
- "agent": "claude-opus-5",
- "baseline": {
-  "iteration": "v164",
-  "commit": "f051f94abd9f8768b51544f3d60d925d3ac8a522",
-  "agent": "codex-gpt5"
- },
- "source_commit": "fd00517470507e20caa35fbe3ae006a1842bafcd",
- "artifact": {
-  "name": "flosc.zip",
-  "sha256": "28248f35fb5004234d091d663b71b49c68cb6a73d9b0ae8430c99eb4a52fa7a5",
-  "bytes": 2837549,
-  "shipped_files": 243,
-  "shipped_php_files": 154,
-  "built_with": "./build-dist-zip.sh",
-  "digest_note": "build-dist-zip.sh output depends on file mtimes, which git does not store. A rebuild from this commit on another machine produces a different zip digest with identical file contents. Compare file by file, not digest to digest."
- },
- "changed_from_baseline": [
-  {
-   "path": "admin/ivr-messages.php",
-   "change": "four handler entry conditions now require their file-name field to be one text value (lines 765, 806, 903, 940)"
-  },
-  {
-   "path": "flosc.php",
-   "change": "Internal Iteration v164 -> v166"
-  }
- ],
- "verification": {
-  "php_lint": {
-   "files": 154,
-   "failures": 0,
-   "target": "unpacked zip"
-  },
-  "phpcs": {
-   "standard": "WordPress",
-   "annotations": "disabled",
-   "sniffs": [
-    "WordPress.Security.ValidatedSanitizedInput",
-    "WordPress.Security.EscapeOutput"
-   ],
-   "errors": 0,
-   "warnings": 0,
-   "exit": 0,
-   "target": "unpacked zip"
-  },
-  "php_compatibility": {
-   "standard": "PHPCompatibilityWP",
-   "testVersion": "7.4-7.4",
-   "findings": 0,
-   "exit": 0,
-   "target": "unpacked zip"
-  },
-  "repository_tests": {
-   "passed": 53,
-   "failed": 2,
-   "failures": [
-    "tests/check_provider_identity.php",
-    "tests/check_request_protection.php"
-   ],
-   "note": "both fail identically on the v164 baseline and reference no changed file"
-  },
-  "runtime": {
-   "plugin_check": "NOT RUN",
-   "wordpress_page_load": "NOT RUN",
-   "wp_debug_log": "NOT READ"
-  }
- },
- "guarantee": "None. Plugin Check has not run and no WordPress page has been loaded against this artifact.",
- "file_inventory": [
+ "iteration": "v200",
+ "label": "claude-code-v200",
+ "base_commit": "4ae041a",
+ "zip_sha256": "bddc26d6f3e0a792753aefbfee5abd134434f20cb0ce1b8b9127fa1d7cae790b",
+ "file_count": 233,
+ "php_count": 144,
+ "files": [
   {
    "path": "admin/administration.php",
    "bytes": 16174,
@@ -87,8 +23,8 @@
   },
   {
    "path": "admin/ai-configuration.php",
-   "bytes": 166033,
-   "sha256": "46806b992af8280c69a6fcb4c7fd596932e3f5f03b613e61f8e17dbc26a14873"
+   "bytes": 167133,
+   "sha256": "08090868c96c0157d254d273b2a7505a44af96b314d9be219d13b2e738a38164"
   },
   {
    "path": "admin/ai-feedback.php",
@@ -142,53 +78,8 @@
   },
   {
    "path": "admin/da1.php",
-   "bytes": 79846,
-   "sha256": "d2218fe1b110fe6b1b0cb0558921c6814c5a7f9c9c2f47629f69ae6add5c7885"
-  },
-  {
-   "path": "admin/docs/part1-journey.php",
-   "bytes": 17495,
-   "sha256": "121e23f8d61c7f8fd10bdd1c61a2c7fa9c3b0f0a1bd9442ed9a25503c830da59"
-  },
-  {
-   "path": "admin/docs/part3-ref-audio-quiz-flow.php",
-   "bytes": 9815,
-   "sha256": "38579851c6c3ee35ebc941dd3bf124fa7812cba745f702f650cc0b8eca3262c1"
-  },
-  {
-   "path": "admin/docs/part3-ref-personality-profile.php",
-   "bytes": 15394,
-   "sha256": "96516b5e67db984068ee41fcffd71c7fa06cb5c5a71d8ed4d055eb394e006766"
-  },
-  {
-   "path": "admin/docs/part3-ref-quiz.php",
-   "bytes": 20221,
-   "sha256": "4c4d128784bcc046b304dc29151c0b6386dbe3ccd4f4803b612f095d34c2d22f"
-  },
-  {
-   "path": "admin/docs/part3-ref-settings-fields.php",
-   "bytes": 161149,
-   "sha256": "b2c90f7e4ee88025faedc3f4c305e9f886f1640ac2d4c2aff90482f7efe51020"
-  },
-  {
-   "path": "admin/docs/part5-glossary.php",
-   "bytes": 50382,
-   "sha256": "6bef42371341e023f5799d26cb9b128c2c943c7f0903a8e4fdae2b8a8c71b431"
-  },
-  {
-   "path": "admin/docs/part6-development.php",
-   "bytes": 2166,
-   "sha256": "8f1c214714747058c5f9b9c61463d06740a0d653e819926e002100fac9b77f4b"
-  },
-  {
-   "path": "admin/docs/ref-admin-skeleton.php",
-   "bytes": 51246,
-   "sha256": "9daa4f3aa80b98fb101cfa00cd6953855712ddc6634bd0624867a012a5d6ef19"
-  },
-  {
-   "path": "admin/docs/ref-core-skeleton.php",
-   "bytes": 6559,
-   "sha256": "a70452a288b25e4fe1b00e01b36f32cd2c67a6247160957f9a422268e6ca5dc9"
+   "bytes": 87414,
+   "sha256": "69e6b5606349266d55727f7056cd14490fcd89dcb9f66a4f9e08d99d1aa5c00c"
   },
   {
    "path": "admin/documentation.php",
@@ -207,23 +98,23 @@
   },
   {
    "path": "admin/flosc-app.php",
-   "bytes": 95658,
-   "sha256": "a9ae8f47246b5971a5721fe2dca3e4aa3113f5ed57312331048734daa073d83a"
+   "bytes": 95659,
+   "sha256": "0d432a2fc1b569060b88f1ab0371b553de6493850b189c1e7d20db896aa5e993"
   },
   {
    "path": "admin/flow-edit.php",
-   "bytes": 20412,
-   "sha256": "cc678b69ffc6b19cf8d20a90fc75b9246947dad39351b0439dfeeafa268e1387"
+   "bytes": 20444,
+   "sha256": "499530f1276d1002d22e0594a20f1040acefbce0f4f19fa6200c661d8b625fe7"
   },
   {
    "path": "admin/flow.php",
-   "bytes": 69881,
-   "sha256": "6e46c515c4997aab05dc0dd5247ba7d77c98c0b8e3f6db5fbae60dbf981f00b1"
+   "bytes": 70109,
+   "sha256": "a11c786973ec9b362ce269a653cbc78185d3d40c1a629ee17b0640e2b91ccf5b"
   },
   {
    "path": "admin/flows.php",
-   "bytes": 4319,
-   "sha256": "e9dd1b813574209f147c956d57961cb74f83d3d9dc8d4038524c4406f1e58d41"
+   "bytes": 4073,
+   "sha256": "cccca9d77575d0248aebd80614f577863126ad16dc60334818f37e1bd0dc9856"
   },
   {
    "path": "admin/ivr-messages.php",
@@ -267,13 +158,13 @@
   },
   {
    "path": "admin/settings-helper.php",
-   "bytes": 10743,
-   "sha256": "10a412aaf2c7596e454af7a6cac54fe0eead3bd3d71b4c8610227004cb45c9e4"
+   "bytes": 10985,
+   "sha256": "7bd6baf59d0632a0558f4ad3fc103ff70f15d1a5c9ee09814e8e1b6ed255d051"
   },
   {
    "path": "admin/settings.php",
-   "bytes": 187684,
-   "sha256": "8b83f8fe6dfe1fe2d31845615d0827f9826343fff63f1c02bce9b7c2e44c1074"
+   "bytes": 188974,
+   "sha256": "717c8df56c64952aeb3384c68db06fac86c22db30e69d07ecf7ea321318c955a"
   },
   {
    "path": "admin/sso.php",
@@ -447,8 +338,8 @@
   },
   {
    "path": "assets/css/flosc-portability-admin.css",
-   "bytes": 9059,
-   "sha256": "c7ecbdf8bbf8055c92f9e3562cb37cd73efc54e16d27db88ca605471936a8a8c"
+   "bytes": 9901,
+   "sha256": "bc3fb546099c7c706f3c4e7c7396e0d1760b7510e7c4263130a8861b8696a9a0"
   },
   {
    "path": "assets/css/flosc-theme.css",
@@ -507,8 +398,8 @@
   },
   {
    "path": "assets/js/flosc-personality-builder.js",
-   "bytes": 341894,
-   "sha256": "0dcc655c2941ec59e87faf3df8739400bfe2370a9cc12aa0f74433adee6e8e4d"
+   "bytes": 336624,
+   "sha256": "243c42132353728a20ad696c8bb76bd4df57e9a2e437094aea11e0c76edf45a8"
   },
   {
    "path": "assets/js/flosc-portability-admin.js",
@@ -522,8 +413,8 @@
   },
   {
    "path": "assets/personality-builder/flosc-personality-builder-markup.php",
-   "bytes": 11704,
-   "sha256": "4c2b00516ee48c1a083da7c90343f70995cae45a6ef2783a6f47e466e295fecd"
+   "bytes": 11592,
+   "sha256": "1ae462158ff3c999dabdaa272327082e6c3e80cd9bceb9caf072076ec460a737"
   },
   {
    "path": "assets/personality-builder/index.php",
@@ -532,13 +423,13 @@
   },
   {
    "path": "flosc.php",
-   "bytes": 30020,
-   "sha256": "de6f4fa1ec9ea6abd4ad32591497c3aa194a4f396523252820cbfd558ddcf907"
+   "bytes": 29961,
+   "sha256": "33d6dc6c6a92baacdac69b21f4f5d2815548588fc9bc19019e2b96f83f993eb7"
   },
   {
    "path": "flosc_documentation/chapters/part1-journey.html",
-   "bytes": 20180,
-   "sha256": "791119830aeedced6367be98cd304c007365a97713d8927f1bfa8cbb63b41b98"
+   "bytes": 20163,
+   "sha256": "dec5232b78306c8f7b2cb5fa14aa5eeecac0167070373bc93796c2f15730cb63"
   },
   {
    "path": "flosc_documentation/chapters/part2-architecture.html",
@@ -562,8 +453,8 @@
   },
   {
    "path": "flosc_documentation/chapters/part3-ref-core.html",
-   "bytes": 12192,
-   "sha256": "5405084faebf1aebf4d7ccd464f34cbd10f3ca463927c171b8a16cba96b1efff"
+   "bytes": 12067,
+   "sha256": "7aac5e48815a3d1e88df83c7f258f9886ebd1e36c0a52fdf86e94b59f4f11cc6"
   },
   {
    "path": "flosc_documentation/chapters/part3-ref-frontend.html",
@@ -577,8 +468,8 @@
   },
   {
    "path": "flosc_documentation/chapters/part3-ref-payments.html",
-   "bytes": 9053,
-   "sha256": "0a0052def2912dc9b7c78baf59cadb5efcf7e4c36ab4324ba0a1ca7c011ec331"
+   "bytes": 8917,
+   "sha256": "f2b653e76d0750c237f28975da1777c01739d9285f8dfdfa9498593aabd68559"
   },
   {
    "path": "flosc_documentation/chapters/part3-ref-quiz.html",
@@ -597,8 +488,8 @@
   },
   {
    "path": "flosc_documentation/chapters/part5-glossary.html",
-   "bytes": 40341,
-   "sha256": "edd09229b52373222f628bcf766574e741e38af567add8e8cce71f4ea3461402"
+   "bytes": 40286,
+   "sha256": "045fe95f1ba507b8cd1e5c9321a3122a3e69f5ac60206d21f120e829f6c96be0"
   },
   {
    "path": "flosc_documentation/chapters/part6-development.html",
@@ -622,8 +513,8 @@
   },
   {
    "path": "includes/ai/flosc-model-catalog.php",
-   "bytes": 18760,
-   "sha256": "6928c9f48287256ded866d8e408a7c292c1e75621bca120231f291f3d3e926c0"
+   "bytes": 18776,
+   "sha256": "927fedac3f4dd8fc0e365b00445dbb71acd364ddc6105f98a102886bfc0c5df5"
   },
   {
    "path": "includes/ai/flosc-model-parameters.php",
@@ -642,13 +533,13 @@
   },
   {
    "path": "includes/ai/flosc-provider-profiles.php",
-   "bytes": 15885,
-   "sha256": "e56638938dd4de5ba920646beff99c17e2726e977aefe2f5e3c1810203ca4f3c"
+   "bytes": 15906,
+   "sha256": "ca73ffb9db1426e988b98678bad72a450a7eb96f9b5c935fd7298d03c2128d6c"
   },
   {
    "path": "includes/chat-turn/trait-flosc-chat-turn.php",
-   "bytes": 72815,
-   "sha256": "26b11cf949867bd80bcc957cd31ced3c120c8fe629272ae07c608e186e1bbc39"
+   "bytes": 73377,
+   "sha256": "5a30bae000daf16a82d0dfc8ab644896a30d70c5dfc6cffd4f9a1e62382fe951"
   },
   {
    "path": "includes/class-companion-widget.php",
@@ -662,8 +553,8 @@
   },
   {
    "path": "includes/class-flosc-ai-chat-dispatch.php",
-   "bytes": 62983,
-   "sha256": "0cc6c76e92a5d29ba864a258f9aa58c73dc5d7128dfd684a31833e8c5cebe7e0"
+   "bytes": 63011,
+   "sha256": "b944cfc5f7e781bc4d637ece253df4e3147bbcedbde4012e2b4dc3e9bc0b82da"
   },
   {
    "path": "includes/class-flosc-bridge-data-manager.php",
@@ -682,8 +573,8 @@
   },
   {
    "path": "includes/class-flosc-concierge.php",
-   "bytes": 52978,
-   "sha256": "ef1e3db8c5224aae1213b0c1db95cd85b9a1d019a35c35562ababa6661ad12c4"
+   "bytes": 52985,
+   "sha256": "0946106f3a55d271028065f0e2bd3f67332d64879f4a04af57eb1e94f0bc29ad"
   },
   {
    "path": "includes/class-flosc-condition-evaluator.php",
@@ -707,8 +598,8 @@
   },
   {
    "path": "includes/class-flosc-framework.php",
-   "bytes": 591925,
-   "sha256": "87ce0b55e52e6a334303f217379f1a6cba1de1654c5008e424dc532baf31e3e8"
+   "bytes": 591512,
+   "sha256": "24ab2ecaa195359eddc11a296c5bd60cce8f8c4922821cb7ea7314748168e35e"
   },
   {
    "path": "includes/class-flosc-free-content-item-manager.php",
@@ -782,13 +673,13 @@
   },
   {
    "path": "includes/class-flosc-stt-dispatch.php",
-   "bytes": 10266,
-   "sha256": "4af5cf2e969a4d2e427269482c0b3a1a7aa3ba45a21c4a4320cd3e7a4bf07c30"
+   "bytes": 10265,
+   "sha256": "c79d275561c29ed5ae79ac03b59be06d3f781f7c264c6e32e97ccac8738899d7"
   },
   {
    "path": "includes/class-flosc-trajectory.php",
-   "bytes": 20332,
-   "sha256": "031f0a630254335e8fda8381a1f25a1c84ab3da63a3a8c1222e1a313c184d1d1"
+   "bytes": 20339,
+   "sha256": "7cd2ee964913c03f32be98e2d5df13d175bd06545e3105b63cd2a7589f08d2b2"
   },
   {
    "path": "includes/class-flosc-user-access-manager.php",
@@ -822,8 +713,8 @@
   },
   {
    "path": "includes/companion-mode/class-flosc-companion-mode.php",
-   "bytes": 57113,
-   "sha256": "d656964b0569ea8b5c0799682053f6888aa6f08801cdb37deffbd09b1215ce8a"
+   "bytes": 57271,
+   "sha256": "5a26e63ad17a1aaca21dfa39e863a0da5e4ebe7989866531dd356364c3aa9536"
   },
   {
    "path": "includes/companion-mode/class-flosc-companion-widget.php",
@@ -837,8 +728,8 @@
   },
   {
    "path": "includes/da1/class-flosc-da1-catalogs.php",
-   "bytes": 23164,
-   "sha256": "ae64fbeba251e6d5bf81062c816bfef6f1a01b7e116ff3125dc06a873c9da93e"
+   "bytes": 27394,
+   "sha256": "7ad475ff50fef4884d3da042661c792a61764c3bc41383fc7b7513cdd8a03964"
   },
   {
    "path": "includes/da1/class-flosc-da1-compositions.php",
@@ -847,8 +738,8 @@
   },
   {
    "path": "includes/email/class-flosc-email.php",
-   "bytes": 31734,
-   "sha256": "4e13486b919f66bf693f097fbae9182bc4c0bac3f7d5c3039ebfcff6a4a9a6c4"
+   "bytes": 32869,
+   "sha256": "9c6529b48bb8b06f43da41fc6e1db3d1e3b919fa3838e09d9dfef0ab7e84f45e"
   },
   {
    "path": "includes/email/flosc-guest-followup-slots.php",
@@ -872,18 +763,18 @@
   },
   {
    "path": "includes/flosc-accessors.php",
-   "bytes": 5141,
-   "sha256": "2f8c0fcc18e968c4dd9dc73f8a97e13eb812f1e50147bc3ae009b296ec9f1395"
+   "bytes": 7137,
+   "sha256": "c212602e15ed1e38816b380cfd9354530d173ce71820310568404657077ca005"
   },
   {
    "path": "includes/flosc-admin.php",
-   "bytes": 107211,
-   "sha256": "80e41d2d2dd0beb7e5389a31ff23b10dff64b6229819340be418acf401e799db"
+   "bytes": 109741,
+   "sha256": "403c1dbafecd5ebf3c47376d723f5a237c453e5cfb4de0f56bdd085542a23429"
   },
   {
    "path": "includes/flosc-available-providers.php",
-   "bytes": 21075,
-   "sha256": "9ebfe991ae5ab9fb214bc5c90907adc844fa4bcf65b44c16c759b4b1787592fd"
+   "bytes": 21214,
+   "sha256": "cdd324ea7e2fd867393781c0297d07f312f2923c737f09ec7127ce1ff761c85b"
   },
   {
    "path": "includes/flosc-flow-runtime.php",
@@ -912,8 +803,8 @@
   },
   {
    "path": "includes/flosc-personality-library.php",
-   "bytes": 143624,
-   "sha256": "24b79deec39bb3e67fb22213e5aa6af4919f59c2b815bf159fa86cd809eaea22"
+   "bytes": 146234,
+   "sha256": "1d5daae34ea9b710c6c818790bf18f114ae1143ad03ab86765913a419326a0d3"
   },
   {
    "path": "includes/flosc-post-queries.php",
@@ -927,13 +818,13 @@
   },
   {
    "path": "includes/flosc-rest.php",
-   "bytes": 44056,
-   "sha256": "671268bc4dae41b37375671d05d40e1552bc89871f90d14056ddcd961b604bb9"
+   "bytes": 43470,
+   "sha256": "a7c2af0f33d35f5138167de6ae78271341f27423d06627421da2c12d94720122"
   },
   {
    "path": "includes/full-page-mode/class-flosc-full-page-mode.php",
-   "bytes": 23428,
-   "sha256": "d78e34ceeab5f3aeeb3812e67afc1221856d5cdd6ca85a5b4c9026cd01a07a4f"
+   "bytes": 25374,
+   "sha256": "627236583df6c5360a12bf6ffd0e0fe4a0a7bcd7b3fe17fc75cc9fdef0942edc"
   },
   {
    "path": "includes/logging/class-flosc-chat-logger.php",
@@ -942,8 +833,8 @@
   },
   {
    "path": "includes/magic-link/class-flosc-magic-link-trait.php",
-   "bytes": 84589,
-   "sha256": "5104ac464165cd5bbf4c6873389e0ad1589e42682e9da7b58cb34534db9f61a1"
+   "bytes": 84896,
+   "sha256": "da64fa015b5b19b9b0848c6a59dd93c0be529a95c7a3378bf62a00309c7fde66"
   },
   {
    "path": "includes/portability/class-flosc-ivr-parser.php",
@@ -1007,8 +898,8 @@
   },
   {
    "path": "includes/sale/class-flosc-offer-manager.php",
-   "bytes": 29361,
-   "sha256": "155c7da4be599fc240ed482d732290c3401d4fb40381fc04cc3513c9bc3dc2e3"
+   "bytes": 28925,
+   "sha256": "7dff2ae3951e8b28e14737edfe4811841c889549f49d6d0273728859c8f9ef89"
   },
   {
    "path": "includes/sale/class-flosc-payment-provider.php",
@@ -1017,8 +908,8 @@
   },
   {
    "path": "includes/sale/class-flosc-sale-manager.php",
-   "bytes": 18603,
-   "sha256": "8b35ccd18abbc30ae15f0b0d6ec8a89830c14642d2699d597f0e02320ce21f7d"
+   "bytes": 18463,
+   "sha256": "f2a2010cd8c2a64d3d257102f82532e193336701d8f23b439e0aace645f1d300"
   },
   {
    "path": "includes/sale/class-flosc-usage-tracker.php",
@@ -1026,14 +917,9 @@
    "sha256": "b24b91559b4818b5739171efc5b6ff6f199f0c929c1e913ea36152e92d4e44c0"
   },
   {
-   "path": "includes/sale/providers/class-flosc-affiliate-provider.php",
-   "bytes": 24465,
-   "sha256": "ba901004970b76a67b0e36df13ab3c1c5526d9a2189db88d87a7a52effd83f19"
-  },
-  {
    "path": "includes/sale/providers/class-flosc-clickbank-provider.php",
-   "bytes": 27694,
-   "sha256": "5684042568a0bcea71c7165d7d2ecb735e93b5665b9039fd4961b518800d1767"
+   "bytes": 27975,
+   "sha256": "15815fbe5daa59c44fbd4e9dd9ef9f2de8e0022e473090814232f5f36698310a"
   },
   {
    "path": "includes/sale/providers/class-flosc-paypal-provider.php",
@@ -1047,8 +933,8 @@
   },
   {
    "path": "includes/sale/providers/class-flosc-token-provider.php",
-   "bytes": 17716,
-   "sha256": "9b6459ad836edf9bde9acac9f10efde2c64d9228608937f93abaf790f3f06b32"
+   "bytes": 16832,
+   "sha256": "dadfa419ae78d9fff831824ded33b6a6ffd09eed9a9d658309d8f77d2bc99e2e"
   },
   {
    "path": "includes/sessions/class-flosc-session-manager.php",
@@ -1077,8 +963,8 @@
   },
   {
    "path": "includes/sso/class-user-linker.php",
-   "bytes": 13488,
-   "sha256": "f0a5a0c5e0ca2ffe2d130a90f8e33f9d19f59f552b80aa6b6e98c2aa1177e118"
+   "bytes": 13584,
+   "sha256": "31581a276783e9163d0dd20babec275a69fc184df2d3adcbfe64c8220353cfed"
   },
   {
    "path": "includes/sso/flosc-sso-accessor.php",
@@ -1112,8 +998,8 @@
   },
   {
    "path": "includes/starter-packs/class-flosc-starter-packs.php",
-   "bytes": 68780,
-   "sha256": "d715d89c3dfb08c03abe04907e687a1f19f75724f8f7a5d1a0144dbdf8792c06"
+   "bytes": 72091,
+   "sha256": "39b778a10a505020fa8f6d7ca52982c68f964d003886af4309960bb20365590c"
   },
   {
    "path": "includes/tokens/class-flosc-token-ledger.php",
@@ -1177,13 +1063,13 @@
   },
   {
    "path": "readme.txt",
-   "bytes": 34151,
-   "sha256": "1924b63b7cd63de6e68eebee217fcb44591dc81ee00eee6c6608ebb66dbc3e3b"
+   "bytes": 39798,
+   "sha256": "d936bb41fe9ac56e62659dc04e68d2a032e766aefab7363e3edd8af21c63bddf"
   },
   {
    "path": "starter-packs/da1-catalog-sales/README.txt",
-   "bytes": 3492,
-   "sha256": "995ca4b92942fea73e4c15f440c08393c42f663b9f14b1374c3bd78472a7183d"
+   "bytes": 3587,
+   "sha256": "32b8b837f6ec797b7f44c108a135cdd0f7cb7c7596cca87e25f53b90d59f308e"
   },
   {
    "path": "starter-packs/da1-catalog-sales/UberManual.pdf",
@@ -1192,23 +1078,23 @@
   },
   {
    "path": "starter-packs/da1-catalog-sales/catalog.txt",
-   "bytes": 18680,
-   "sha256": "7c6aab47513b9e73929d2c5ed79e54e9d0c28048d15b2af1e4165a8dde1c1696"
+   "bytes": 20400,
+   "sha256": "86062b23bbedb9f733394ab3046da46988545cbd658f64c99faf835e9b177914"
   },
   {
    "path": "starter-packs/da1-catalog-sales/content.json",
-   "bytes": 6481,
-   "sha256": "2718671e81ea63a801d18379a3e84e37bbac2cfd4ec86822aabd75519043778d"
+   "bytes": 6598,
+   "sha256": "fd8537fcb77debd61ebd1dc40552d52bab7f52f8e7a272684352a321acd5f2d8"
   },
   {
    "path": "starter-packs/da1-catalog-sales/flow_ivr.md",
-   "bytes": 5789,
-   "sha256": "f32cbeb7130850abd80665114412542dfbad9325a3137615e60dc64badd2c378"
+   "bytes": 11883,
+   "sha256": "001b53e6c716b131292875ebbddaa93a18fa331735af648b5992ee685a8a8574"
   },
   {
    "path": "starter-packs/da1-catalog-sales/pack.json",
-   "bytes": 1460,
-   "sha256": "e11040a5a67d208df4e33e9e4065fe50f1e37f18257b0f8b4c70ba127a25e7df"
+   "bytes": 1311,
+   "sha256": "aa99b24af8e7fd0172b2f1c042c25056140fbd03b260b9f6c321150175729d83"
   },
   {
    "path": "starter-packs/membership-craft/content.json",
@@ -1217,33 +1103,33 @@
   },
   {
    "path": "starter-packs/membership-craft/flow_ivr.md",
-   "bytes": 7620,
-   "sha256": "6bed4f3326673bcf71ec1b8fb88584cd4e93ef897fb3fea2c9d366cf557f2923"
+   "bytes": 8847,
+   "sha256": "b2288df98b43b2deb09bfd686b3794ae623387de760f705bb7d08fae03a3c9dc"
   },
   {
    "path": "starter-packs/membership-craft/pack.json",
-   "bytes": 962,
-   "sha256": "53b701bdca74469b93729f7b0b2ff1e3070737e7056f60c83154897b0a6f9d1f"
+   "bytes": 916,
+   "sha256": "7a2bc15e7d8e3324eb8d9c4c6a85e8542e940bcc0d67d93d32f789221c23caaf"
   },
   {
    "path": "starter-packs/vegan-latvian-kitchen/catalog.txt",
-   "bytes": 4883,
-   "sha256": "b422c662536f1949716b537bc811f5adfa4f7c555b17c9eaaa04e6b1ef3e799b"
+   "bytes": 5423,
+   "sha256": "8ef67a1ea8239dd2bb35f9f0fa34c98e3fd48cae38fe51e5f9471d1cdaf9655a"
   },
   {
    "path": "starter-packs/vegan-latvian-kitchen/content.json",
-   "bytes": 21533,
-   "sha256": "425576f054691dbf9c941ff486669431704f6052744b062b607ca6815e3a67f4"
+   "bytes": 21413,
+   "sha256": "09a2efd83df96d7ac3257c758ed822fd7639f125fb79b801d4274d1ad0aaee34"
   },
   {
    "path": "starter-packs/vegan-latvian-kitchen/flow_ivr.md",
-   "bytes": 12446,
-   "sha256": "c9697d4d5ecdaa891e7c12e505f3945c7bc25c2ae6d380189af3db3296b575d4"
+   "bytes": 12935,
+   "sha256": "01f028a3432caa14db926bfeaeca8f82cd1bb98ace2757ca41b5e9f9afa8e140"
   },
   {
    "path": "starter-packs/vegan-latvian-kitchen/pack.json",
-   "bytes": 1449,
-   "sha256": "72a3e2551a3e9ea5f301742806e770ffbe0c7f17c02a1667fe602532e73edabe"
+   "bytes": 1251,
+   "sha256": "f7782171532c71ef20879f411c0cabb0ac5a3962a0f03ddc8c02ef113459186d"
   },
   {
    "path": "starter-packs/vegan-latvian-kitchen/vegan-latvian-kitchen-cookbook.pdf",
@@ -1252,8 +1138,8 @@
   },
   {
    "path": "starter-packs/vegan-latvian-kitchen/vegan-latvian-recipes.xml",
-   "bytes": 46763,
-   "sha256": "85d07db41c82419e428a453fe46a970a47f8654c8b65ed1554f5aa5546fa16cf"
+   "bytes": 46606,
+   "sha256": "d984cc5f4ccc7188a47b35efd034caa1c5bcbb041cac83fb128b14b7c1b2e3ed"
   },
   {
    "path": "starter-packs/wordpress-content-membership/100-content-items.xml",
@@ -1272,13 +1158,13 @@
   },
   {
    "path": "starter-packs/wordpress-content-membership/flow_ivr.md",
-   "bytes": 5429,
-   "sha256": "40be3773d8d46870a789b0615cd8f31792cc10c04bdde91ffb5ff244249fada1"
+   "bytes": 7166,
+   "sha256": "e837730669f494e7912297822cdd95e9c4c77ecbf4ec91abb7fd2ebee1aff90a"
   },
   {
    "path": "starter-packs/wordpress-content-membership/pack.json",
-   "bytes": 1023,
-   "sha256": "5ec96f493b3780464f5190537b39443a63695d7c04100cac2186a10756cfe6d6"
+   "bytes": 936,
+   "sha256": "0e4be4e2bedad5775500ca6c773b74d32c3fe167d4cee774ee8624723f5592e4"
   },
   {
    "path": "uninstall.php",

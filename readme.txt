@@ -203,13 +203,11 @@ The wp-sync hop only reissues the cookie for a MagicLink login that already fire
 
 The DA1 AI Personality Builder contains optional citations to people, works, and educational source material. They are sample personality-design inputs, not external services used by FLOSC. Reference pages are maintained by their publishers and may change, move, or become unavailable over time.
 
-"Include influences" is enabled by default. Character notes and works from active influence cards are compiled into `ai_base_prompt` and sent as prompt text to the AI provider selected by the floscAdmin. Complete reference entries—their descriptions and URLs—are excluded by default and are included only when the administrator enables the separate "Include reference URLs" option. That provider transmission is described below under External Services. Including a URL as prompt text does not itself contact or retrieve content from the cited website.
+"Include influences" is enabled by default. Character notes and the titles of works from active influence cards are compiled into `ai_base_prompt` and sent as prompt text to the AI provider selected by the floscAdmin. That provider transmission is described below under External Services.
 
 When "Include influences" is disabled, those materials remain in `workshop_json` and the design copy, but are excluded from `ai_base_prompt` and are not sent to the AI provider.
 
-FLOSC does not fetch content from, call an API at, or transmit WordPress, profile, visitor, or conversation data to the cited websites. Opening a citation is an ordinary administrator-initiated browser navigation.
-
-Current citation hosts include Wikipedia (`en.wikipedia.org`), the Electronic Text Corpus of Sumerian Literature (`etcsl.orinst.ox.ac.uk`), the Stanford Encyclopedia of Philosophy (`plato.stanford.edu`), the Rudolf Steiner Archive (`rsarchive.org`), BDK America (`www.bdkamerica.org`), Bible Gateway (`www.biblegateway.com`), Project Gutenberg (`www.gutenberg.org`), Nobel Prize (`www.nobelprize.org`), and the Viktor Frankl Institute (`www.viktorfrankl.org`). These are references, not FLOSC service dependencies.
+The builder carries the titles of the works an archetype draws on. It carries no web addresses: the bibliography lives in the project's reference documentation, outside the plugin. FLOSC contacts no citation website, and no WordPress, profile, visitor or conversation data travels to one.
 
 == Screenshots ==
 

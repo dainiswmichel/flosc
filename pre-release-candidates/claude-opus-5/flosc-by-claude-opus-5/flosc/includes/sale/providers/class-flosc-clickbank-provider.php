@@ -665,8 +665,19 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 		$username = $this->get_unique_username( $base_username );
 		$password = wp_generate_password( 16, true, true );
+		$role     = flosc_registration_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
+		if ( is_wp_error( $role ) ) {
+			return $role;
+		}
 
-		$user_id = wp_create_user( $username, $password, $email );
+		$user_id = wp_insert_user(
+			array(
+				'user_login' => wp_slash( $username ),
+				'user_pass'  => $password,
+				'user_email' => wp_slash( $email ),
+				'role'       => $role,
+			)
+		);
 
 		if ( is_wp_error( $user_id ) ) {
 			return $user_id;

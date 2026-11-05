@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="identity-row">
 		<div class="field">
 			<label for="soulName">Name</label>
-			<input id="soulName" type="text" placeholder="e.g. DadJokeDan" autocomplete="off">
+			<input id="soulName" type="text" placeholder="e.g. DadJokesDan" autocomplete="off">
 		</div>
 		<div class="field field--wide">
 			<label for="soulRole">Role</label>
@@ -183,10 +183,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<label class="chip">
 			<input type="checkbox" id="includeComments" checked>
 			Include influences
-		</label>
-		<label class="chip">
-			<input type="checkbox" id="includeReferenceUrls">
-			Include reference URLs
 		</label>
 		</div>
 		<p class="figure-readout output-view-note" id="outViewNote"></p>

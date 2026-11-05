@@ -65,6 +65,12 @@ class FLOSC_Full_Page_Mode {
 		if ( null === $flow ) {
 			$flow = $this->flosc->get_current_flow();
 		}
+		if ( is_string( $flow ) ) {
+			$flow = array( 'slug' => $flow );
+		}
+		if ( ! is_array( $flow ) ) {
+			$flow = array();
+		}
 
 		if ( $flow && ! empty( $flow['custom_domain'] ) ) {
 			// Normalize and return custom domain URL.
@@ -81,7 +87,7 @@ class FLOSC_Full_Page_Mode {
 		}
 
 		if ( $flow && ! empty( $flow['slug'] ) ) {
-			return home_url( '/' . $flow['slug'] . '/' );
+			return $this->get_local_app_url( $flow['slug'], $flow['ivr_file'] ?? '' );
 		}
 
 		// Fallback to legacy settings.
@@ -95,6 +101,51 @@ class FLOSC_Full_Page_Mode {
 
 		// Fall back to slug-based URL.
 		$slug = get_option( 'flosc_app_slug', 'flosc' );
+		return $this->get_local_app_url( $slug );
+	}
+
+	/**
+	 * Build a local app URL that matches the site's permalink mode.
+	 *
+	 * WordPress accepts three route shapes: a query URL when permalinks are
+	 * disabled, an /index.php/ path when the structure contains that front, and
+	 * the normal pretty path after web-server rewrites. Returning the shape the
+	 * site actually uses prevents admin links from bypassing WordPress entirely.
+	 *
+	 * @param mixed $slug     Flow route slug.
+	 * @param mixed $ivr_file Flow IVR filename, used by plain permalinks.
+	 * @return string Absolute app URL.
+	 */
+	private function get_local_app_url( $slug, $ivr_file = '' ) {
+		$slug = strtolower( (string) preg_replace( '/[^a-z0-9_-]/i', '', (string) $slug ) );
+		if ( '' === $slug ) {
+			return '';
+		}
+
+		$permalink_structure = (string) get_option( 'permalink_structure', '' );
+		if ( '' === $permalink_structure ) {
+			if ( ( ! is_string( $ivr_file ) || '' === $ivr_file ) && function_exists( 'flosc_config_glob' ) && method_exists( $this->flosc, 'build_flow_from_ivr_file' ) ) {
+				$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
+				foreach ( $ivr_files as $known_ivr_file ) {
+					$known_flow = $this->flosc->build_flow_from_ivr_file( $known_ivr_file );
+					if ( is_array( $known_flow ) && ( $known_flow['slug'] ?? '' ) === $slug ) {
+						$ivr_file = $known_ivr_file;
+						break;
+					}
+				}
+			}
+
+			$query_args = array( 'flosc_app' => '1' );
+			if ( is_string( $ivr_file ) && '' !== $ivr_file ) {
+				$query_args['flosc_ivr'] = basename( $ivr_file );
+			}
+			return add_query_arg( $query_args, home_url( '/' ) );
+		}
+
+		if ( 0 === strpos( $permalink_structure, '/index.php/' ) ) {
+			return home_url( '/index.php/' . $slug . '/' );
+		}
+
 		return home_url( '/' . $slug . '/' );
 	}
 

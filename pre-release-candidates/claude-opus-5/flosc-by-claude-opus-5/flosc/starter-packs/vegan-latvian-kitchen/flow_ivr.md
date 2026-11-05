@@ -3,7 +3,7 @@
 # IVR file name: flosc_vegan_latvian_kitchen_ivr.md
 # Personality: warm kitchen host — cultural pride, clear freeline, plant-based Latvian cooking.
 # Content model: 14 recipes · 2 visitor · 2 guest · 10 member + PDF for members
-# Member: $10 USD one-time, or access code garšīgs
+# Member: $10 USD one-time, or access code GETFLOSCD
 # Pair with: WordPress import (14 recipes + PDF) + DA1 catalog.
 # Identity: recipe freeline host — not a "lessons coach."
 # Portable demo: ## Settings (YAML) applies on Create New Flow / Apply to current flow.
@@ -13,6 +13,10 @@
 name: Vegan Latvian Kitchen
 title: Vegan Latvian Kitchen
 tagline: Classic Latvian dishes, fully plant-based
+ai_enable_ivr_context: true
+ai_enable_content_access: true
+ai_topic_scope: "Vegan Latvian recipes and the Vegan Latvian Kitchen starter collection"
+ai_base_prompt: "Be a warm Latvian kitchen guide. Share any recipe title freely, one or two at a time, and state whether it is available to visitors, guests or members. Never quote or summarize a recipe body above the reader's access level. Visitors can cook two recipes, guests can cook four, and members receive all 14 recipes plus the cookbook PDF. Registration grants 10,000 tokens. Encourage registration or the $10 offer when useful; access code GETFLOSCD grants the same member access for this demonstration."
 slug: vegan-latvian-kitchen
 status: active
 default_member_level: member
@@ -41,8 +45,7 @@ companion_pass_page_context: true
 companion_flow_slug: vegan-latvian-kitchen
 companion_greeting: Chat with the kitchen
 companion_subtitle: Recipes, freeline, membership
-access_code: "garšīgs"
-access_code_role: member
+guest_token_grant: 10000
 offers:
   vlkit_full_pack:
     id: vlkit_full_pack
@@ -60,8 +63,7 @@ offers:
       features:
         0: full_access
     access_codes:
-      0: "garšīgs"
-      1: garsigs
+      0: "GETFLOSCD"
     pricing:
       price: 10
       currency: USD
@@ -79,7 +81,7 @@ offers:
 MessageName: vlkit_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Labdien! Welcome to **Vegan Latvian Kitchen** — classic dishes, fully plant-based. As a visitor you can cook **two freeline recipes** right away: **pelēkie zirņi** and **kartupeļu pankūkas**. Log in for two more free recipes. **Members** get all **14 recipes** on the site plus the **cookbook PDF** ($10 one-time, or access code **garšīgs**). What would you like to taste first?
+MessageContent: Labdien! Welcome to **Vegan Latvian Kitchen** — classic dishes, fully plant-based. As a visitor you can cook **two recipes** right away: **pelēkie zirņi** and **kartupeļu pankūkas**. Registering gives you **10,000 tokens** and two more recipes: **ķimeņu siers** and **aukstā zupa**. Members get all **14 recipes** plus the **cookbook PDF** ($10 one-time, or access code **GETFLOSCD**). What would you like to taste first?
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -100,7 +102,7 @@ MessageName: vlkit_visitor_peas
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: Pelēkie zirņi please
-MessageContent: **Pelēkie zirņi ar “speķi”** — national dish, veganized. Soak and boil grey peas; fry onions, mushrooms and smoked tofu with paprika and liquid smoke; pile on hot. Full steps are in the recipe post. Want **kartupeļu pankūkas** next, or shall I nudge you to log in for more?
+MessageContent: **Pelēkie zirņi ar “speķi”**, available to visitors. Soak 500 g dried grey peas overnight, then boil them in fresh salted water until tender, about 45–60 minutes. Dice two onions, 250 g mushrooms and 150 g smoked tofu. Fry the onions until golden, brown the mushrooms, then add tofu, smoked paprika and a little liquid smoke. Season well and spoon the smoky topping over the hot peas. Want **kartupeļu pankūkas** next?
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: zirni, zirņi, grey peas, pelekie, speki, speķi, national
 
@@ -111,7 +113,7 @@ MessageName: vlkit_visitor_pankukas
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: Kartupeļu pankūkas please
-MessageContent: **Kartupeļu pankūkas** — grated potato pancakes, crisp edges, plant-side sour cream or dill. Full steps are in your freeline recipe. After zirņi and pankūkas, login opens Midsummer cheese and cold beet soup.
+MessageContent: **Kartupeļu pankūkas**, available to visitors. Finely grate 1 kg potatoes and one small onion, then squeeze out only some of the liquid. Mix with three tablespoons flour, one tablespoon potato starch, salt and pepper. Fry thin pancakes in hot oil until deeply golden and crisp. Serve with plant-based sour cream, dill, mushroom sauce or applesauce. Registration opens Midsummer cheese and cold beet soup.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: pankukas, pankūkas, potato pancakes, kartupelu, kartupeļu
 
@@ -133,7 +135,7 @@ MessageName: vlkit_visitor_login_nudge
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: Why should I log in?
-MessageContent: Login makes you a **guest of this flow** and opens **two more free recipes**: **Ķimeņu siers (Jāņu siers)** and **Aukstā zupa**. **Members** get the other **ten recipes** on the site plus the **PDF** — **$10 one-time**, or access code **garšīgs**. Ready to create an account or sign in?
+MessageContent: Login makes you a **guest of this flow** and opens **two more free recipes**: **Ķimeņu siers (Jāņu siers)** and **Aukstā zupa**. **Members** get the other **ten recipes** on the site plus the **PDF** — **$10 one-time**, or access code **GETFLOSCD**. Ready to create an account or sign in?
 MessageConditions: is_visitor
 Keywords: login, log in, sign in, register, account, more recipes
 
@@ -144,9 +146,9 @@ MessageName: vlkit_visitor_offer_tease
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: What's in the full book?
-MessageContent: **14 vegan Latvian recipes** on the site — freeline four for visitors and guests, plus ten more for members (rasols, sklandrausis, burkānlaša, roast, desserts, and more) and the **downloadable PDF**. **$10 one-time**, or redeem access code **garšīgs**. Browse freeline first.
+MessageContent: **14 vegan Latvian recipes** on the site — freeline four for visitors and guests, plus ten more for members (rasols, sklandrausis, burkānlaša, roast, desserts, and more) and the **downloadable PDF**. **$10 one-time**, or redeem access code **GETFLOSCD**. Browse freeline first.
 MessageConditions: is_visitor || is_guest
-Keywords: full, book, all recipes, pdf, buy, purchase, member, cookbook, 10, dollar, garsigs, garšīgs
+Keywords: full, book, all recipes, pdf, buy, purchase, member, cookbook, 10, dollar, GETFLOSCD
 
 ---
 
@@ -161,24 +163,13 @@ Keywords: latvian, vegan, cuisine, about, tradition, culture
 
 ---
 
-## AI nudge
-MessageName: vlkit_ai_api
-MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: Enable smarter kitchen chat (AI)
-MessageContent: This flow is IVR + keywords until floscAdmin connects a preferred AI API under **Settings → AI** (BYOK). Then free-form questions like “how do I fix soggy pīrāgi dough?” get much smarter answers.
-MessageConditions: is_visitor || is_guest || is_member
-Keywords: ai, api, grok, xai, openai, smarter, intelligent
-
----
-
 # Guest Messages
 
 ## Guest Welcome
 MessageName: vlkit_guest_welcome
 MessageType: auto
 MessageStyle: pill
-MessageContent: Welcome back — you're a **guest of Vegan Latvian Kitchen**. You keep the two visitor recipes and also get **Ķimeņu siers** and **Aukstā zupa**. Members get the other ten recipes + PDF ($10 or **garšīgs**). What shall we cook?
+MessageContent: Welcome back — you're a **guest of Vegan Latvian Kitchen**. You keep the two visitor recipes and also get **Ķimeņu siers** and **Aukstā zupa**. Members get the other ten recipes + PDF ($10 or **GETFLOSCD**). What shall we cook?
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -221,9 +212,9 @@ MessageName: vlkit_guest_upgrade
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Get all 14 recipes and the PDF
-MessageContent: Membership opens **all 14 recipes** on the site plus the **cookbook PDF**. **$10 one-time**, or access code **garšīgs** in the offer. Open the offer when ready — or keep cooking your four freeline recipes.
+MessageContent: Membership opens **all 14 recipes** on the site plus the **cookbook PDF**. **$10 one-time**, or access code **GETFLOSCD** in the offer. Open the offer when ready — or keep cooking your four freeline recipes.
 MessageConditions: is_guest
-Keywords: upgrade, buy, purchase, pdf, member, offer, 10, dollar, garsigs, garšīgs, cookbook, all 14
+Keywords: upgrade, buy, purchase, pdf, member, offer, 10, dollar, GETFLOSCD, cookbook, all 14
 
 ---
 
@@ -235,9 +226,9 @@ OfferID: vlkit_full_pack
 Price: 10
 DisplayFormat: card
 UserInput: Show membership offer
-MessageContent: **Full recipe pack + PDF** — all 14 recipes on the site and the cookbook PDF. **$10 one-time**, or redeem access code **garšīgs**.
+MessageContent: **Full recipe pack + PDF** — all 14 recipes on the site and the cookbook PDF. **$10 one-time**, or redeem access code **GETFLOSCD**.
 MessageConditions: is_visitor || is_guest
-Keywords: offer, membership, buy, purchase, full pack, pdf pack, 10, dollar, garsigs, garšīgs
+Keywords: offer, membership, buy, purchase, full pack, pdf pack, 10, dollar, GETFLOSCD
 
 ---
 
@@ -301,6 +292,6 @@ MessageName: vlkit_member_how
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: How did membership work?
-MessageContent: Members join with a **$10 one-time** offer, or by redeeming access code **garšīgs**. That grants **member** on this flow — all 14 recipes + PDF.
+MessageContent: Members join with a **$10 one-time** offer, or by redeeming access code **GETFLOSCD**. That grants **member** on this flow — all 14 recipes + PDF.
 MessageConditions: is_member
-Keywords: access code, garsigs, garšīgs, how, membership, 10
+Keywords: access code, GETFLOSCD, how, membership, 10
