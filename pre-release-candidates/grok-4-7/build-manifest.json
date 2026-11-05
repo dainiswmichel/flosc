@@ -1,0 +1,31 @@
+{
+  "schema_version": 8,
+  "candidate": "grok-4-7",
+  "candidate_label": "FLOSC 8.0.0 candidate v200",
+  "owner": "Grok",
+  "parent": {
+    "candidate": "origin/main",
+    "commit": "4ae041a3c9844b3ec79317361ae94c453888ccb9"
+  },
+  "plugin_version": "8.0.0",
+  "stable_tag": "8.0.0",
+  "internal_iteration": "v200",
+  "github_hashid_at_pack": "4ae041a3c9844b3ec79317361ae94c453888ccb9",
+  "plugin_source": "flosc-by-grok-4-7/flosc",
+  "baseline": "committed Codex v190 snapshot at 4ae041a3c9844b3ec79317361ae94c453888ccb9",
+  "code_base": "v190 4ae041a3c9844b3ec79317361ae94c453888ccb9",
+  "requires_at_least": "7.1",
+  "requires_php": "7.4",
+  "review": "R flosc/dainismichel/2Jun26/T15 24Oct26/4.3 (P0TDX321123HGN)",
+  "artifact": {
+    "path": "flosc.zip",
+    "root": "flosc/",
+    "entries": 286,
+    "files": 246,
+    "bytes": 2861904,
+    "sha256": "5dff4a73e50bbbcc38d307ed173b14698ac9cbd50ced9ab8b5305950be58652c",
+    "runtime_manifest_sha256": "77ed2eeb2112966d615e86968523ddb486d9ff3cf9141291106ef7558bcc13e5",
+    "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
+    "tests_entries": 0
+  }
+}

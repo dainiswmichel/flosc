@@ -1,0 +1,34 @@
+<h1 id="user-creation-and-authentication-security">User creation and authentication</h1>
+<p>FLOSC creates a WordPress account when purchased access, membership state, quiz results, or protected content must persist across sessions. The account is a subscriber, or another nonprivileged role from <code>flosc_registration_role()</code>. FLOSC does not create an administrator. A MagicLink never creates an account. A server-to-server payment notification may create the buyer's account and does not log a browser in.</p>
+<p>Session issuance uses <code>wp_set_auth_cookie()</code> and <code>wp_set_current_user()</code>. Those are the WordPress session APIs. Each session issuance fires <code>wp_login</code> once. The wp-sync hop only reissues a cookie for a MagicLink login that already fired <code>wp_login</code>.</p>
+<p>Post-purchase browser login stays off unless <code>flosc_post_purchase_instant_login</code> or <code>flosc_post_purchase_login_token</code> is enabled. MagicLink stays off unless <code>flosc_enable_magic_access_links</code> is enabled and that flow's own switch is on.</p>
+<h2 id="user-creation-call-sites">Call sites</h2><ul>
+<li><code>includes/flosc-accessors.php:171</code> * @return string|WP_Error Role slug for wp_insert_user(), or an error when no</li>
+<li><code>includes/class-flosc-framework.php:2165</code> // WordPress fires user_register from wp_insert_user(), which every FLOSC</li>
+<li><code>includes/class-flosc-framework.php:8686</code> wp_update_user(</li>
+<li><code>includes/class-flosc-framework.php:8704</code> wp_set_password( $password, $user_id );</li>
+<li><code>includes/class-flosc-framework.php:8705</code> // wp_set_password() clears all sessions — re-issue auth cookies for this user only.</li>
+<li><code>includes/class-flosc-framework.php:8706</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/class-flosc-framework.php:9482</code> $created = wp_insert_user(</li>
+<li><code>includes/class-flosc-framework.php:9500</code> wp_update_user(</li>
+<li><code>includes/class-flosc-framework.php:9992</code> $created_id = wp_insert_user(</li>
+<li><code>includes/class-flosc-framework.php:10006</code> wp_update_user(</li>
+<li><code>includes/class-flosc-framework.php:10194</code> wp_set_current_user( $uid );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:281</code> wp_set_current_user( $user_id );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:282</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:455</code> wp_set_current_user( $user_id );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:456</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:570</code> wp_set_current_user( $user_id );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:571</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:601</code> wp_set_current_user( $user_id );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:602</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/magic-link/class-flosc-magic-link-trait.php:709</code> $user_id                                    = wp_insert_user(</li>
+<li><code>includes/first-party-authentication/class-flosc-first-party-authentication.php:801</code> * 4. Calls wp_set_current_user(0) → undoes our FLOSC token auth</li>
+<li><code>includes/filesystem/flosc-data-paths.php:858</code> wp_set_current_user( $user_id );</li>
+<li><code>includes/filesystem/flosc-data-paths.php:859</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/sso/class-oauth2-handler.php:958</code> wp_set_current_user( $user_id );</li>
+<li><code>includes/sso/class-oauth2-handler.php:959</code> wp_set_auth_cookie( $user_id, true );</li>
+<li><code>includes/sso/class-user-linker.php:195</code> $user_id = wp_insert_user( $user_data_wp );</li>
+<li><code>includes/sale/providers/class-flosc-clickbank-provider.php:673</code> $user_id = wp_insert_user(</li>
+<li><code>includes/sale/providers/class-flosc-clickbank-provider.php:691</code> wp_update_user(</li>
+</ul>

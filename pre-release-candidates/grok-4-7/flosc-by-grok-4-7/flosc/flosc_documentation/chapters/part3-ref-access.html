@@ -1,0 +1,221 @@
+<h1 id="ref-access">Part 3: Reference — Access & Sessions</h1>
+<p class="skeleton-marker">User sessions, access control, content protection. Content pending.</p>
+
+<h2 id="user-session">class-flosc-user-session.php — Session Management</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-purpose">What It Does — Tracks Who's Talking</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-guest">Guest Sessions — Cookie-Based Identity</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-member">Member Sessions — WordPress User Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-data">Session Data — What Gets Stored Per Conversation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-build-state">flosc_build_state() — Assembling User State Object</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-state-hash">flosc_get_state_hash() — Change Detection</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-user-type">flosc_determine_user_type() — Visitor, Guest, or Member?</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-access-level">flosc_determine_access_level() — Content Access Decision</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-autoprompts">flosc_get_visible_autoprompts() — Phase-Appropriate Pills</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-boundary">flosc_get_boundary_rules() — What This User Can't Do</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-to-json">flosc_to_json() — Serialization for FLOSC_USER</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-can">flosc_can() — Capability Check</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-session-visitor-id">Visitor Identification — flosc_build_visitor_id(), flosc_generate_visitor_id_suffix()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="session-manager">class-session-manager.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="session-manager-purpose">What It Does — Lifecycle Management</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="session-manager-cleanup">Session Cleanup — Expiration & Garbage Collection</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="session-manager-crud">CRUD Methods — create, get, delete, add_message</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="session-manager-title">generate_flosc_session_title() — AI-Generated Titles</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="session-manager-count">get_flosc_session_count() — Usage Statistics</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="access-validator">class-access-validator.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-purpose">What It Does — Can This User Access This Content?</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-rules">Access Rules Hierarchy</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="access-validator-free">Free Content Rules</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="access-validator-paid">Paid Content Rules</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="access-validator-admin">Admin Override</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="user-access-manager">class-user-access-manager.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="uam-purpose">What It Does — Manages User Access Levels</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="uam-grant">Granting Access — After Payment</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="uam-check">Checking Access — Runtime Verification</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="member-access">class-member-access.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="member-access-purpose">What It Does — Member-Specific Access Logic</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="member-access-membership">Membership Methods — is_member(), grant_member_access(), revoke_member_access()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="member-access-levels">Level System — has_level(), grant_level(), revoke_level(), get_user_levels()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="member-access-guest">Guest Access Methods — grant_guest_access(), has_guest_access(), get_guest_access_posts()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="member-access-free-lessons">Free Lesson Methods — calculate_free_lesson_count(), grant_free_lessons()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="member-access-stats">get_member_stats() — Usage & Membership Data</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="content-protection">class-content-protection.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-protection-purpose">What It Does — Prevents Unauthorized Content Display</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-protection-hooks">WordPress Hooks — Where Protection Is Enforced</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-protection-category">Category Protection — protect_category(), unprotect_category(), is_category_protected()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-protection-post-visibility">Post Visibility Tiers — hidden, teaser, preview, full</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="content-protection-hidden">get_hidden_content() — Fully Protected</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="content-protection-teaser">get_teaser_content() — Partial Reveal</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="content-protection-preview">get_preview_content() — Extended Preview</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-protection-cta">flosc_add_public_post_ctas() — Chat CTAs on Protected Posts</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-protection-queries">hide_protected_from_public_queries() — Search & Archive Filtering</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="content-filter">class-content-filter.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-filter-purpose">What It Does — Filters Content Based on Access Level</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-filter-markdown">filter_markdown_by_access() — Markdown Section Filtering</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-filter-parse">parse_markdown_sections() — Structural Analysis</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="content-filter-excerpt">get_excerpt() — Access-Aware Excerpts</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="free-lesson-manager">class-free-lesson-manager.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="free-lesson-purpose">What It Does — Controls Which Lesson Is Free</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="free-lesson-config">Configuration — Admin-Selectable Free Lesson</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="free-lesson-delivery">Delivery Flow — How The Free Lesson Reaches the Guest</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="free-lesson-quiz-trigger">handle_quiz_completion() — Auto-Delivery After Quiz</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="free-lesson-missed">get_missed_lessons() — Finding Relevant Lessons from Quiz Results</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="free-lesson-find-post">find_lesson_post() — WordPress Post Discovery</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="lesson-manager">class-lesson-manager.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="lesson-manager-purpose">What It Does — CRUD Operations for Lessons</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="lesson-manager-queries">WordPress Queries — How Lessons Are Fetched</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="lesson-manager-ordering">Lesson Ordering — _flosc_lesson_number Meta</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="bridge-data-manager">class-bridge-data-manager.php — Quiz-to-Commerce Bridge</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-purpose">What It Does — Connects Quiz Results to Lesson Recommendations</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-quiz-completion">handle_quiz_completion() — Bridge Data Creation on Quiz Complete</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-external">External Quiz Handlers — handle_external_quiz(), handle_learndash_quiz(), handle_tutor_quiz()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-item-results">build_item_results() — Categorizing Correct & Incorrect Answers</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-create-read">flosc_create_bridge_data() & get_flosc_bridge_data() — CRUD Operations</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-state">is_in_flosc_bridge_state() & flosc_has_profile() — State Checking</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-weakness">get_flosc_weakest_category() — Finding Areas for Improvement</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-user-summary">get_flosc_user_summary() — Aggregated User Performance</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-manager-purchase">handle_purchase_completed() — Post-Purchase Bridge Actions</h3>
+<p class="skeleton-marker">Content pending.</p>

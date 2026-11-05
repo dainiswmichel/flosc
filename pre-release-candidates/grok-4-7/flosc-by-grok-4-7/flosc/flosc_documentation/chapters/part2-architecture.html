@@ -1,0 +1,264 @@
+<h1 id="architecture">Part 2: Architecture</h1>
+<p class="skeleton-marker">~10 pages — How the pieces fit together. Content pending.</p>
+
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p><strong>🔲 Content pending</strong> — This section has a heading structure prepared. Content will be written as the corresponding features stabilize.</p>
+
+<h2 id="the-big-picture">The Big Picture</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="system-diagram">System Diagram — What Talks to What</h3>
+<p class="skeleton-marker">Content pending. Include ASCII or SVG diagram.</p>
+
+<h3 id="request-lifecycle">A Request's Lifecycle — From Click to Response</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="visitor-first-load">Visitor First Load</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chat-message-flow">Chat Message Flow</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-submission-flow">Quiz Submission Flow</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="payment-flow">Payment Flow</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="the-ivr-system">The IVR System — The Heart of FLOSC</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-what-it-is">What the IVR Actually Is</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-message-anatomy">Anatomy of an IVR Message</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-conditions">Conditions — Who Sees What and When</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-autoprompts">Autoprompt Pills — Data-Driven UI Buttons</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-offer-triggers">Offer Triggers — When Commerce Meets Content</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-markdown-format">The IVR Markdown Format</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-parsing-pipeline">Parsing Pipeline — Markdown → PHP → Chat Response</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-vs-ai">IVR vs AI — When Each Responds</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-first-ai-fallback">IVR-First, AI-Fallback — The Dispatch Logic</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-tone-variants">IVR Tone Variants — Positive, Technical, Custom</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="flow-system">The Flow System — Multi-Tenant Architecture</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-concept">What a Flow Is — One Plugin, Multiple Products</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-settings-override">Flow Settings — Override Hierarchy</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-domain-mapping">Domain Mapping — get_flow_by_domain()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-branding">Per-Flow Branding — Name, Logo, Colors, Emoji</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="bridge-data-system">Bridge Data System — Quiz-to-Commerce Pipeline</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-concept">What Bridge Data Is — Connecting Quiz Results to Offers</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-item-results">Item Results — Category Analysis</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="bridge-lesson-mapping">Lesson Mapping — Which Score Maps to Which Lesson</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="chatpack-system">ChatPack System — Structured Prompt Assembly</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-concept">What a ChatPack Is — Everything AI Needs in One Payload</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-sections">ChatPack Sections — Identity, WordPress, User, Flow, Knowledge, IVR, Rules</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-first-vs-followup">First Message vs Follow-up — Different Payloads</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="companion-architecture">Companion Widget Architecture</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="companion-iframe">The Iframe Approach — Embedding FLOSC Anywhere</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="companion-page-context">Page Context Detection — Knowing Where the User Is</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="data-model">Data Model</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="wordpress-integration">WordPress Integration Points</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="custom-post-types">Custom Post Types (None — and Why)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="options-vs-meta">Options Table vs Post Meta vs Flow Settings</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="transients-sessions">Transients and Session Storage</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-data-model">User Data Model</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="guest-sessions">Guest Sessions — No Account Required</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="member-data">Member Data — What Gets Stored</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-results-storage">Quiz Results Storage</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="lesson-data-model">Lesson Data Model</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="lesson-post-structure">Lesson as WordPress Post</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="lesson-meta-fields">Meta Fields — _flosc_lesson_number and Friends</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="lesson-content-format">Content Format — Markdown with IPA</h4>
+<p class="skeleton-marker">Content pending.</p>
+<h3 id="offer-data-model">Offer Data Model</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="offer-types">Offer Types — One-Time, Subscription, Tokens, Hybrid</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="offer-display-formats">Display Formats — Card, Pill, Compact, Banner, Featured, Text</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-log-data-model">Chat Log Data Model</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chat-log-table">Custom Table — flosc_ensure_table()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chat-log-rating">Rating System — Admin Feedback on AI Responses</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="email-data-model">Email System Data Model</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="email-templates">Template Variables</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="email-triggers">Automation Triggers</h4>
+<p class="skeleton-marker">Content pending.</p>
+<h2 id="file-organization">File Organization</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="directory-structure">Directory Structure — What Lives Where</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="naming-conventions">Naming Conventions</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-architecture">CSS Architecture — The Layer System</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-layout-layer">Layout Layer (flosc-layout.css)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-theme-layer">Theme Layer (flosc-theme.css)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-chat-styles">Chat Style Themes (chat-style-*.css)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-offers-layer">Offers Layer (flosc-offers.css)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-admin-layer">Admin Layer (flosc-admin.css)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-architecture">JavaScript Architecture</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-single-file">The Single-File Decision (flosc-app.js)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-class-structure">FLOSCApp Class Structure</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-no-build-step">No Build Step — And Why That's Intentional</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="external-dependencies">External Dependencies</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="anthropic-api">Anthropic Claude API</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="paypal-sdk">PayPal JavaScript SDK</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="stripe-api">Stripe API</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="wordpress-rest">WordPress REST API (Internal)</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="stt-providers">Speech-to-Text Providers — AssemblyAI, OpenAI Whisper, Custom</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-providers-external">Social Login Providers — Google, Apple, Facebook, Microsoft, LinkedIn</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-architecture">Security Architecture Overview</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rate-limiting">Rate Limiting — Per-IP with CDN Support</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="signed-cookies">Signed Cookies — HMAC SHA256</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-whitelisting">Condition Variable Whitelisting — ~35 Allowed Variables</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="nonce-architecture">Nonce Architecture — CSRF Protection in REST API</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="config-objects">Configuration Objects — Server to Client</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flosc-config-object-arch">FLOSC_CONFIG — Product, AI, Payment, IVR Settings</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flosc-user-object-arch">FLOSC_USER — Identity, State, Access, History</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="sample-data-architecture">Sample Data System</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sample-wxr">WXR Import — 10 Sample Lessons</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sample-generator">Admin Sample Data Generator</h3>
+<p class="skeleton-marker">Content pending.</p>

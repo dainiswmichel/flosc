@@ -1,0 +1,302 @@
+<h1 id="ref-ai">Part 3: Reference — AI & RAG</h1>
+<p class="skeleton-marker">AI chat handling, knowledge retrieval, response validation. Content pending.</p>
+
+<h2 id="ai-chat-dispatch">class-ai-chat-dispatch.php — The Traffic Controller</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-purpose">What It Does — Routes Messages to IVR or AI</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-decision">The IVR-First Decision Tree</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-fallback">When AI Gets Called — Fallback Logic</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-providers">Provider Methods — anthropic_request(), openai_request(), xai_request()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-chained">get_chained_response() — Multi-Turn AI Conversations</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-ivr-response">ivr_response() — Direct IVR-Only Mode</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ai-dispatch-prompt-building">System Prompt Construction</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ai-dispatch-build-identity">build_identity_prompt() — AI Personality</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ai-dispatch-build-feedback">build_feedback_prompt() — Corrections & Praise Integration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ai-dispatch-flosc-process">get_flosc_process_prompt() — Phase-Aware Instructions</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ai-dispatch-phase-prompt">load_phase_prompt() — Per-Phase Prompt Loading</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ai-dispatch-orientation">load_orientation_files() — Background Knowledge</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ai-dispatch-context-string">build_context_string() — Assembling User Context</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="chatpack">class-flosc-chatpack.php — Structured Prompt Builder</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-purpose">What It Does — Assembles Everything AI Needs</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-hashing">Session Hashing — generate_flosc_hash() & generate_session_hash()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-conversation">Conversation History — load_conversation_history(), is_first_message()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-full-build">build_full_chatpack() — First Message Payload</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-followup-build">build_followup_chatpack() — Subsequent Messages</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-sections">ChatPack Sections</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-identity">build_identity_section() — Who the AI Is</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-wordpress">build_wordpress_section() — Site Context</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-user">build_user_section() — User State & History</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-flow">build_flow_section() — Active Flow Configuration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-knowledge">build_knowledge_section() — Lesson & Catalog Content</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-ivr">build_ivr_section() — IVR Messages for AI Context</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="chatpack-rules">build_rules_section() — Behavioral Constraints</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-phase-instructions">get_phase_instructions() — Phase-Specific AI Guidance</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chatpack-knowledge-files">load_knowledge_files() — File Discovery & Loading</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="rag-chat-handler">class-flosc-rag-chat-handler.php — The AI Brain</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-purpose">What It Does — Anthropic API Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-state">State Management — flosc_handle_with_state()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-system-prompt">System Prompt Construction</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-build-prompt">flosc_build_system_prompt_from_state() — State-Driven Prompts</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-knowledge-injection">Knowledge Injection — How Lessons Enter the Prompt</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-context-window">Context Window Management</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-tools">Tool Use — Functions the AI Can Call</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-tool-deliver-lesson">deliver_lesson Tool</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-tool-show-offer">show_offer Tool</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-tool-results">Tool Results — Stringification Requirement</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-error-handling">Error Handling — When Anthropic Fails</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-handler-400-errors">400 Errors — The Array-to-String Bug (v1.9.6 Fix)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-rag-loop">flosc_execute_rag_loop() — The RAG Loop</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-extract-text">flosc_extract_text_from_response() — Parsing AI Output</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-execute-tools">flosc_execute_tools_from_response() — Tool Execution</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-store">flosc_store_conversation() — Persisting Chat History</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-handler-contextual-prompts">flosc_get_contextual_autoprompts() — Dynamic Pill Suggestions</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="rag-access-controller">class-flosc-rag-access-controller.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-access-purpose">What It Does — Decides What Content AI Can Deliver</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-access-free-lesson">Free Lesson Access Logic</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="rag-access-free-lesson-number">free_lesson_number — The Context Key That Fixed Everything</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-access-member-content">Member Content Access</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-access-tool-execution">flosc_execute_tool() — Running AI-Requested Actions</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-access-validation">flosc_validate_output() — Output Safety Check</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-access-denial">flosc_denial_payload() — Access Denied Responses</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="rag-manager">class-rag-manager.php — Knowledge Base Manager</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-purpose">What It Does — Loads and Indexes Knowledge Files</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-retrieval">Retrieval Strategy — How Relevant Knowledge Is Selected</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-tools">get_ai_tools() — Tool Definitions for Anthropic</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-search-kb">search_knowledge_base() — Knowledge File Search</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-search-posts">search_posts() — WordPress Post Search</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-lesson-content">get_lesson_content() & get_available_lessons()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="rag-manager-access-check">can_user_access_level() — Access Gate</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="response-validator">class-flosc-response-validator.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="response-validator-purpose">What It Does — Post-Processing AI Responses</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="response-validator-safety">Safety Checks</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="response-validator-lesson-check">flosc_contains_lesson_content() — Detecting Unauthorized Content</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="response-validator-tool-check">flosc_used_lesson_tool() — Verifying Tool Usage</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="response-validator-pricing">flosc_contains_pricing() — Pricing Leak Detection</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="response-validator-override">flosc_get_override_response() — Replacing Bad Responses</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="access-validator-ai">class-access-validator.php — AI Response Guardrails</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-ai-purpose">What It Does — Validates AI Doesn't Break Boundaries</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-forbidden">get_forbidden_keywords() — Blocked Terms List</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-visitor">check_visitor_violations() — Visitor Boundary Enforcement</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-guest">check_guest_violations() — Guest Boundary Enforcement</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-fallback">get_safe_fallback_response() — Recovery When Violations Detected</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-validator-system-prompt">validate_system_prompt() — Pre-Send Prompt Validation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="chat-logger">class-flosc-chat-logger.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-purpose">What It Does — Conversation History</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-storage">Storage Format</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-table">Database Table — flosc_ensure_table() & flosc_upgrade_table()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-rating">Rating System — flosc_rate_log()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-logging">flosc_log_chat() — Writing Log Entries</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-retrieval">flosc_get_logs() & flosc_get_log_count() — Reading Logs</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-cleanup">flosc_clear_old_logs() — Log Rotation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="chat-logger-privacy">flosc_get_hashed_ip() — IP Anonymization</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="pronunciation-analyzer">class-pronunciation-analyzer.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="pronunciation-purpose">What It Does — IPA Analysis</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="pronunciation-stt">Speech-to-Text Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="pronunciation-normalize">normalize() — Text Normalization for Comparison</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="pronunciation-items-match">items_match() — Phoneme Comparison</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="pronunciation-feedback">generate_feedback() — Learner-Friendly Results</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="stt-dispatch">class-stt-dispatch.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="stt-purpose">What It Does — Speech Recognition Routing</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="stt-providers">Provider Implementations</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="stt-assemblyai">assemblyai_transcribe() — AssemblyAI</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="stt-whisper">openai_whisper_transcribe() — OpenAI Whisper</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="stt-custom">custom_transcribe() — Custom Provider</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="stt-provider-info">get_provider_info() — Provider Metadata</h3>
+<p class="skeleton-marker">Content pending.</p>
