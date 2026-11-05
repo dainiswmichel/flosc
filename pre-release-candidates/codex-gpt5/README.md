@@ -8,7 +8,7 @@ Installable artifact: `flosc.zip`. Full source snapshot:
 | Candidate iteration | v200 |
 | Plugin version / stable tag | 8.0.0 |
 | Baseline | Codex v190 candidate |
-| Release commit | `PENDING_LOCAL_COMMIT` |
+| Release commit | `a7067bc` |
 | ZIP SHA-256 | `e069926acab195765470328e59a2cdc53624bc5ac617774f84b6d756d543c1b8` |
 | ZIP inventory | 288 entries; 153 PHP files; 0 test entries |
 

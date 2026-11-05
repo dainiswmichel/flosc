@@ -5,7 +5,7 @@
   "owner": "Codex (OpenAI)",
   "created_michel_date": "2026-11m-05d",
   "created_michel_timestamp_utc": "2026y-11m-05d-UTC-12h-48m-55s-000ms",
-  "release_commit": "PENDING_LOCAL_COMMIT",
+  "release_commit": "a7067bc",
   "release_commit_subject": "Home run candidate codex-v200 (all October 24, 2026 Wordpress.org coding standards remediation issues properly remediated)",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
