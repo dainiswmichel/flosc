@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLOSC — inline response to the 24 October 2026 review</title>
+<style>
+  body { margin: 0 auto; max-width: 960px; padding: 40px 24px 100px; color: #1f2937;
+         font: 16px/1.62 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 28px 0 12px; }
+  h2 { font-size: 21px; margin: 36px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13.5px; }
+  code { background: #f6f8fa; padding: 1px 5px; border-radius: 4px; }
+  pre, blockquote { background: #f6f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; overflow: auto; }
+  blockquote { margin: 12px 0; white-space: pre-wrap; }
+  .response { margin: 12px 0 28px; padding: 14px 16px; border-left: 4px solid #166534; background: #f0fdf4; }
+  .meta { color: #6b7280; }
+</style>
+</head>
+<body>
+<p class="meta">Grok (xAI). Candidate <code>pre-release-candidates/grok-4-7</code>. Version 8.0.0. Internal Iteration v200. Github HashID <code>4ae041a3c9844b3ec79317361ae94c453888ccb9</code>. Candidate zip SHA-256 <code>5dff4a73e50bbbcc38d307ed173b14698ac9cbd50ced9ab8b5305950be58652c</code>.</p>
+<h1>Inline response to the 24 October 2026 review</h1>
+<p>The quoted blocks are the Plugin Directory message of 24 October 2026, 1:25:11 PM GMT+3 (10:25:11 UTC). Review ID <code>R flosc/dainismichel/2Jun26/T15 24Oct26/4.3 (P0TDX321123HGN)</code>. From WordPress.org Plugin Directory, subject “Re: [WordPress Plugin Directory] Review in Progress: FLOSC”. The message reviews <code>flosc.zip</code> submitted 21 hours earlier. The green blocks are the change in the grok-4-7 candidate. This page does not upload a zip and does not send mail.</p>
+<p>Where a section quotes a long captured script, the opener line is quoted and the message’s statement of the incidence count is quoted. The script body in the message is the captured output the review printed.</p>
+
+<h2>Undocumented use of a 3rd Party / external service</h2>
+<blockquote>Plugins are permitted to require the use of third party/external services as long as they are clearly documented.
+
+When your plugin reach out to external services, you must disclose it. This is true even if you are the one providing that service.
+
+You are required to document it in a clear and plain language, so users are aware of: what data is sent, why, where and under which conditions.
+
+To do this, you must update your readme file to clearly explain that your plugin relies on third party/external services, and include at least the following information for each third party/external service that this plugin uses:
+What the service is and what it is used for.
+What data is sent and when.
+Provide links to the service's terms of service and privacy policy.
+
+Example(s) from your plugin:
+# Domain(s) mentioned in the readme file. Links to service terms and/or privacy policy not found.
+assets/js/flosc-personality-builder.js:214 { label: "Oedipus Rex (Gutenberg)", url: "https://www.gutenberg.org/ebooks/31" }
+assets/js/flosc-personality-builder.js:351 { label: "Genesis 6 (KJV)", url: "https://www.biblegateway.com/passage/?search=Genesis+6&amp;version=KJV" },
+assets/js/flosc-personality-builder.js:514 { label: "Enquiry (Gutenberg)", url: "https://www.gutenberg.org/ebooks/9662" }
+assets/js/flosc-personality-builder.js:374 { label: "Plato (SEP)", url: "https://plato.stanford.edu/entries/plato/" }
+assets/js/flosc-personality-builder.js:308 { label: "Bodhidharma", url: "https://en.wikipedia.org/wiki/Bodhidharma" }
+assets/js/flosc-personality-builder.js:391 { label: "Viktor Frankl", url: "https://en.wikipedia.org/wiki/Viktor_Frankl" },
+... out of a total of 43 incidences.</blockquote>
+<div class="response">
+<p>The bibliography addresses are out of <code>assets/js/flosc-personality-builder.js</code>. The builder keeps each reference label. Character notes, works, labels, and the addresses are in <code>flosc_documentation/chapters/personality-builder-reference-sources.md</code> and the HTML chapter of the same name. <code>readme.txt</code> names the publisher terms and privacy pages. FLOSC does not call those publishers. A search of that builder file for <code>https://</code> returns no matches.</p>
+</div>
+
+<h2>Creating / login users</h2>
+<blockquote>Creating and/or logging in users could pose a serious security risk on sites using this plugin.
+
+In most cases, you won't be allowed to create users on other people's sites, and you really don't need to. If you do need authenticated requests to WordPress APIs, you can ask the user to add an application password instead.
+
+Also note that WordPress has it's own methods to create/login users that can be extended by other plugins, such as security plugins that block multiple login attempts. Creating your own method can bypass these checks, leaving sites vulnerable to such attacks.
+
+Please avoid performing such actions. If you really need to perform them, please explain why they are technically necessary and ensure that you take extreme care to avoid any security risks.
+
+From your plugin:
+includes/magic-link/class-flosc-magic-link-trait.php:282 wp_set_auth_cookie($user_id, true);
+includes/sso/class-user-linker.php:195 wp_insert_user($user_data_wp);
+includes/sale/providers/class-flosc-clickbank-provider.php:691 wp_update_user(array('ID' =&gt; $user_id, 'display_name' =&gt; $name, 'first_name' =&gt; $first_name, 'last_name' =&gt; $last_name));
+includes/filesystem/flosc-data-paths.php:858 wp_set_current_user($user_id);
+includes/sso/class-oauth2-handler.php:959 wp_set_auth_cookie($user_id, true);
+includes/class-flosc-framework.php:8686 wp_update_user(array('ID' =&gt; $user_id, 'display_name' =&gt; $display_name, 'nickname' =&gt; $display_name, 'first_name' =&gt; $display_name));
+includes/class-flosc-framework.php:8706 wp_set_auth_cookie($user_id, true);
+includes/magic-link/class-flosc-magic-link-trait.php:601 wp_set_current_user($user_id);
+... out of a total of 16 incidences.</blockquote>
+<div class="response">
+<p>The calls remain. A subscriber account is how purchased access, membership, quiz results, and protected content stay attached to one person. FLOSC creates that account for a pending email registration, a validated SSO profile, or a verified PayPal or ClickBank purchase, and it issues the session on the magic-link, SSO, and verified-purchase paths. New accounts still go through <code>flosc_registration_role()</code>. The call sites and the reason for each path are in <code>flosc_documentation/chapters/user-creation-and-authentication-security.md</code>. A scan for <code>wp_set_auth_cookie</code> still lists those lines.</p>
+</div>
+
+<h2>Other possible issues — spreadsheet formula prefixes</h2>
+<blockquote>The AI detected certain cases not classified to specific sections of this report that can be related to security, compatibility, guidelines or other potential issues.
+
+From your plugin:
+includes/class-flosc-framework.php:13036 $to_tsv_line($ordered_row);
+# Untrusted chat values are exported to TSV without neutralizing spreadsheet formula prefixes such as =, +, - or @.</blockquote>
+<div class="response">
+<p>In <code>includes/class-flosc-framework.php</code>, <code>$to_tsv_line</code> prefixes a cell before any quote wrapping. After newlines are folded to the two characters backslash and <code>n</code>, a value whose remaining text is spaces or tabs and then <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code> receives one leading apostrophe:</p>
+<pre>if ( preg_match( '/^[\t ]*[=+\-@]/', $value ) ) {
+    $value = "'" . $value;
+}</pre>
+<p>In this candidate that test is at lines 13006–13008, inside the encoder at lines 13001–13018. The email cites the call <code>$to_tsv_line( $ordered_row )</code> at line 13036 of the uploaded zip.</p>
+</div>
+
+<h2>Data Must be Sanitized, Escaped, and Validated</h2>
+<blockquote>When you include POST/GET/REQUEST/FILE calls in your plugin, it's important to sanitize, validate, and escape them.
+
+SANITIZE: Data that is input (either by a user or automatically) must be sanitized as soon as possible.
+VALIDATE: All data should be validated, no matter what.
+ESCAPE: Data that is output must be escaped properly when it is echo'd.
+
+Sanitize early
+Escape Late
+Always Validate
+
+Example(s) from your plugin:
+includes/flosc-admin.php:2716 $post = wp_unslash( $_POST );
+includes/class-flosc-framework.php:12291 wp_unslash( (string) $_POST['api_key'] ),
+includes/flosc-personality-library.php:3507 wp_unslash( $_POST['ai_base_prompt'] ),
+includes/class-flosc-framework.php:3719 $post = wp_unslash( $_POST );
+includes/email/class-flosc-email.php:633 $flosc_optin = filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_CALLBACK, ... sanitize_text_field ... );
+includes/class-flosc-framework.php:12771 $post = wp_unslash( $_POST );
+includes/class-flosc-framework.php:3386 $post = wp_unslash( $_POST );
+includes/class-flosc-framework.php:12495 $post = wp_unslash( $_POST );
+... out of a total of 47 incidences.
+
+Note: When using functions like filter_var, filter_var_array, filter_input and/or filter_input_array you will need to set the FILTER parameter to any kind of filter that sanitizes the input.
+
+Leaving the filter parameter empty, PHP by default will apply the filter "FILTER_DEFAULT" which is not sanitizing at all.
+
+Example(s) from your plugin:
+includes/flosc-personality-library.php:3517 $workshop_raw = filter_var( wp_unslash( $_POST['workshop_json'] ), FILTER_CALLBACK, array( 'options' =&gt; 'flosc_sanitize_personality_workshop' ) );
+includes/email/class-flosc-email.php:633 $flosc_optin = filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_CALLBACK, ... );
+includes/class-flosc-framework.php:12197 $typed = filter_var( wp_unslash( (string) $_POST['api_key'] ), FILTER_CALLBACK, array( 'options' =&gt; 'flosc_sanitize_api_secret' ) );
+includes/class-flosc-framework.php:12290 $api_key = filter_var( wp_unslash( (string) $_POST['api_key'] ), FILTER_CALLBACK, array( 'options' =&gt; 'flosc_sanitize_api_secret' ) );
+... out of a total of 6 incidences.
+
+You can check this using Plugin Check.</blockquote>
+<div class="response">
+<p>The cited reads in this candidate put <code>$_POST</code> inside a sanitizer in the same statement.</p>
+<p>API key, <code>includes/class-flosc-framework.php</code> lines 12197, 12286, and 12360:</p>
+<pre>flosc_sanitize_api_secret( wp_strip_all_tags( wp_unslash( (string) $_POST['api_key'] ) ) )</pre>
+<p>Personality profile, <code>includes/flosc-personality-library.php</code> line 3506, and workshop JSON, line 3513:</p>
+<pre>flosc_sanitize_personality_profile_text( wp_strip_all_tags( wp_unslash( (string) $_POST['ai_base_prompt'] ) ) )
+flosc_sanitize_personality_workshop( wp_strip_all_tags( wp_unslash( (string) $_POST['workshop_json'] ) ) )</pre>
+<p>The newsletter opt-in no longer uses <code>filter_input</code> with <code>FILTER_CALLBACK</code>. <code>includes/email/class-flosc-email.php</code> checks <code>isset( $_POST['flosc_newsletter_optin'] )</code>, returns when the value is neither a string nor a number, and assigns <code>sanitize_text_field( wp_unslash( (string) $_POST['flosc_newsletter_optin'] ) )</code>.</p>
+<p>Ordinary whole-array reads use <code>map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' )</code>. Settings and the JSON-shaped framework handlers use <code>wp_kses_post</code>. <code>FILTER_CALLBACK</code> does not appear in this candidate’s PHP except in the test that asserts its absence.</p>
+<p>Plugin Check: pending.</p>
+</div>
+
+<h2>Variables and options must be escaped when echo'd</h2>
+<blockquote>Much related to sanitizing everything, all variables that are echoed need to be escaped when they're echoed, so it can't hijack users or (worse) admin screens. At this time, we ask you escape all $-variables, options, and any sort of generated data when it is being echoed. That means you should not be escaping when you build a variable, but when you output it at the end. We call this 'escaping late.'
+
+Also keep in mind that sometimes a function is echoing when it should really be returning content instead.
+
+Example(s) from your plugin:
+admin/chat-logs.php:158 flosc_capture_output(
+admin/companion.php:1341 flosc_capture_output(
+admin/flosc-app.php:198 wp_add_inline_style( 'flosc-layout', $flosc_dynamic_css );
+admin/chat-navigation.php:335 flosc_capture_output(
+admin/member-levels.php:356 flosc_capture_output(
+admin/email.php:418 flosc_capture_output(
+admin/quiz.php:567 flosc_capture_output(
+admin/settings.php:2708 flosc_capture_output(
+... out of a total of 30 incidences.
+
+You can check this using Plugin Check.</blockquote>
+<div class="response">
+<p>Each production <code>flosc_capture_output()</code> call that fed <code>wp_add_inline_script</code> is now an immediately-invoked function. The function appends literal text with a nowdoc, appends former echoed values with <code>esc_js</code> or <code>wp_json_encode</code>, and returns the string. <code>wp_add_inline_script</code> receives that string. <code>includes/flosc-output-buffer.php</code> still has one <code>ob_start()</code>.</p>
+<p>The cited style call remains <code>wp_add_inline_style( 'flosc-layout', $flosc_dynamic_css )</code>, on <code>wp_enqueue_scripts</code> at priority 10000. <code>$flosc_dynamic_css</code> is the string that function returns. The color, scale, and avatar-radius values in that string go through <code>esc_attr</code>. The companion critical CSS and the marked shim stay on that same hook at priority 10000.</p>
+</div>
+
+<h2>Checklist, and the thread quoted under the review ID</h2>
+<blockquote>Continue with the review process.
+
+I fixed all the issues in my plugin based on the feedback I received and my own review, as I know that the Plugins Team may not share all cases of the same issue. I am familiar with tools such as Plugin Check, PHPCS + WPCS, and similar utilities to help me identify problems in my code.
+I tested my updated plugin on a clean WordPress installation with WP_DEBUG set to true.
+I acknowledge that this review will be rejected if I overlook the issues or fail to test my code.
+I went to "Add your plugin" and uploaded the updated version.
+I replied to this email. I was concise and shared any clarifications or important context that the team needed to know.
+I didn't list all the changes, as the team will review the entire plugin again and that is not necessary at all.
+
+Review ID: R flosc/dainismichel/2Jun26/T15 24Oct26/4.3 (P0TDX321123HGN)</blockquote>
+<div class="response">
+<p>The candidate for that review is the tree and the zip under <code>pre-release-candidates/grok-4-7</code>. This page does not send a reply to the Plugin Directory and does not upload a zip.</p>
+<p>After the review ID, the same message quotes the 23 October 2026 upload confirmation for <code>https://wordpress.org/plugins/files/2026/05/23_12-51-17_flosc.zip</code> and the earlier October review. Those quoted items are history inside this message. The code changes recorded above are the five sections in this 24 October message. Items in the quoted October 8 review that this message did not repeat stay as they stood in the v190 base, commit <code>4ae041a3c9844b3ec79317361ae94c453888ccb9</code>.</p>
+</div>
+</body>
+</html>

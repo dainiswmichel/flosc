@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLOSC V(latest) local verification commands — 2026-10m-06d</title>
+<meta name="description" content="Copy-paste terminal commands for the tree at mvp_sprint/flosc_8_0_0/flosc. The blocks read that directory and zip-files/flosc.zip built from it. They do not name a candidate iteration.">
+<style>
+  :root {
+    --ink: #172033;
+    --muted: #5e6879;
+    --paper: #f7f9fc;
+    --panel: #ffffff;
+    --line: #d8e0ea;
+    --blue: #185a96;
+    --blue-soft: #eaf4ff;
+    --green: #176b42;
+    --green-soft: #e9f7ef;
+    --amber: #805300;
+    --amber-soft: #fff5d9;
+    --red: #a22929;
+    --red-soft: #fff0f0;
+    --code: #171d29;
+    --code-ink: #edf3fa;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--paper);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--blue); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 96px; }
+  .hero { padding-bottom: 22px; border-bottom: 3px solid var(--ink); }
+  .eyebrow { color: var(--blue); font-size: 12px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+  h1 { margin: 8px 0 12px; font-size: clamp(30px, 4vw, 44px); line-height: 1.08; letter-spacing: -.02em; }
+  h2 { margin: 46px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 26px; line-height: 1.2; }
+  h3 { margin: 28px 0 8px; font-size: 18px; }
+  p { margin: 0 0 12px; }
+  code, .path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
+  .path { background: var(--blue-soft); padding: 0 .25em; border-radius: 4px; }
+  ul, ol { margin: 8px 0 14px; padding-left: 1.3em; }
+  li { margin: 4px 0; }
+  .note, .warn, .stop {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 14px 0;
+    background: var(--panel);
+  }
+  .note { background: var(--blue-soft); border-color: #c5daf3; }
+  .warn { background: var(--amber-soft); border-color: #ead7a2; }
+  .stop { background: var(--red-soft); border-color: #f0c9c9; }
+  .copy-block { position: relative; margin: 10px 0 18px; }
+  .copy-block pre {
+    margin: 0;
+    padding: 42px 16px 14px;
+    overflow: auto;
+    background: var(--code);
+    color: var(--code-ink);
+    border-radius: 10px;
+    font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    border: 1px solid #8ea0b8;
+    background: #243044;
+    color: var(--code-ink);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: #31445f; }
+  .copy-btn.copied { border-color: #8dccaa; color: #d9ffe9; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; background: var(--panel); }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .toc a { text-decoration: none; }
+  .toc li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<p class="note">Public copy of local-verification-commands-2026-10m-06d.html. A home-directory prefix in the source is written here as $HOME. The burner administrator password and the burner host login are omitted.</p>
+
+<div class="wrap">
+<section id="sequence">
+  <h2>Sequence</h2>
+  <p>One process runs the blocks on this page, in order, each in its own shell. Block 19 has no terminal command and is recorded as exit 0. The code is whatever is in <span class="path">$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc</span>. The zip is written from that directory into <span class="path">$HOME/2026/flosc_project_folder/zip-files/flosc.zip</span> before the blocks run.</p>
+  <pre>SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+bash $HOME/2026/flosc_project_folder/mvp_sprint/wordpress-remediation-plan/verify-flosc.sh</pre>
+  <p>Reports go to <span class="path">$HOME/2026/flosc_project_folder/testing-logs/&lt;Internal Iteration&gt;/</span>. The iteration is the <span class="path">Internal Iteration</span> line in <span class="path">flosc.php</span> in that directory when the script starts. The report directory is that line. When the line is missing, the directory is an MTS, <span class="path">YYYYy-MMm-DDd-UTC-HHh-MMm-SSs</span>. The last line of the terminal output is <span class="path">REPORTS=</span> that directory. <span class="path">00-summary.txt</span> in that directory lists every block exit. A non-zero exit from phpcs or PHPStan does not stop the later blocks.</p>
+  <p>The order is 01 identity, 02 PHP syntax, 03 PHP gates, 04 JS gates, 05 project phpcs, 06 WordPress security sniffs, 07 nonce full report, 08 security sniffs with suppressions renamed, 09 PHP 7.4, 10 version headers, 11 slurps and raw tags, 12 external services, 13 review-surface searches, 14 PHPStan, 15 Semgrep, 16 zip inspection, 17 wp-env, 18 external URL status, 19 no command, 20 flosc-test, 21 Playground.</p>
+  <p>Block 1 also prints Internal Iteration. Block 18 lists URLs with <span class="path">grep -o</span> and without <span class="path">-n</span>. Scratch directories under <span class="path">/tmp</span> are named <span class="path">flosc-verify-*</span>. Blocks 17, 20, and 21 use Colima and wp-env. The per-block commands below still write to <span class="path">~/Desktop/flosc-&lt;Internal Iteration&gt;-verify/</span> when pasted alone.</p>
+</section>
+<section id="burner">
+  <h2>Burner site install</h2>
+  <div class="note">
+    <p>The burner site needs two things the plain WordPress install does not provide. It needs FLOSC from the local tree — the zip built by <span class="path">build-dist-zip.sh</span> from <span class="path">$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc</span> and scp'd to <span class="path">/opt/flosc-wp-v111/flosc.zip</span>, never a zip left over from an earlier build — and it needs the newest version of the WordPress Plugin Check plugin from wordpress.org, installed and activated from wordpress.org at every burn so the site carries the current release rather than a pinned older one. A burn that stops at <span class="path">wp core install</span> is incomplete.</p>
+  </div>
+  <p>For a human and for an agent. The burner is a normal WordPress site on the DigitalOcean droplet <span class="path">[burner-ssh-host]</span>. A new volume downloads the current WordPress release from wordpress.org. WordPress updates, the plugin and theme editor, and file modifications stay at WordPress defaults. <span class="path">wp-config.php</span> does not define <span class="path">AUTOMATIC_UPDATER_DISABLED</span>, <span class="path">WP_AUTO_UPDATE_CORE</span>, <span class="path">DISALLOW_FILE_MODS</span>, <span class="path">DISALLOW_FILE_EDIT</span>, or <span class="path">WP_HTTP_BLOCK_EXTERNAL</span>.</p>
+  <table>
+    <tr><th>Item</th><th>Value</th></tr>
+    <tr><td>Site</td><td><a href="http://[burner-host]/">http://[burner-host]/</a></td></tr>
+    <tr><td>Login</td><td><a href="http://[burner-host]/wp-login.php">http://[burner-host]/wp-login.php</a></td></tr>
+    <tr><td>Admin user</td><td><span class="path">flosc_admin</span></td></tr>
+    <tr><td>Admin password</td><td><span class="path">[omitted]</span></td></tr>
+    <tr><td>Admin email</td><td><span class="path">flosc_admin@example.test</span></td></tr>
+    <tr><td>SSH</td><td><span class="path">ssh [burner-ssh-host]</span> — <span class="path">[burner-host]</span>, DigitalOcean <span class="path">nyc3</span></td></tr>
+    <tr><td>Compose</td><td><span class="path">/opt/flosc-wp-v111/compose.yml</span> on the droplet. No local copy.</td></tr>
+    <tr><td>Not this site</td><td>ChemiCloud, <span class="path">dainis.net</span>, and <span class="path">$HOME/public_html</span></td></tr>
+  </table>
+  <h3>WordPress source</h3>
+  <p>The image <span class="path">wordpress:php8.3-apache</span> supplies PHP 8.3 and Apache. <span class="path">command</span> is <span class="path">apache2-foreground</span>. That image is not the WordPress source. <span class="path">/opt/flosc-wp-v111/install-wordpress-org.sh</span> runs when <span class="path">/var/www/html/index.php</span> or <span class="path">/var/www/html/wp-includes/version.php</span> is absent. It reads <span class="path">https://api.wordpress.org/core/version-check/1.7/</span>, downloads <span class="path">https://wordpress.org/wordpress-&lt;version&gt;.tar.gz</span>, and checks <span class="path">https://wordpress.org/wordpress-&lt;version&gt;.tar.gz.sha1</span> before extracting. An existing volume is left as installed. The image Dockerfile downloads from the same host, <span class="path">https://wordpress.org/wordpress-$version.tar.gz</span>, at image build. The pin <span class="path">wordpress:7.1.1-php8.3-apache</span> is that script with <span class="path">version='7.1.1'</span>.</p>
+  <p>The CLI service is <span class="path">wordpress:cli-php8.3</span> with <span class="path">user: "33:33"</span>, the same uid as Apache <span class="path">www-data</span>. The CLI image’s own default user is uid 82. Files created as uid 82 are not writable by Apache, and a dashboard core update then fails with <span class="path">mkdir_failed_ziparchive</span> on <span class="path">wp-content/upgrade</span>.</p>
+  <h3>Burn</h3>
+  <p>These commands run when the site is burned. <span class="path">docker compose down -v</span> removes the WordPress and database volumes for <span class="path">flosc-wp-v111</span> only. Posts, flow options, and installed starter-pack content go with those volumes. The next start downloads the current wordpress.org release into the empty volume, then <span class="path">wp core install</span> creates the same administrator. The blog title is the site name. It is not the plugin iteration. The zip mounted at <span class="path">/tmp/flosc.zip</span> is <span class="path">zip-files/flosc.zip</span> just built from the local tree. Plugin Check is installed from wordpress.org, current release. The CLI cannot see Apache’s <span class="path">mod_rewrite</span>, so the burn then sets the permalink structure to <span class="path">/%postname%/</span> and writes <span class="path">/var/www/html/.htaccess</span>. Without that file Apache returns its own 404 for a flow slug.</p>
+  <p>Starter packs are not installed by activation. <span class="path">FLOSC_Starter_Packs::install()</span> runs from the Starter Packs tab. That install writes the journey and sets <span class="path">personality_library_id</span> on the flow. The AI key is entered on the AI tab. A burn does not install a pack and does not store an API key.</p>
+<pre>SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+ZIP="$HOME/2026/flosc_project_folder/zip-files/flosc.zip"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+scp "$ZIP" [burner-ssh-host]:/opt/flosc-wp-v111/flosc.zip
+ssh [burner-ssh-host] 'cd /opt/flosc-wp-v111 && docker compose down -v && docker compose up -d && docker compose --profile cli run --rm cli core install --path=/var/www/html --url=http://[burner-host] --title="FLOSC v111 Burner" --admin_user=flosc_admin --admin_password="[omitted]" --admin_email=flosc_admin@example.test --skip-email && docker compose --profile cli run --rm cli plugin install /tmp/flosc.zip --force --activate --path=/var/www/html && docker compose --profile cli run --rm cli plugin install plugin-check --activate --path=/var/www/html && docker compose --profile cli run --rm cli rewrite structure "/%postname%/" --hard --path=/var/www/html && docker compose exec -T -u www-data wp sh -c "cat > /var/www/html/.htaccess << \"EOF\"
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\\.php\$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+EOF" && docker compose restart wp'</pre>
+  <h3>What is installed</h3>
+  <p>An empty volume gets the WordPress release the version-check API names at that moment. FLOSC is the zip built from the local tree. Read the lines after install. The page does not store them.</p>
+<pre>ssh [burner-ssh-host] 'cd /opt/flosc-wp-v111 && docker compose exec -T wp php -r "include \"/var/www/html/wp-includes/version.php\"; echo \$wp_version, PHP_EOL;" && docker compose exec -T wp grep -E "Version:|Internal Iteration:|Requires at least:|Requires PHP:" /var/www/html/wp-content/plugins/flosc/flosc.php'</pre>
+  <p>Plugin Check is <a href="http://[burner-host]/wp-admin/tools.php?page=plugin-check">/wp-admin/tools.php?page=plugin-check</a>. Starter packs are <a href="http://[burner-host]/wp-admin/admin.php?page=flosc-settings&amp;tab=starter-packs">/wp-admin/admin.php?page=flosc-settings&amp;tab=starter-packs</a>. The personality builder is on <span class="path">tab=ai</span>.</p>
+</section>
+<header class="hero">
+  <div class="eyebrow">Michel Time Stamp 2026-10m-06d</div>
+  <h1>FLOSC V(latest) local verification commands</h1>
+  <p>The tree under test is <span class="path">$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc</span>. Every local check on this page runs against that directory. Each block is self-contained and runs under bash, including from zsh. Long output is also written under <span class="path">~/Desktop/flosc-&lt;Internal Iteration&gt;-verify/</span>. These commands were not executed when this page was written.</p>
+</header>
+
+<h2 id="target">Target</h2>
+<table>
+  <tr><th>Role</th><th>Path</th></tr>
+  <tr><td>Local root. All gates and static tools</td><td><span class="path">$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc</span></td></tr>
+  <tr><td>Git checkout</td><td><span class="path">$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc</span></td></tr>
+  <tr><td>Zip</td><td><span class="path">$HOME/2026/flosc_project_folder/zip-files/flosc.zip</span>, written by <span class="path">build-dist-zip.sh</span> from the directory above with <span class="path">FLOSC_ZIP_OUT_DIR</span> set to that <span class="path">zip-files</span> directory. Blocks 1, 16, 17, 20, and 21 build that file from the directory, then read it.</td></tr>
+  <tr><td>Plugin Check mount, block 17</td><td>The zip unpacked into <span class="path">wp_plugin_workbench_v6/runtime/ship/plugin</span>. <span class="path">runtime/ship/flosc</span> is a symlink to <span class="path">plugin</span>.</td></tr>
+  <tr><td>Plugin Check mount, block 20</td><td><span class="path">flosc-test</span> unpacks the same zip into <span class="path">flosc_project_folder/testing-runtime/ship/flosc</span></td></tr>
+  <tr><td>Plugin Check mount, block 21</td><td>The same zip unpacked to <span class="path">/tmp/flosc-verify-playground/flosc</span> and mounted into one new local Playground</td></tr>
+  <tr><td>Standing burn site</td><td><a href="http://[burner-host]/">http://[burner-host]/</a> — droplet <span class="path">[burner-ssh-host]</span>, compose <span class="path">/opt/flosc-wp-v111</span>. WordPress is the current wordpress.org release from the burner section. FLOSC is the zip built from the local tree.</td></tr>
+</table>
+<p>Block 1 prints the commit, the <span class="path">Internal Iteration</span> line, and the zip hash from those two paths. Header lines are read from <span class="path">flosc.php</span> and <span class="path">readme.txt</span> in the directory. This page does not record them.</p>
+<div class="warn">
+  <p>Every block tests <span class="path">$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc</span>. Scans skip <span class="path">pre-release-candidates/</span> and <span class="path">testing-environment/</span> inside it. <span class="path">phpcs.xml.dist</span> also excludes any path containing <span class="path">pre-release-candidates</span>. Block 5 copies that directory to <span class="path">/tmp</span> without those two directories before that ruleset runs.</p>
+</div>
+
+<h2 id="dropped">Left out</h2>
+<ul>
+  <li>Any rsync of <span class="path">claude-opus-5</span> onto the local tree, and any copy of a <span class="path">pre-release-candidates</span> zip into <span class="path">zip-files/flosc.zip</span>.</li>
+  <li><span class="path">tests/flosc-check.sh</span>. It calls the zip builder without <span class="path">FLOSC_ZIP_OUT_DIR</span>, treats a zero-file <span class="path">phpcs.xml.dist</span> scan as the WPCS result, and hard-codes old expected counts (44 gates, 22 warnings, 88 suppressions). The zip step on this page is <span class="path">build-dist-zip.sh</span> with <span class="path">FLOSC_ZIP_OUT_DIR</span> set to <span class="path">zip-files</span>.</li>
+  <li><span class="path">git clone</span> into a second repo, <span class="path">git pull</span> on <span class="path">.flosc-mirror</span>, and <span class="path">git pull</span> on <span class="path">flosc_project_folder/pre-release-candidates</span>. That mirror has no upstream, and that candidates directory is not the git checkout.</li>
+  <li>The mirror fetch / hard reset / rsync that refreshes the outside <span class="path">pre-release-candidates</span> copy.</li>
+  <li>Repeated phpcs lines aimed at <span class="path">claude-opus-5</span>, <span class="path">gpt-5-6-sol</span>, and <span class="path">$HOME/2026/flosc-repo</span>.</li>
+  <li><span class="path">code -n</span>.</li>
+  <li><span class="path">composer global require</span>. <span class="path">~/.composer/vendor/bin/phpcs</span>, <span class="path">phpstan</span>, and <span class="path">~/.venvs/semgrep/bin/semgrep</span> are already on disk. <span class="path">phpstan-wordpress</span> is installed beside phpstan.</li>
+  <li>Semgrep <span class="path">--config=auto</span> and a workbench <span class="path">semgrep-rules</span> directory. That directory is not in <span class="path">wp_plugin_workbench_v6</span>. Block 15 uses the <span class="path">p/php</span> and <span class="path">p/security-audit</span> rulesets in one run.</li>
+  <li>The workbench <span class="path">phpstan.neon.dist</span> as a direct <span class="path">--configuration</span>. It references <span class="path">%TARGET_ROOT%</span> and <span class="path">%BOOTSTRAP_FILE%</span> with no values. Block 14 writes a neon that points at the local tree and loads the installed WordPress extension.</li>
+</ul>
+
+<nav class="toc">
+<h2 id="contents">Blocks</h2>
+<ol>
+  <li><a href="#b1">Identity</a></li>
+  <li><a href="#b2">PHP syntax</a></li>
+  <li><a href="#b3">PHP gates</a></li>
+  <li><a href="#b4">JS gates</a></li>
+  <li><a href="#b5">Project phpcs.xml.dist</a></li>
+  <li><a href="#b6">WordPress security sniffs</a></li>
+  <li><a href="#b7">Nonce verification, full report</a></li>
+  <li><a href="#b8">Same security sniffs with phpcs suppressions renamed</a></li>
+  <li><a href="#b9">PHP 7.4 compatibility</a></li>
+  <li><a href="#b10">Version headers and 7.0.4</a></li>
+  <li><a href="#b11">Slurps, FILTER_UNSAFE_RAW, raw script and style tags</a></li>
+  <li><a href="#b12">External services section in readme.txt</a></li>
+  <li><a href="#b13">Review-surface searches</a></li>
+  <li><a href="#b14">PHPStan</a></li>
+  <li><a href="#b15">Semgrep</a></li>
+  <li><a href="#b16">Zip inspection, read-only</a></li>
+  <li><a href="#b17">wp-env, Plugin Check, WP_DEBUG</a></li>
+  <li><a href="#b18">Optional: HTTP status of external URLs found in PHP and JS</a></li>
+  <li><a href="#b19">No terminal command</a></li>
+  <li><a href="#b20">flosc-test: zip from the local tree, wp-env, Plugin Check</a></li>
+  <li><a href="#b21">Local Playground of the zip from the local tree</a></li>
+</ol>
+</nav>
+
+<h2 id="b1">1. Identity</h2>
+<p>Builds <span class="path">zip-files/flosc.zip</span> from that directory, then prints the commit, whether the checkout is clean, the <span class="path">Internal Iteration</span> line, and the hash of that zip.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+ZIP="$(cd "$SOURCE/../../.." && pwd)/zip-files/flosc.zip"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+{
+  echo "SOURCE=$SOURCE"
+  echo "Github HashID=$(sed -n 's/^ \* Github HashID: //p' "$SOURCE/flosc.php" | head -1)"
+  echo "Internal Iteration=$ITERATION"
+  echo "ZIP=$ZIP"
+  git -C "$REPO" rev-parse HEAD
+  git -C "$REPO" log -1 --format='%s'
+  git -C "$REPO" status -sb
+  shasum -a 256 "$ZIP"
+  echo "zip bytes: $(wc -c &lt; "$ZIP" | tr -d ' ')"
+} | tee "$REPORTS/01-identity.txt"
+EOS</pre>
+
+<h2 id="b2">2. PHP syntax</h2>
+<p>Every <span class="path">.php</span> file under that directory, excluding <span class="path">vendor</span>, <span class="path">node_modules</span>, <span class="path">pre-release-candidates</span>, and <span class="path">testing-environment</span>. A clean run prints one PASS line.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 2. PHP SYNTAX =========="
+  BAD="$(
+    find . -type f -name '*.php' \
+      -not -path './vendor/*' \
+      -not -path './node_modules/*' \
+      -not -path './pre-release-candidates/*' \
+      -not -path './testing-environment/*' \
+      -print0 \
+    | xargs -0 -n1 php -l 2&gt;&amp;1 \
+    | grep -v 'No syntax errors detected' || true
+  )"
+  if [ -z "$BAD" ]; then
+    echo "PASS: PHP syntax clean"
+  else
+    printf '%s\n' "$BAD"
+  fi
+} | tee "$REPORTS/02-php-syntax.txt"
+EOS</pre>
+
+<h2 id="b3">3. PHP gates</h2>
+<p><span class="path">tests/check_*.php</span> and <span class="path">tests/test_*.php</span> in that directory. Each file prints PASS or FAIL. Full output is kept for failures. These gates are the plugin’s own checks. A green result here is not a WordPress.org Plugin Check result.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 3. FLOSC PHP GATES =========="
+  FAIL=0
+  COUNT=0
+  for f in tests/check_*.php tests/test_*.php; do
+    [ -f "$f" ] || continue
+    COUNT=$((COUNT + 1))
+    OUT="$(php "$f" 2&gt;&amp;1)"
+    RC=$?
+    if [ "$RC" -ne 0 ]; then
+      echo "FAIL: $f"
+      printf '%s\n' "$OUT"
+      FAIL=$((FAIL + 1))
+    else
+      echo "PASS: $f"
+    fi
+  done
+  echo "Gates run: $COUNT"
+  echo "Gate failures: $FAIL"
+} | tee "$REPORTS/03-php-gates.txt"
+EOS</pre>
+
+<h2 id="b4">4. JS gates</h2>
+<p>The four <span class="path">tests/check_*.js</span> files, including the companion handoff and surface contracts. Output is printed in full.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 4. FLOSC JS GATES =========="
+  FAIL=0
+  COUNT=0
+  for f in tests/check_*.js; do
+    [ -f "$f" ] || continue
+    COUNT=$((COUNT + 1))
+    echo "----- $f -----"
+    node "$f"
+    RC=$?
+    if [ "$RC" -ne 0 ]; then
+      echo "FAIL: $f ($RC)"
+      FAIL=$((FAIL + 1))
+    else
+      echo "PASS: $f"
+    fi
+  done
+  echo "JS gates run: $COUNT"
+  echo "JS gate failures: $FAIL"
+} | tee "$REPORTS/04-js-gates.txt"
+EOS</pre>
+
+<h2 id="b5">5. Project phpcs.xml.dist</h2>
+<p>Copies that directory to <span class="path">/tmp/flosc-verify-ruleset</span>, leaving out <span class="path">pre-release-candidates</span> and <span class="path">testing-environment</span>, then runs the project ruleset there. That ruleset is WordPress plus WordPress-Extra, WordPress-Docs, the project sanitizer list, global prefixes, and PHPCompatibilityWP at 7.4. The copy exists so a ruleset exclude of any path containing <span class="path">pre-release-candidates</span> does not drop every file. Tests, vendor, node_modules, <span class="path">admin/docs</span>, and <span class="path">flosc_documentation</span> stay ignored, matching the earlier procedure. The summary includes how many files were scanned. A scan of zero files is a missed run.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+PHPCS="$HOME/.composer/vendor/bin/phpcs"
+SCAN="/tmp/flosc-verify-ruleset"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+rm -rf "$SCAN"
+mkdir -p "$SCAN"
+rsync -a --exclude '.git' --exclude vendor --exclude node_modules --exclude pre-release-candidates --exclude testing-environment "$SOURCE/" "$SCAN/"
+cd "$SCAN"
+{
+  echo "========== 5. PROJECT PHPCS RULESET =========="
+  echo "scan dir: $SCAN"
+  "$PHPCS" \
+    -d memory_limit=2G \
+    --standard=phpcs.xml.dist \
+    --extensions=php \
+    --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*,*/pre-release-candidates/*,*/testing-environment/*' \
+    --report=summary \
+    -s \
+    .
+  echo "phpcs exit: $?"
+} | tee "$REPORTS/05-phpcs-project.txt"
+EOS</pre>
+
+<h2 id="b6">6. WordPress security sniffs</h2>
+<p>The five security sniffs from the review mail, on that directory, with <span class="path">--standard=WordPress</span>. That standard does not use the project exclude, so this one runs in place.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+PHPCS="$HOME/.composer/vendor/bin/phpcs"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 6. WORDPRESS SECURITY SNIFFS =========="
+  "$PHPCS" \
+    -d memory_limit=2G \
+    --standard=WordPress \
+    --extensions=php \
+    --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*,*/pre-release-candidates/*,*/testing-environment/*' \
+    --sniffs='WordPress.Security.EscapeOutput,WordPress.Security.NonceVerification,WordPress.Security.PluginMenuSlug,WordPress.Security.SafeRedirect,WordPress.Security.ValidatedSanitizedInput' \
+    --report=summary \
+    -s \
+    .
+  echo "phpcs exit: $?"
+} | tee "$REPORTS/06-phpcs-security.txt"
+EOS</pre>
+
+<h2 id="b7">7. Nonce verification, full report</h2>
+<p>The single sniff from the WordPress.org rejection, full output, same ignore list. The file on the Desktop is the record.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+PHPCS="$HOME/.composer/vendor/bin/phpcs"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+"$PHPCS" \
+  -d memory_limit=2G \
+  --standard=WordPress \
+  --extensions=php \
+  --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*,*/pre-release-candidates/*,*/testing-environment/*' \
+  --sniffs='WordPress.Security.NonceVerification' \
+  --report=full \
+  -s \
+  . | tee "$REPORTS/07-nonce-full.txt"
+echo "phpcs exit: ${PIPESTATUS[0]}"
+EOS</pre>
+
+<h2 id="b8">8. Same security sniffs with phpcs suppressions renamed</h2>
+<p>A second <span class="path">/tmp</span> copy. Comments that say <span class="path">phpcs:ignore</span>, <span class="path">phpcs:disable</span>, and <span class="path">phpcs:enable</span> are renamed so they no longer suppress. The project ruleset still credits <span class="path">flosc_sanitize_personality_profile_text</span> and <span class="path">flosc_sanitize_personality_workshop</span>. Those are functions in the ruleset, not line suppressions.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+PHPCS="$HOME/.composer/vendor/bin/phpcs"
+SEC="/tmp/flosc-verify-nosuppress"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+rm -rf "$SEC"
+mkdir -p "$SEC"
+rsync -a --exclude '.git' --exclude vendor --exclude node_modules --exclude pre-release-candidates --exclude testing-environment "$SOURCE/" "$SEC/"
+find "$SEC" -type f -name '*.php' -print0 \
+| xargs -0 perl -pi -e 's/phpcs:ignore/phpcsWASignore/g; s/phpcs:disable/phpcsWASdisable/g; s/phpcs:enable/phpcsWASenable/g'
+cd "$SEC"
+{
+  echo "========== 8. SECURITY WITH SUPPRESSIONS RENAMED =========="
+  echo "scan dir: $SEC"
+  "$PHPCS" \
+    -d memory_limit=2G \
+    --standard=phpcs.xml.dist \
+    --extensions=php \
+    --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*,*/pre-release-candidates/*,*/testing-environment/*' \
+    --sniffs='WordPress.Security.NonceVerification,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.EscapeOutput,WordPress.Security.SafeRedirect,WordPress.Security.PluginMenuSlug,WordPress.DB.PreparedSQL,WordPress.DB.DirectDatabaseQuery,WordPress.WP.GlobalVariablesOverride,WordPress.PHP.NoSilencedErrors' \
+    --report=summary \
+    -s \
+    .
+  echo "phpcs exit: $?"
+} | tee "$REPORTS/08-phpcs-nosuppress.txt"
+EOS</pre>
+
+<h2 id="b9">9. PHP 7.4 compatibility</h2>
+<p><span class="path">PHPCompatibilityWP</span> with <span class="path">testVersion 7.4-</span>, in place on that directory.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+PHPCS="$HOME/.composer/vendor/bin/phpcs"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 9. PHP 7.4 COMPATIBILITY =========="
+  "$PHPCS" \
+    -d memory_limit=2G \
+    --standard=PHPCompatibilityWP \
+    --runtime-set testVersion 7.4- \
+    --extensions=php \
+    --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*,*/pre-release-candidates/*,*/testing-environment/*' \
+    --report=summary \
+    -s \
+    .
+  echo "phpcs exit: $?"
+} | tee "$REPORTS/09-php74.txt"
+EOS</pre>
+
+<h2 id="b10">10. Version headers and 7.0.4</h2>
+<p>Prints the readme and plugin-header lines from the directory. Also searches that tree for the string <span class="path">7.0.4</span> and for <span class="path">WordPress 7.0</span> in the readme.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 10. VERSION HEADERS =========="
+  grep -n -m1 '^Requires at least:' readme.txt
+  grep -n -m1 '^Requires PHP:' readme.txt
+  grep -n -m1 '^Stable tag:' readme.txt
+  grep -n -m1 'Requires at least:' flosc.php
+  grep -n -m1 'Requires PHP:' flosc.php
+  grep -n -m1 'Version:' flosc.php
+  echo
+  echo "7.0.4 search:"
+  if grep -RIn '7\.0\.4' \
+    --include='*.php' --include='*.txt' --include='*.md' \
+    --exclude-dir='.git' --exclude-dir='vendor' --exclude-dir='node_modules' \
+    --exclude-dir='pre-release-candidates' --exclude-dir='testing-environment' \
+    .; then
+    echo "FOUND: 7.0.4"
+  else
+    echo "PASS: no 7.0.4"
+  fi
+  echo
+  echo "readme WordPress 7.0 count: $(grep -c 'WordPress 7\.0' readme.txt || true)"
+  echo -n "description words until Installation: "
+  awk '/^== Description ==/{f=1} /^== Installation ==/{f=0} f' readme.txt | wc -w | tr -d ' '
+} | tee "$REPORTS/10-headers.txt"
+EOS</pre>
+
+<h2 id="b11">11. Slurps, FILTER_UNSAFE_RAW, raw script and style tags</h2>
+<p>Bulk <span class="path">wp_unslash( $_GET|$_POST|$_REQUEST )</span> assignments under <span class="path">admin</span> and <span class="path">includes</span>. Token counts skip comments. The tag count skips <span class="path">vendor</span>, <span class="path">tests</span>, and <span class="path">docs</span>.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+{
+  echo "========== 11. BULK REQUEST SLURPS =========="
+  SLURPS="$(
+    grep -rnE '^[[:space:]]*\$[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*wp_unslash[[:space:]]*\([[:space:]]*\$_(GET|POST|REQUEST)[[:space:]]*\)' \
+      --include='*.php' admin includes 2&gt;/dev/null || true
+  )"
+  if [ -z "$SLURPS" ]; then
+    echo "PASS: no bulk GET/POST/REQUEST slurps found"
+  else
+    printf '%s\n' "$SLURPS"
+  fi
+
+  echo
+  echo "========== FILTER_UNSAFE_RAW =========="
+  php -r '
+  $n=0;
+  $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator(".",FilesystemIterator::SKIP_DOTS));
+  foreach($it as $f){
+      $p=$f-&gt;getPathname();
+      if(substr($p,-4)!==".php" || strpos($p,"/vendor/")!==false || strpos($p,"/tests/")!==false || strpos($p,"/pre-release-candidates/")!==false || strpos($p,"/testing-environment/")!==false) continue;
+      foreach(token_get_all(file_get_contents($p)) as $t){
+          if(is_array($t) &amp;&amp; $t[0]!==T_COMMENT &amp;&amp; $t[0]!==T_DOC_COMMENT &amp;&amp; strpos($t[1],"FILTER_UNSAFE_RAW")!==false) $n++;
+      }
+  }
+  echo "FILTER_UNSAFE_RAW occurrences: $n\n";
+  '
+
+  echo
+  echo "========== RAW SCRIPT / STYLE TAGS IN PHP =========="
+  php -r '
+  $n=0;
+  $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator(".",FilesystemIterator::SKIP_DOTS));
+  foreach($it as $f){
+      $p=$f-&gt;getPathname();
+      if(substr($p,-4)!==".php" || strpos($p,"/vendor/")!==false || strpos($p,"/tests/")!==false || strpos($p,"/docs/")!==false || strpos($p,"/pre-release-candidates/")!==false || strpos($p,"/testing-environment/")!==false) continue;
+      $c="";
+      foreach(token_get_all(file_get_contents($p)) as $t){
+          if(is_array($t)){
+              if($t[0]===T_COMMENT || $t[0]===T_DOC_COMMENT) continue;
+              $c.=$t[1];
+          } else {
+              $c.=$t;
+          }
+      }
+      $n += preg_match_all("/&lt;\s*(script|style)(\s|&gt;)/i",$c);
+  }
+  echo "Raw script/style tags: $n\n";
+  '
+} | tee "$REPORTS/11-input-and-tags.txt"
+EOS</pre>
+
+<h2 id="b12">12. External services section in readme.txt</h2>
+<p>Splits the readme between <span class="path">= External Services =</span> and <span class="path">= FLOSC Site Policies =</span>. Each numbered service is checked for Data sent, Service terms, and Privacy policy.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+python3 - &lt;&lt; 'PY' | tee "$REPORTS/12-external-services.txt"
+from pathlib import Path
+import re
+
+text = Path("readme.txt").read_text(encoding="utf-8")
+m = re.search(r"(?ms)^= External Services =\s*(.*?)^= FLOSC Site Policies =", text)
+
+if not m:
+    print("FAIL: External Services section not found")
+    raise SystemExit
+
+blocks = re.split(r"(?m)(?=^\d+\.\s)", m.group(1))
+services = [b.strip() for b in blocks if re.match(r"^\d+\.\s", b.strip())]
+
+print("Services documented:", len(services))
+
+for block in services:
+    title = block.splitlines()[0]
+    missing = []
+    for field in ("Data sent:", "Service terms:", "Privacy policy:"):
+        if field not in block:
+            missing.append(field)
+    if missing:
+        print("CHECK:", title, "missing", ", ".join(missing))
+    else:
+        print("PASS:", title)
+PY
+EOS</pre>
+
+<h2 id="b13">13. Review-surface searches</h2>
+<p>Searches of the PHP in that directory, excluding tests, vendor, node_modules, <span class="path">admin/docs</span>, and <span class="path">flosc_documentation</span>. A hit is a place to read. It is not, by itself, a defect. The external-URL list is PHP and JS only, same excludes, plus <span class="path">starter-packs</span> left out so sample-pack content does not dominate the list.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$SOURCE"
+IGN=(
+  --include='*.php'
+  --exclude-dir=tests
+  --exclude-dir=vendor
+  --exclude-dir=node_modules
+  --exclude-dir=.git
+  --exclude-dir=docs
+  --exclude-dir=flosc_documentation
+  --exclude-dir=pre-release-candidates
+  --exclude-dir=testing-environment
+)
+{
+  echo "========== authentication / user creation =========="
+  grep -RInE 'wp_set_auth_cookie|wp_set_current_user|wp_create_user|wp_insert_user|wp_update_user|wp_set_password' "${IGN[@]}" . || true
+
+  echo
+  echo "========== REST permissions =========="
+  grep -RInE 'register_rest_route|permission_callback|__return_true|is_user_logged_in' "${IGN[@]}" . || true
+
+  echo
+  echo "========== register_setting sanitization =========="
+  grep -RInE 'register_setting|sanitize_callback' "${IGN[@]}" . || true
+
+  echo
+  echo "========== redirect / host trust =========="
+  grep -RInE 'HTTP_HOST|wp_redirect|wp_safe_redirect|allowed_redirect_hosts|redirect_to' "${IGN[@]}" . || true
+
+  echo
+  echo "========== filesystem writes =========="
+  grep -RInE 'file_put_contents|fopen|fwrite|copy\(|rename\(|unlink\(|mkdir\(|rmdir\(' "${IGN[@]}" . || true
+
+  echo
+  echo "========== nonces and capabilities =========="
+  grep -RInE 'check_admin_referer|check_ajax_referer|wp_verify_nonce|current_user_can|wp_create_nonce|wp_nonce_field' "${IGN[@]}" . || true
+
+  echo
+  echo "========== request input =========="
+  grep -RInE '\$_GET|\$_POST|\$_REQUEST|\$_COOKIE|\$_SERVER|FILTER_DEFAULT|FILTER_UNSAFE_RAW|json_decode' "${IGN[@]}" . || true
+
+  echo
+  echo "========== core path loads =========="
+  grep -RInE 'WP_PLUGIN_DIR|wp-load\.php|wp-config\.php|wp-blog-header\.php|wp-admin/includes/' "${IGN[@]}" . || true
+
+  echo
+  echo "========== inline markup =========="
+  grep -RInE '&lt;script|&lt;style|style=|onclick=|onchange=|onload=' \
+    --include='*.php' --include='*.js' \
+    --exclude-dir=tests --exclude-dir=vendor --exclude-dir=node_modules \
+    --exclude-dir=.git --exclude-dir=docs --exclude-dir=flosc_documentation \
+    --exclude-dir=pre-release-candidates --exclude-dir=testing-environment \
+    . || true
+
+  echo
+  echo "========== external URLs in PHP and JS =========="
+  grep -RInEoh 'https?://[^"[:space:]&lt;&gt;()]+' \
+    --include='*.php' --include='*.js' \
+    --exclude-dir=tests --exclude-dir=vendor --exclude-dir=node_modules \
+    --exclude-dir=.git --exclude-dir=docs --exclude-dir=flosc_documentation \
+    --exclude-dir=pre-release-candidates --exclude-dir=testing-environment \
+    --exclude-dir=starter-packs \
+    . | sort -u || true
+} | tee "$REPORTS/13-review-surfaces.txt"
+EOS</pre>
+
+<h2 id="b14">14. PHPStan</h2>
+<p>Level 5, with <span class="path">phpstan-wordpress</span> loaded from the Composer global install. Tests, vendor, node_modules, <span class="path">admin/docs</span>, and <span class="path">flosc_documentation</span> are excluded. One process, because the workbench config uses that limit.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+PHPSTAN="$HOME/.composer/vendor/bin/phpstan"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cat &gt; /tmp/flosc-verify-phpstan.neon &lt;&lt; NEON
+includes:
+    - ${HOME}/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+    level: 5
+    paths:
+        - ${SOURCE}
+    bootstrapFiles:
+        - ${HOME}/.composer/vendor/szepeviktor/phpstan-wordpress/bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    excludePaths:
+        analyse:
+            - */tests/*
+            - */vendor/*
+            - */node_modules/*
+            - */admin/docs/*
+            - */flosc_documentation/*
+            - */pre-release-candidates/*
+            - */testing-environment/*
+    parallel:
+        maximumNumberOfProcesses: 1
+NEON
+"$PHPSTAN" analyse --memory-limit=4G --configuration=/tmp/flosc-verify-phpstan.neon \
+  | tee "$REPORTS/14-phpstan.txt"
+echo "phpstan exit: ${PIPESTATUS[0]}"
+EOS</pre>
+
+<h2 id="b15">15. Semgrep</h2>
+<p><span class="path">p/php</span> and <span class="path">p/security-audit</span> together. The binary is the venv already on this Mac. The first run can download those rulesets.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+SEMGREP="$HOME/.venvs/semgrep/bin/semgrep"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+"$SEMGREP" \
+  --config=p/php \
+  --config=p/security-audit \
+  --metrics=off \
+  --exclude=tests \
+  --exclude=vendor \
+  --exclude=node_modules \
+  --exclude=admin/docs \
+  --exclude=flosc_documentation \
+  --exclude=pre-release-candidates \
+  --exclude=testing-environment \
+  "$SOURCE" \
+  | tee "$REPORTS/15-semgrep.txt"
+echo "semgrep exit: ${PIPESTATUS[0]}"
+EOS</pre>
+
+<h2 id="b16">16. Zip inspection, read-only</h2>
+<p>Builds <span class="path">zip-files/flosc.zip</span> from that directory, then reads it. Prints the hash, the entry count, whether <span class="path">tests/</span> is inside, and whether the deny-list names from the packager are inside.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+ZIP="$(cd "$SOURCE/../../.." && pwd)/zip-files/flosc.zip"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+echo "ZIP=$ZIP"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+{
+  echo "========== 16. ZIP =========="
+  shasum -a 256 "$ZIP"
+  echo "bytes: $(wc -c &lt; "$ZIP" | tr -d ' ')"
+  echo "entries: $(unzip -l "$ZIP" | tail -1)"
+  echo "top-level entries:"
+  unzip -l "$ZIP" | awk '{print $4}' | awk -F/ 'NF&gt;1 {print $1}' | sort -u
+  for x in 'tests/' 'phpcs.xml.dist' 'CLAUDE.md' 'agents.md' '.cursorrules' 'build-dist-zip.sh' 'vendor/'; do
+    echo "count of $x : $(unzip -l "$ZIP" | grep -c -- "$x" || true)"
+  done
+  echo "starter pack.json files:"
+  unzip -l "$ZIP" | grep 'starter-packs/.*/pack.json' || true
+} | tee "$REPORTS/16-zip.txt"
+EOS</pre>
+
+<h2 id="b17">17. wp-env, Plugin Check, WP_DEBUG</h2>
+<div class="warn">
+  <p>This block builds <span class="path">zip-files/flosc.zip</span> from that directory, starts Docker through <span class="path">npx @wordpress/env</span>, and replaces the files in <span class="path">wp_plugin_workbench_v6/runtime/ship/plugin</span> with the unpacked zip. It does not touch chemicloud. Plugin Check sees that zip, not the tests directory.</p>
+</div>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+ZIP="$(cd "$SOURCE/../../.." && pwd)/zip-files/flosc.zip"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+echo "ZIP=$ZIP"
+WORKBENCH="$HOME/2026/flosc_project_folder/wp_plugin_workbench_v6"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+rm -rf /tmp/flosc-verify-zip
+mkdir -p /tmp/flosc-verify-zip
+unzip -q "$ZIP" -d /tmp/flosc-verify-zip
+rsync -a --delete /tmp/flosc-verify-zip/flosc/ "$WORKBENCH/runtime/ship/plugin/"
+cd "$WORKBENCH"
+{
+  echo "========== 17. WP-ENV =========="
+  npx @wordpress/env start
+  npx @wordpress/env run cli -- wp plugin install plugin-check --activate
+  npx @wordpress/env run cli -- wp plugin activate flosc
+  echo "----- plugin check -----"
+  npx @wordpress/env run cli -- wp plugin check flosc
+  echo "----- plugin check experimental -----"
+  npx @wordpress/env run cli -- wp plugin check flosc --include-experimental
+  echo "----- plugin check experimental + cli.php -----"
+  npx @wordpress/env run cli -- wp plugin check flosc --include-experimental --require=./wp-content/plugins/plugin-check/cli.php
+  npx @wordpress/env run cli -- sh -c 'rm -f /var/www/html/wp-content/debug.log'
+  curl -sS -o /dev/null -w "home: %{http_code}\n" http://localhost:8888/
+  curl -sS -o /dev/null -w "login: %{http_code}\n" http://localhost:8888/wp-login.php
+  curl -sS -o /dev/null -w "admin: %{http_code}\n" http://localhost:8888/wp-admin/
+  curl -sS -o /dev/null -w "missing: %{http_code}\n" http://localhost:8888/nonexistent-page-for-testing
+  echo "========== WP_DEBUG LOG =========="
+  npx @wordpress/env run cli -- sh -c 'cat /var/www/html/wp-content/debug.log 2&gt;/dev/null || true'
+} | tee "$REPORTS/17-wp-env.txt"
+EOS</pre>
+
+<h2 id="b18">18. Optional: HTTP status of external URLs found in PHP and JS</h2>
+<p>Uses the URL list from block 13 if that file exists, otherwise rebuilds it. Each URL is requested. This block contacts those hosts.</p>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+echo "SOURCE=$SOURCE"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+LIST="$REPORTS/18-external-urls.txt"
+cd "$SOURCE"
+grep -RInEoh 'https?://[^"[:space:]&lt;&gt;()]+' \
+  --include='*.php' --include='*.js' \
+  --exclude-dir=tests --exclude-dir=vendor --exclude-dir=node_modules \
+  --exclude-dir=.git --exclude-dir=docs --exclude-dir=flosc_documentation \
+  --exclude-dir=pre-release-candidates --exclude-dir=testing-environment \
+  --exclude-dir=starter-packs \
+  . | sort -u &gt; "$LIST"
+{
+  echo "URL count: $(wc -l &lt; "$LIST" | tr -d ' ')"
+  while IFS= read -r url; do
+    [ -n "$url" ] || continue
+    printf '%s  ' "$url"
+    curl -L -sS -o /dev/null --max-time 20 -w '%{http_code}\n' "$url" || echo "curl-failed"
+  done &lt; "$LIST"
+} | tee "$REPORTS/18-external-url-status.txt"
+EOS</pre>
+
+<h2 id="b19">19. No terminal command</h2>
+<p>Plugin Check and the static tools do not press the product. After block 17, or after block 20, the local site is <span class="path">http://localhost:8888/</span>. Those two blocks are different WordPress containers, and only one of them can own that port. The same product questions on dainis.net are a different install from this local list. This list reads only the directory above.</p>
+<ul>
+  <li>Settings save.</li>
+  <li>AI personality dropdown: the page leaves “Attaching…” and reloads on the selected personality.</li>
+  <li>Companion and fullscreen, both directions, same thread.</li>
+  <li>A same-site link in the open companion loads in the current tab with the panel still open. An off-site link stays a new tab.</li>
+  <li>Each bundled starter pack installs and answers.</li>
+  <li>A newly created personality saves, loads, and answers.</li>
+  <li>IVR tab loads. Audio plays. Google login completes.</li>
+</ul>
+
+<p>Output files from the blocks land in <span class="path">~/Desktop/flosc-&lt;Internal Iteration&gt;-verify/</span>.</p>
+
+<h2 id="b20">20. flosc-test: zip from the local tree, wp-env, Plugin Check</h2>
+<div class="warn">
+  <p><span class="path">$HOME/2026/flosc_project_folder/flosc-test</span> is the script that starts the <span class="path">testing-runtime</span> WordPress and installs Plugin Check. <span class="path">./flosc-test doctor --fix</span> runs <span class="path">wp plugin install plugin-check --activate</span> when that plugin is missing, and creates the published post Plugin Check needs for its URL checks. Procedure 0 deletes <span class="path">testing-runtime/ship</span> and replaces <span class="path">testing-runtime/flosc.zip</span> with the zip argument. This block passes <span class="path">zip-files/flosc.zip</span> built from the local tree. A bare name under <span class="path">pre-release-candidates</span> is not the argument.</p>
+  <p><span class="path">testing-runtime/.wp-env.json</span> and the workbench both publish port 8888. This block stops the workbench container first. The files in <span class="path">wp_plugin_workbench_v6/runtime/ship/plugin</span> stay on disk. After procedure 0, <span class="path">npx wp-env start --update</span> remounts the container on the replaced tree. <span class="path">./wp_plugin_workbench_v6</span> procedure 6 runs Plugin Check and does not install it. Block 17 is the workbench install of the same zip.</p>
+</div>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+ROOT="$HOME/2026/flosc_project_folder"
+REPO="$ROOT/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+ZIP="$(cd "$SOURCE/../../.." && pwd)/zip-files/flosc.zip"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+echo "ZIP=$ZIP"
+WORKBENCH="$ROOT/wp_plugin_workbench_v6"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+cd "$ROOT"
+{
+  echo "========== 20. FLOSC-TEST =========="
+  echo "zip under test: $ZIP"
+  shasum -a 256 "$ZIP"
+  if [ -f "$ROOT/testing-runtime/flosc.zip" ]; then
+    echo "testing-runtime zip before procedure 0:"
+    shasum -a 256 "$ROOT/testing-runtime/flosc.zip"
+  fi
+  echo "----- stop workbench wp-env (port 8888) -----"
+  ( cd "$WORKBENCH" && npx @wordpress/env stop ) || true
+  echo "----- procedure 0: unpack zip-files/flosc.zip into testing-runtime/ship -----"
+  ./flosc-test 0 "$ZIP"
+  p0rc=$?
+  echo "procedure 0 exit: $p0rc"
+  echo "testing-runtime zip after procedure 0:"
+  shasum -a 256 "$ROOT/testing-runtime/flosc.zip"
+  if [ "$p0rc" -ne 0 ]; then
+    echo "procedure 0 did not finish. doctor, Plugin Check, and the clean install were not started."
+  else
+    echo "----- remount wp-env on the replaced ship tree -----"
+    ( cd "$ROOT/testing-runtime" && npx wp-env start --update )
+    echo "wp-env start exit: $?"
+    echo "----- doctor --fix: Plugin Check and the fixture post -----"
+    ./flosc-test doctor --fix
+    echo "doctor exit: $?"
+    echo "----- procedure 1: zip contents -----"
+    ./flosc-test 1 "$ZIP"
+    echo "procedure 1 exit: $?"
+    echo "----- procedure 10: Plugin Check on the unpacked zip -----"
+    ./flosc-test 10 "$ZIP"
+    echo "procedure 10 exit: $?"
+    echo "----- procedure 11: clean install, WP_DEBUG -----"
+    ./flosc-test 11 "$ZIP"
+    echo "procedure 11 exit: $?"
+  fi
+} | tee "$REPORTS/20-flosc-test.txt"
+EOS</pre>
+<p><span class="path">flosc-test</span> also writes its own transcript under <span class="path">flosc_project_folder/testing-logs/</span>. The local site after a completed start is <span class="path">http://localhost:8888/</span>.</p>
+
+<h2 id="b21">21. Local Playground of the zip from the local tree</h2>
+<div class="note">
+  <p>This command unpacks <span class="path">zip-files/flosc.zip</span>, the archive built from the local tree, and mounts that directory into one new local Playground. The blueprint installs Plugin Check from wordpress.org and activates it, then runs <span class="path">wp plugin check flosc</span>. The command does not call <span class="path">testing-bench.sh</span>. The Playground address is the URL printed when the process starts. That process is local. The standing burn site is <a href="http://[burner-host]/">http://[burner-host]/</a>.</p>
+</div>
+<pre>bash &lt;&lt; 'EOS'
+set -u
+REPO="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+SOURCE="$HOME/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc"
+ZIP="$(cd "$SOURCE/../../.." && pwd)/zip-files/flosc.zip"
+FLOSC_ZIP_OUT_DIR="$HOME/2026/flosc_project_folder/zip-files" "$SOURCE/build-dist-zip.sh"
+echo "ZIP=$ZIP"
+UNPACK="/tmp/flosc-verify-playground"
+BLUEPRINT="/tmp/flosc-verify-pc-blueprint.json"
+ITERATION="$(sed -n 's/^ \* Internal Iteration: //p' "$SOURCE/flosc.php" | head -1)"
+case "$ITERATION" in
+  v[0-9]*) REPORTS="$HOME/Desktop/flosc-${ITERATION}-verify" ;;
+  *) REPORTS="$HOME/Desktop/flosc-verify-$(date -u '+%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss')" ;;
+esac
+mkdir -p "$REPORTS"
+rm -rf "$UNPACK"
+mkdir -p "$UNPACK"
+unzip -q "$ZIP" -d "$UNPACK"
+cat &gt; "$BLUEPRINT" &lt;&lt; 'EOB'
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "login": true,
+  "steps": [
+    { "step": "installPlugin",
+      "pluginData": { "resource": "wordpress.org/plugins", "slug": "plugin-check" },
+      "options": { "activate": true } },
+    { "step": "wp-cli", "command": "wp plugin check flosc --format=csv" }
+  ]
+}
+EOB
+{
+  echo "========== 21. PLAYGROUND =========="
+  echo "zip under test: $ZIP"
+  shasum -a 256 "$ZIP"
+  echo "mount: $UNPACK/flosc"
+  echo "tests directories: $(find "$UNPACK/flosc" -type d -name tests | wc -l | tr -d ' ')"
+  echo "build-dist-zip.sh files: $(find "$UNPACK/flosc" -name build-dist-zip.sh | wc -l | tr -d ' ')"
+  npx --yes @wp-playground/cli@latest run-blueprint \
+    --blueprint="$BLUEPRINT" \
+    --mount="$UNPACK/flosc:/wordpress/wp-content/plugins/flosc" \
+    --php=8.3
+  echo "playground exit: $?"
+} | tee "$REPORTS/21-playground.txt"
+EOS</pre>
+</div>
+<script>
+document.querySelectorAll("pre").forEach(function (pre) {
+  var wrap = document.createElement("div");
+  wrap.className = "copy-block";
+  pre.parentNode.insertBefore(wrap, pre);
+  wrap.appendChild(pre);
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "copy-btn";
+  btn.textContent = "Copy";
+  btn.addEventListener("click", function () {
+    var text = pre.textContent.replace(/^\n+|\n+$/g, "") + "\n";
+    function done() {
+      btn.textContent = "Copied";
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = "Copy";
+        btn.classList.remove("copied");
+      }, 1500);
+    }
+    function failed() {
+      btn.textContent = "Copy failed";
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+    function fallback() {
+      var area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.left = "-9999px";
+      document.body.appendChild(area);
+      area.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+      document.body.removeChild(area);
+      if (ok) done(); else failed();
+    }
+  });
+  wrap.appendChild(btn);
+});
+</script>
+</body>
+</html>
