@@ -1,0 +1,14 @@
+# Cursor rules for FLOSC
+
+The canonical, authoritative rules for this project live in **`AGENTS.md`** in
+this directory. Read `AGENTS.md` before writing any code and obey it in full.
+
+Short version:
+- WordPress Coding Standards (WPCS) via `vendor/bin/phpcs` — the release gate
+  is the referee, not visual memory.
+- PHP 7.4 floor, `flosc` text domain, `flosc`/`FLOSC` prefixes.
+- Sanitize input, escape output, prepared SQL, nonces, capability checks.
+- No inline `<style>`/`<script>` in PHP. No `error_log`/`console.log` —
+  `flosc_log()` only.
+- No version bumps, zips, or deploys without Dainis confirming the change.
+- Run `flosc-gate.sh` before claiming anything is submission-ready.

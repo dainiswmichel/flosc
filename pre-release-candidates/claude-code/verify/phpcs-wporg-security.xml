@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+  Stock WordPress security sniffs, exactly as shipped by WPCS.
+  No customSanitizingFunctions, no customEscapingFunctions: a project helper
+  gets no credit here, because the WordPress.org review tooling gives it none.
+  Run with ‑‑ignore-annotations so phpcs:ignore comments hide nothing.
+-->
+<ruleset name="FLOSC wp.org security (stock)">
+    <arg name="extensions" value="php"/>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/testing-environment/*</exclude-pattern>
+    <rule ref="WordPress.Security"/>
+    <rule ref="WordPress.DB.PreparedSQL"/>
+    <rule ref="WordPress.WP.AlternativeFunctions"/>
+</ruleset>

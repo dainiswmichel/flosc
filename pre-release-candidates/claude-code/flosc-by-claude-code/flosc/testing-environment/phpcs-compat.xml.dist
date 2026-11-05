@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<ruleset name="FLOSC-compat">
+	<description>
+		PHP cross-version compatibility at WordPress.org's published minimum.
+
+		testVersion 7.4- means "7.4 and up". Code that only runs on PHP 8 is a
+		rejection even when it works perfectly on the machine it was written on.
+	</description>
+
+	<rule ref="PHPCompatibilityWP"/>
+	<config name="testVersion" value="7.4-"/>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="s"/>
+
+	<exclude-pattern>*/tests/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/admin/docs/*</exclude-pattern>
+	<exclude-pattern>*/flosc_documentation/*</exclude-pattern>
+</ruleset>

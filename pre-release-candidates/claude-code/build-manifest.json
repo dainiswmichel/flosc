@@ -1,0 +1,44 @@
+{
+  "schema_version": 13,
+  "candidate": "claude-code",
+  "candidate_label": "Home run candidate claude-code-v200 (all October 24, 2026 Wordpress.org coding standards remediation issues properly remediated)",
+  "owner": "Claude Opus 5.5 (claude-opus-5-5), Claude Code CLI",
+  "created_michel_date": "2026-11m-05d",
+  "baseline": {
+    "candidate": "codex-gpt5 v190",
+    "commit": "4ae041a",
+    "zip_sha256": "3379855c54a5dfa64781f70b5dbaa0aa42bda054bf2cba8928886e6fd8281e3b",
+    "note": "The zip reviewed by WordPress.org on 24 October 2026 (uploaded 23 October 2026 12:51 UTC). The candidate source was copied from that tree and matched the zip byte for byte before editing."
+  },
+  "review_addressed": "R flosc/dainismichel/2Jun26/T15 24Oct26/4.3 (P0TDX321123HGN)",
+  "plugin_version": "8.0.0",
+  "stable_tag": "8.0.0",
+  "candidate_iteration": "v200",
+  "requires_at_least": "7.1",
+  "requires_php": "7.4",
+  "plugin_source": "flosc-by-claude-code/flosc",
+  "artifact": {
+    "path": "flosc.zip",
+    "root": "flosc/",
+    "entries": 312,
+    "php_files": 155,
+    "bytes": 2867000,
+    "sha256": "494cd84299975cc2d77a26c95ca1962e37ab6e08ac072c062b2c8d082dc59038",
+    "tests_entries": 0,
+    "built_with": "flosc-by-claude-code/flosc/build-dist-zip.sh (rsync + .distignore)"
+  },
+  "verification": {
+    "evidence_files": [
+      "verify/oct24-finding-counts.txt",
+      "verify/phpcs-on-zip.txt",
+      "verify/changed-files-vs-v190.txt"
+    ],
+    "php_lint_on_zip": "0 failures",
+    "phpcs_full_repository_ruleset_on_zip": "1 error, 22 warnings (see README: settings.php nonce order, signed-URL GET recommendations)",
+    "phpcs_stock_security_ignore_annotations_on_zip": "1 error (NonceVerification.Missing admin/settings.php:458), 22 nonce-recommended warnings, 9 file_get_contents warnings",
+    "phpcompatibilitywp_7_4_on_zip": "0 errors, 0 warnings",
+    "repository_tests": "71 of 73 pass; the 2 failures also fail on v190",
+    "plugin_check": "not run: no MySQL, Docker daemon down, and Playground CLI download was refused by the session permission policy",
+    "wordpress_runtime": "not run: no WordPress install was available to this session; no browser test was performed"
+  }
+}

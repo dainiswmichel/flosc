@@ -1,0 +1,66 @@
+Files v190/.distignore and v200/.distignore differ
+Files v190/admin/ai-configuration.php and v200/admin/ai-configuration.php differ
+Files v190/admin/autoprompts.php and v200/admin/autoprompts.php differ
+Files v190/admin/chat-logs.php and v200/admin/chat-logs.php differ
+Files v190/admin/chat-navigation.php and v200/admin/chat-navigation.php differ
+Files v190/admin/chat-styling.php and v200/admin/chat-styling.php differ
+Files v190/admin/companion.php and v200/admin/companion.php differ
+Files v190/admin/content.php and v200/admin/content.php differ
+Files v190/admin/da1.php and v200/admin/da1.php differ
+Files v190/admin/email.php and v200/admin/email.php differ
+Files v190/admin/engagement.php and v200/admin/engagement.php differ
+Files v190/admin/flosc-app.php and v200/admin/flosc-app.php differ
+Files v190/admin/flow-edit.php and v200/admin/flow-edit.php differ
+Files v190/admin/ivr-messages.php and v200/admin/ivr-messages.php differ
+Files v190/admin/ivr-upload-handler.php and v200/admin/ivr-upload-handler.php differ
+Files v190/admin/knowledge-base.php and v200/admin/knowledge-base.php differ
+Files v190/admin/login-registration.php and v200/admin/login-registration.php differ
+Files v190/admin/member-levels.php and v200/admin/member-levels.php differ
+Files v190/admin/offers.php and v200/admin/offers.php differ
+Files v190/admin/payments.php and v200/admin/payments.php differ
+Files v190/admin/quiz.php and v200/admin/quiz.php differ
+Files v190/admin/settings.php and v200/admin/settings.php differ
+Files v190/admin/sso.php and v200/admin/sso.php differ
+Files v190/admin/token-management.php and v200/admin/token-management.php differ
+Files v190/admin/ui-navigation.php and v200/admin/ui-navigation.php differ
+Files v190/assets/js/flosc-personality-builder.js and v200/assets/js/flosc-personality-builder.js differ
+Files v190/assets/personality-builder/flosc-personality-builder-markup.php and v200/assets/personality-builder/flosc-personality-builder-markup.php differ
+Files v190/flosc.php and v200/flosc.php differ
+Files v190/includes/class-flosc-concierge.php and v200/includes/class-flosc-concierge.php differ
+Files v190/includes/class-flosc-framework.php and v200/includes/class-flosc-framework.php differ
+Files v190/includes/class-flosc-site-content-index.php and v200/includes/class-flosc-site-content-index.php differ
+Files v190/includes/class-flosc-trajectory.php and v200/includes/class-flosc-trajectory.php differ
+Files v190/includes/companion-mode/class-flosc-companion-mode.php and v200/includes/companion-mode/class-flosc-companion-mode.php differ
+Files v190/includes/companion-mode/class-flosc-companion-widget.php and v200/includes/companion-mode/class-flosc-companion-widget.php differ
+Files v190/includes/email/class-flosc-email.php and v200/includes/email/class-flosc-email.php differ
+Files v190/includes/filesystem/flosc-data-paths.php and v200/includes/filesystem/flosc-data-paths.php differ
+Files v190/includes/flosc-admin.php and v200/includes/flosc-admin.php differ
+Files v190/includes/flosc-available-providers.php and v200/includes/flosc-available-providers.php differ
+Files v190/includes/flosc-personality-library.php and v200/includes/flosc-personality-library.php differ
+Files v190/includes/magic-link/class-flosc-magic-link-trait.php and v200/includes/magic-link/class-flosc-magic-link-trait.php differ
+Files v190/includes/sale/providers/class-flosc-clickbank-provider.php and v200/includes/sale/providers/class-flosc-clickbank-provider.php differ
+Files v190/includes/sso/class-oauth2-handler.php and v200/includes/sso/class-oauth2-handler.php differ
+Files v190/includes/sso/class-sso-manager.php and v200/includes/sso/class-sso-manager.php differ
+Files v190/includes/sso/class-user-linker.php and v200/includes/sso/class-user-linker.php differ
+Files v190/readme.txt and v200/readme.txt differ
+Files v190/tests/check-issue10-v153-boundaries.php and v200/tests/check-issue10-v153-boundaries.php differ
+Files v190/tests/check-output-buffer-boundaries.php and v200/tests/check-output-buffer-boundaries.php differ
+Files v190/tests/check_admin_js_binds.php and v200/tests/check_admin_js_binds.php differ
+Files v190/tests/check_admin_response_rendering.php and v200/tests/check_admin_response_rendering.php differ
+Files v190/tests/check_attachment_save.php and v200/tests/check_attachment_save.php differ
+Files v190/tests/check_issue10_actual_handlers.php and v200/tests/check_issue10_actual_handlers.php differ
+Files v190/tests/check_login_action_boundary.php and v200/tests/check_login_action_boundary.php differ
+Files v190/tests/check_nonce_exceptions.php and v200/tests/check_nonce_exceptions.php differ
+Files v190/tests/check_personality_influence_boundary.js and v200/tests/check_personality_influence_boundary.js differ
+Files v190/tests/check_registration_role_boundary.php and v200/tests/check_registration_role_boundary.php differ
+Files v190/tests/test_param_sync.php and v200/tests/test_param_sync.php differ
+Files v190/tests/test_tuning_queue.php and v200/tests/test_tuning_queue.php differ
+Only in v200/assets/js: admin
+Only in v200/assets/js: flosc-sso-buttons.js
+Only in v200/assets/js: flosc-sso-error.js
+Only in v200/includes: flosc-accounts.php
+Only in v200/includes: flosc-spreadsheet-export.php
+Only in v200/tests: check_spreadsheet_export_cells.php
+Only in v200: composer.json
+Only in v200: composer.lock
+Only in v200: reference-documentation

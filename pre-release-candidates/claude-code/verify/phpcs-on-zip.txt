@@ -1,0 +1,20 @@
+zip sha256: 494cd84299975cc2d77a26c95ca1962e37ab6e08ac072c062b2c8d082dc59038
+== 1. full repository ruleset (verify/phpcs-full.xml = phpcs.xml.dist minus the pre-release-candidates exclude), annotations honoured
+.....................W..................W.....W.............  60 / 155 (39%)
+......................................................E..... 120 / 155 (77%)
+...................................                          155 / 155 (100%)
+.../claude-v200-check/flosc/includes/class-flosc-framework.php  0       12
+...vate/tmp/claude-v200-check/flosc/includes/flosc-request.php  0       7
+.../flosc/includes/magic-link/class-flosc-magic-link-trait.php  0       3
+A TOTAL OF 1 ERROR AND 22 WARNINGS WERE FOUND IN 4 FILES
+== 2. stock WordPress.Security + PreparedSQL + AlternativeFunctions, --ignore-annotations
+WordPres  Security            Nonce verification recommended               22
+WordPres  WP                  Alternative functions file_get_contents_fil  9
+WordPres  Security            Nonce verification missing                   1
+A TOTAL OF 32 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+== 3. PHPCompatibilityWP testVersion 7.4-
+exit=0
+== 4. php -l failures: 0
+== 5. suppression directives in shipped PHP
+   6 phpcs:disable
+  61 phpcs:ignore

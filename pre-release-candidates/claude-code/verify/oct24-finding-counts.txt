@@ -1,0 +1,38 @@
+zip: flosc.zip
+sha256: 494cd84299975cc2d77a26c95ca1962e37ab6e08ac072c062b2c8d082dc59038
+entries: 312
+
+Finding 1 — third-party URLs in shipped JavaScript
+  citation-host URLs in *.js:        0 (required 0)
+  citation-host URLs anywhere in the zip:        0 (required 0)
+  url fields in personality builder: 0 (required 0)
+
+Finding 2 — creating / logging in users (calls in comment-free PHP)
+  wp_insert_user(:     1 (expected 1, in includes/flosc-accounts.php)
+    includes/flosc-accounts.php:1
+  wp_create_user(:     0 (expected 0)
+  wp_set_password(:    0 (expected 0)
+  wp_set_auth_cookie(: 1 (expected 1, in includes/flosc-accounts.php)
+    includes/flosc-accounts.php:1
+  wp_set_current_user(:2 (expected 2: session helper + per-request REST token)
+    includes/class-flosc-framework.php:1
+    includes/flosc-accounts.php:1
+  wp_update_user(:     1 (expected 1: signed-in user edits own profile)
+    includes/class-flosc-framework.php:1
+
+Finding 3 — chat-log TSV export
+  export encodes every cell with flosc_spreadsheet_text_cell(): yes (required yes)
+  behaviour test: see tests/check_spreadsheet_export_cells.php in the candidate source
+
+Finding 4 — sanitize at read
+  whole-superglobal wp_unslash( $_POST|$_GET|$_REQUEST ): 0 (required 0)
+  FILTER_CALLBACK: 0 (required 0)
+  FILTER_UNSAFE_RAW / FILTER_DEFAULT: 0 (required 0)
+
+Finding 5 — PHP-built inline script / style
+  flosc_capture_output( calls outside its definition: 2 (expected 2, neither carries JavaScript: contact-form shortcode HTML in includes/flosc-admin.php, WordPress Importer HTML silenced in admin/ivr-upload-handler.php)
+    includes/flosc-output-buffer.php:1
+    includes/flosc-admin.php:1
+    admin/ivr-upload-handler.php:1
+  wp_json_encode concatenated into a script string ('= ' . wp_json_encode): 0 (required 0)
+  <?php echo inside shipped .js files:        0 (required 0)
