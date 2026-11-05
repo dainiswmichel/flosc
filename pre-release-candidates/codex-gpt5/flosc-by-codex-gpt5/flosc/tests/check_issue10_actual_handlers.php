@@ -64,6 +64,19 @@ function wp_unslash( $value ) {
 	return $value;
 }
 
+function map_deep( $value, $callback ) {
+	if ( is_array( $value ) ) {
+		return array_map(
+			static function ( $item ) use ( $callback ) {
+				return map_deep( $item, $callback );
+			},
+			$value
+		);
+	}
+
+	return call_user_func( $callback, $value );
+}
+
 function wp_verify_nonce() {
 	return true;
 }

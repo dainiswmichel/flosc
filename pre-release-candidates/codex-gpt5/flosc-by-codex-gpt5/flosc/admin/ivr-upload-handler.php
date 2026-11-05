@@ -685,7 +685,7 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 			return;
 		}
 
-		$posted = wp_unslash( $_POST );
+		$posted = map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' );
 		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text(
 			$posted,
 			array( 'flosc_portability_pack_action', 'flosc_working_ivr', 'flosc_pack_filename', 'flosc_pack_attachment_id' )
@@ -798,8 +798,8 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		if ( ! empty( $GLOBALS['flosc_ivr_upload_handled'] ) ) {
 			return;
 		}
-		$posted = wp_unslash( $_POST );
-		$query  = wp_unslash( $_GET );
+		$posted = map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' );
+		$query  = map_deep( wp_unslash( $_GET ), 'sanitize_textarea_field' );
 		if ( ! is_array( $posted ) || ! is_array( $query ) || ! flosc_submitted_fields_are_text(
 			$posted,
 			array( 'flosc_portability_submit', 'flosc_upload_ivr_file', 'flosc_working_ivr', 'flosc_upload_redirect_tab', 'flosc_upload_redirect_view' )

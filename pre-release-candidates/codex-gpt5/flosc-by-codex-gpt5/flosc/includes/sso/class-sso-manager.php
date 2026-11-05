@@ -272,12 +272,12 @@ class SSO_Manager {
 
 		echo '</div>';
 
-		// Add inline styles.
+		// Enqueue the shared SSO presentation and interaction assets.
 		$this->output_login_button_styles();
 	}
 
 	/**
-	 * Output login button styles
+	 * Enqueue login button assets.
 	 */
 	private function output_login_button_styles() {
 		static $styles_output = false;
@@ -286,95 +286,26 @@ class SSO_Manager {
 		}
 		$styles_output = true;
 
-		// §12: SSO button styles via an inline-only style handle.
-		wp_register_style( 'flosc-sso', false, array(), FLOSC_VERSION );
-		wp_enqueue_style( 'flosc-sso' );
-		wp_add_inline_style(
+		wp_enqueue_style(
 			'flosc-sso',
-			'
-        .flosc-sso-login-buttons {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .flosc-sso-separator {
-            position: relative;
-            margin: 20px 0;
-            text-align: center;
-            color: #666;
-        }
-        .flosc-sso-separator::before,
-        .flosc-sso-separator::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 40%;
-            height: 1px;
-            background: #ddd;
-        }
-        .flosc-sso-separator::before { left: 0; }
-        .flosc-sso-separator::after { right: 0; }
-        .flosc-sso-separator span {
-            background: #fff;
-            padding: 0 10px;
-        }
-        .flosc-sso-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 10px 16px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fff;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        .flosc-sso-button:hover {
-            background: #f5f5f5;
-            border-color: #999;
-        }
-        .flosc-sso-icon {
-            margin-right: 10px;
-            font-size: 18px;
-        }
-        .flosc-sso-google { background: #fff; color: #757575; }
-        .flosc-sso-google:hover { background: #f5f5f5; }
-        .flosc-sso-facebook { background: #1877f2; color: #fff; border-color: #1877f2; }
-        .flosc-sso-facebook:hover { background: #166fe5; }
-        .flosc-sso-apple { background: #000; color: #fff; border-color: #000; }
-        .flosc-sso-apple:hover { background: #333; }
-        .flosc-sso-microsoft { background: #2f2f2f; color: #fff; border-color: #2f2f2f; }
-        .flosc-sso-microsoft:hover { background: #444; }
-        .flosc-sso-linkedin { background: #0a66c2; color: #fff; border-color: #0a66c2; }
-        .flosc-sso-linkedin:hover { background: #004182; }
-        '
+			FLOSC_PLUGIN_URL . 'assets/css/flosc-sso.css',
+			array(),
+			FLOSC_VERSION
 		);
 
-		// Add click handler script
-		// v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
-		// §12: attached via an inline-only script handle.
-		wp_register_script( 'flosc-sso', false, array(), FLOSC_VERSION, true );
-		wp_enqueue_script( 'flosc-sso' );
-		wp_add_inline_script(
+		wp_enqueue_script(
 			'flosc-sso',
-			'
-        document.addEventListener("DOMContentLoaded", function() {
-            document.querySelectorAll(".flosc-sso-button").forEach(function(btn) {
-                btn.addEventListener("click", function() {
-                    var provider = this.dataset.provider;
-                    // v1.5.0: Extract redirect_to from URL params (e.g. wp-login.php?redirect_to=flosc.ai)
-                    // instead of capturing the login page URL itself
-                    var urlParams = new URLSearchParams(window.location.search);
-                    var redirectTo = urlParams.get("redirect_to") || window.location.href;
-                    var baseUrl = ' . wp_json_encode( rest_url( 'flosc/v1/sso/authorize/' ) ) . ' + provider;
-                    var separator = baseUrl.indexOf("?") !== -1 ? "&" : "?";
-                    window.location.href = baseUrl + separator + "redirect_to=" + encodeURIComponent(redirectTo);
-                });
-            });
-        });
-        '
+			FLOSC_PLUGIN_URL . 'assets/js/flosc-sso.js',
+			array(),
+			FLOSC_VERSION,
+			true
+		);
+		wp_localize_script(
+			'flosc-sso',
+			'floscSsoConfig',
+			array(
+				'authorizeBaseUrl' => rest_url( 'flosc/v1/sso/authorize/' ),
+			)
 		);
 	}
 
@@ -409,15 +340,22 @@ class SSO_Manager {
 				$error_message = 'Login didn\'t complete. Please try again — if the issue persists, try a different login method or contact support.';
 			}
 
-			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
-			// show the error in-chat and re-present the auth modal.
+			// Set data for the asset that exposes the error to flosc-app.js.
 			add_action(
 				'wp_footer',
 				function () use ( $error_message ) {
-					// §12: emit via an inline-only script handle.
-					wp_register_script( 'flosc-sso-error', false, array(), FLOSC_VERSION, true );
-					wp_enqueue_script( 'flosc-sso-error' );
-					wp_add_inline_script( 'flosc-sso-error', 'window.flosc_sso_error = ' . wp_json_encode( $error_message ) . ';' );
+					wp_enqueue_script(
+						'flosc-sso-error',
+						FLOSC_PLUGIN_URL . 'assets/js/flosc-sso-error.js',
+						array(),
+						FLOSC_VERSION,
+						true
+					);
+					wp_localize_script(
+						'flosc-sso-error',
+						'floscSsoErrorConfig',
+						array( 'message' => sanitize_text_field( (string) $error_message ) )
+					);
 				}
 			);
 		}

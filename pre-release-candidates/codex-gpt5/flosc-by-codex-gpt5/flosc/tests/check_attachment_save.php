@@ -53,7 +53,8 @@ function ok( $label, $actual, $expected ) {
 }
 
 $library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
-$page    = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$page    = (string) file_get_contents( $root . '/assets/js/flosc-admin.js' );
+$markup_page = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
 $css     = (string) file_get_contents( $root . '/assets/css/flosc-admin.css' );
 
 echo "The server confirms from storage, not from the request\n";
@@ -100,7 +101,7 @@ foreach ( array( 'flosc-attach-ok', 'flosc-attach-bad' ) as $class ) {
 		strpos( $css, '.' . $class . ' {' ) !== false, true );
 }
 ok( 'and the note element carries no style attribute',
-	(bool) preg_match( '/id="flosc-personality-attach-note"[^>]*style=/', $page ), false );
+	(bool) preg_match( '/id="flosc-personality-attach-note"[^>]*style=/', $markup_page ), false );
 
 /*
  * Every field the designer computes reaches the database.

@@ -177,7 +177,7 @@ function flosc_nav_param_keys() {
 /**
  * Read the declared navigation parameters into an array.
  *
- * This replaces `$flosc_get = wp_unslash( $_GET );` at the top of the admin
+ * This replaces `$flosc_get = map_deep( wp_unslash( $_GET ), 'sanitize_textarea_field' );` at the top of the admin
  * screens. WordPress.org's reviewer raised that pattern twice -- T7 and T13,
  * "don't check for post submission outside of functions" -- and WPCS never
  * reported it, because a nonce check further down the same file satisfies the

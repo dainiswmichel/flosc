@@ -36,6 +36,7 @@ function ok( $label, $actual, $expected ) {
 $builder = (string) file_get_contents( $root . '/assets/js/flosc-personality-builder.js' );
 $markup  = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );
 $library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
+$references = (string) file_get_contents( $root . '/flosc_documentation/chapters/personality-builder-reference-sources.md' );
 
 if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', $root . '/' );
@@ -201,13 +202,17 @@ echo "\nThe footer says how to read the file and where it came from\n";
 foreach ( array(
 	'from lightest and most essential' => 'the ordering is stated',
 	'never sent to a model and never billed' => 'it says it is not the personality',
-	'https://da1.fm'       => 'the builder is reachable',
-	'https://flosc.ai'     => 'so is the framework',
 	'builder_version'      => 'the builder version is named',
 	'exported'             => 'and when the file was written',
 ) as $needle => $what ) {
 	ok( $what, strpos( $builder, $needle ) !== false, true );
 }
+ok( 'runtime personality code contains no external reference URL',
+	(bool) preg_match( '#https?://#i', $builder ), false );
+ok( 'the builder reference is retained in documentation',
+	strpos( $references, 'https://da1.fm' ) !== false, true );
+ok( 'the framework reference is retained in documentation',
+	strpos( $references, 'https://flosc.ai' ) !== false, true );
 
 // Five sources write the first line of a profile. A built personality and a
 // shipped one have to be the same kind of document at the top, which by the

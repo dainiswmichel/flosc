@@ -1,0 +1,127 @@
+/**
+ * FLOSC SSO login buttons.
+ */
+
+.flosc-sso-login-buttons {
+	--flosc-sso-surface: #fff;
+	--flosc-sso-muted: #666;
+	--flosc-sso-border: #ddd;
+	--flosc-sso-border-hover: #999;
+	--flosc-sso-surface-hover: #f5f5f5;
+	--flosc-sso-google-text: #757575;
+	--flosc-sso-facebook: #1877f2;
+	--flosc-sso-facebook-hover: #166fe5;
+	--flosc-sso-apple: #000;
+	--flosc-sso-apple-hover: #333;
+	--flosc-sso-microsoft: #2f2f2f;
+	--flosc-sso-microsoft-hover: #444;
+	--flosc-sso-linkedin: #0a66c2;
+	--flosc-sso-linkedin-hover: #004182;
+
+	margin: 20px 0;
+	text-align: center;
+}
+
+.flosc-sso-separator {
+	position: relative;
+	margin: 20px 0;
+	color: var(--flosc-sso-muted);
+	text-align: center;
+}
+
+.flosc-sso-separator::before,
+.flosc-sso-separator::after {
+	position: absolute;
+	top: 50%;
+	width: 40%;
+	height: 1px;
+	background: var(--flosc-sso-border);
+	content: "";
+}
+
+.flosc-sso-separator::before {
+	left: 0;
+}
+
+.flosc-sso-separator::after {
+	right: 0;
+}
+
+.flosc-sso-separator span {
+	padding: 0 10px;
+	background: var(--flosc-sso-surface);
+}
+
+.flosc-sso-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	margin: 8px 0;
+	padding: 10px 16px;
+	border: 1px solid var(--flosc-sso-border);
+	border-radius: 4px;
+	background: var(--flosc-sso-surface);
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.2s;
+}
+
+.flosc-sso-button:hover {
+	border-color: var(--flosc-sso-border-hover);
+	background: var(--flosc-sso-surface-hover);
+}
+
+.flosc-sso-icon {
+	margin-right: 10px;
+	font-size: 18px;
+}
+
+.flosc-sso-google {
+	background: var(--flosc-sso-surface);
+	color: var(--flosc-sso-google-text);
+}
+
+.flosc-sso-google:hover {
+	background: var(--flosc-sso-surface-hover);
+}
+
+.flosc-sso-facebook {
+	border-color: var(--flosc-sso-facebook);
+	background: var(--flosc-sso-facebook);
+	color: var(--flosc-sso-surface);
+}
+
+.flosc-sso-facebook:hover {
+	background: var(--flosc-sso-facebook-hover);
+}
+
+.flosc-sso-apple {
+	border-color: var(--flosc-sso-apple);
+	background: var(--flosc-sso-apple);
+	color: var(--flosc-sso-surface);
+}
+
+.flosc-sso-apple:hover {
+	background: var(--flosc-sso-apple-hover);
+}
+
+.flosc-sso-microsoft {
+	border-color: var(--flosc-sso-microsoft);
+	background: var(--flosc-sso-microsoft);
+	color: var(--flosc-sso-surface);
+}
+
+.flosc-sso-microsoft:hover {
+	background: var(--flosc-sso-microsoft-hover);
+}
+
+.flosc-sso-linkedin {
+	border-color: var(--flosc-sso-linkedin);
+	background: var(--flosc-sso-linkedin);
+	color: var(--flosc-sso-surface);
+}
+
+.flosc-sso-linkedin:hover {
+	background: var(--flosc-sso-linkedin-hover);
+}

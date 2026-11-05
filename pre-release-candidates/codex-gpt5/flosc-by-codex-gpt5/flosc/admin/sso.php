@@ -417,90 +417,12 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 
 <!-- v1.5.0: Connection Test AJAX -->
 <?php
-wp_add_inline_script(
+wp_localize_script(
 	'flosc-admin',
-	flosc_capture_output(
-		static function () {
-			?>
-(function() {
-	var nonce = '<?php echo esc_js( wp_create_nonce( 'flosc_test_sso' ) ); ?>';
-	var ajaxUrl = '<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>';
-	// v1.5.0: Pass flow_id so test reads per-flow SSO settings
-	var flowId = '<?php echo esc_js( sanitize_key( pathinfo( $GLOBALS['flosc_current_ivr'] ?? '', PATHINFO_FILENAME ) ) ); ?>';
-
-	document.querySelectorAll('.flosc-test-connection-btn').forEach(function(btn) {
-		btn.addEventListener('click', function() {
-			var provider = this.dataset.provider;
-			var statusEl = document.getElementById('flosc-test-status-' + provider);
-			var resultsEl = document.getElementById('flosc-test-results-' + provider);
-
-			// Disable button, show loading
-			btn.disabled = true;
-			btn.textContent = '⏳ Testing...';
-			statusEl.textContent = 'Connecting to ' + provider + '...';
-			statusEl.style.color = '#666';
-			resultsEl.style.display = 'none';
-			resultsEl.innerHTML = '';
-
-			var formData = new FormData();
-			formData.append('action', 'flosc_test_sso_connection');
-			formData.append('nonce', nonce);
-			formData.append('provider', provider);
-			formData.append('flow_id', flowId);
-
-			fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
-				.then(function(r) { return r.json(); })
-				.then(function(resp) {
-					btn.disabled = false;
-					btn.textContent = '🔌 Test Connection';
-
-					if (!resp.success) {
-						statusEl.textContent = '❌ Broken';
-						statusEl.style.color = '#d63638';
-						return;
-					}
-
-					var data = resp.data;
-					var html = '';
-
-					data.checks.forEach(function(check) {
-						var cls = check.pass ? 'pass' : 'fail';
-						var icon = check.pass ? '✅' : '❌';
-						html += '<div class="flosc-test-check ' + cls + '">'
-							+ '<span class="flosc-test-check-icon">' + icon + '</span>'
-							+ '<span class="flosc-test-check-label">' + escHtml(check.label) + '</span>'
-							+ '<span class="flosc-test-check-detail">' + escHtml(check.detail) + '</span>'
-							+ '</div>';
-					});
-
-					if (data.all_pass) {
-						html += '<div class="flosc-test-summary all-pass">✅ Live</div>';
-						statusEl.textContent = '✅ Live';
-						statusEl.style.color = '#00a32a';
-					} else {
-						html += '<div class="flosc-test-summary has-fail">❌ Broken</div>';
-						statusEl.textContent = '❌ Broken';
-						statusEl.style.color = '#d63638';
-					}
-
-					resultsEl.innerHTML = html;
-					resultsEl.style.display = 'block';
-				})
-				.catch(function(err) {
-					btn.disabled = false;
-					btn.textContent = '🔌 Test Connection';
-					statusEl.textContent = '❌ Network error: ' + err.message;
-					statusEl.style.color = '#d63638';
-				});
-		});
-	});
-
-	function escHtml(str) {
-		var div = document.createElement('div');
-		div.appendChild(document.createTextNode(str));
-		return div.innerHTML;
-	}
-})();
-	<?php }
+	'floscSsoConfig',
+	array(
+		'nonce'   => wp_create_nonce( 'flosc_test_sso' ),
+		'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+		'flowId'  => sanitize_key( pathinfo( $GLOBALS['flosc_current_ivr'] ?? '', PATHINFO_FILENAME ) ),
 	)
 ); ?>

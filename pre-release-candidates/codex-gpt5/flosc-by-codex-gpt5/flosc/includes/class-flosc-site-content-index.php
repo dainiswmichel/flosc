@@ -2047,7 +2047,7 @@ class FLOSC_Site_Content_Index {
 		// same page as the settings form, and two fields called _wpnonce in one
 		// submission leave PHP holding only the last of them.
 		check_admin_referer( 'flosc_site_index_rebuild', 'flosc_sci_nonce' );
-		$ivr    = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$ivr    = $this->ivr_from_request( map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) );
 		$stem   = $this->stem_from_ivr( $ivr );
 		$result = $this->rebuild( $stem );
 		if ( empty( $result['ok'] ) ) {
@@ -2072,7 +2072,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_exclude() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_exclude' );
-		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$ivr     = $this->ivr_from_request( map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) );
 		$post_id = 0;
 		if ( isset( $_POST['post_id'] ) && ( is_string( $_POST['post_id'] ) || is_numeric( $_POST['post_id'] ) ) ) {
 			$post_id = absint( wp_unslash( $_POST['post_id'] ) );
@@ -2092,7 +2092,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_include() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_include' );
-		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$ivr     = $this->ivr_from_request( map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) );
 		$post_id = 0;
 		if ( isset( $_POST['post_id'] ) && ( is_string( $_POST['post_id'] ) || is_numeric( $_POST['post_id'] ) ) ) {
 			$post_id = absint( wp_unslash( $_POST['post_id'] ) );
@@ -2112,7 +2112,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_keywords() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_keywords' );
-		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$ivr     = $this->ivr_from_request( map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) );
 		$post_id = 0;
 		if ( isset( $_POST['post_id'] ) && ( is_string( $_POST['post_id'] ) || is_numeric( $_POST['post_id'] ) ) ) {
 			$post_id = absint( wp_unslash( $_POST['post_id'] ) );
@@ -2139,7 +2139,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_reindex_one() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_reindex_one' );
-		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$ivr     = $this->ivr_from_request( map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) );
 		$post_id = 0;
 		if ( isset( $_POST['post_id'] ) && ( is_string( $_POST['post_id'] ) || is_numeric( $_POST['post_id'] ) ) ) {
 			$post_id = absint( wp_unslash( $_POST['post_id'] ) );

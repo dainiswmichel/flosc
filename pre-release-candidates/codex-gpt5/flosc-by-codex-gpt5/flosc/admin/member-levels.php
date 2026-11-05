@@ -351,141 +351,34 @@ $flosc_chat_list_settings_url       = add_query_arg(
 
 <!-- ─── JavaScript ────────────────────────────────────────────────────── -->
 <?php
-wp_add_inline_script(
+$flosc_category_options = '<option value="">— Select —</option>';
+foreach ( $flosc_categories as $flosc_cat ) {
+	$flosc_category_options .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
+}
+
+$flosc_tag_options = '<option value="">— Select —</option>';
+foreach ( $flosc_tags as $flosc_tag ) {
+	$flosc_tag_options .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
+}
+
+$flosc_level_options = '<option value="">— Any Member —</option>';
+foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
+	$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
+	if ( empty( $flosc_slug ) ) {
+		continue;
+	}
+	$flosc_label          = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
+	$flosc_level_options .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
+}
+
+wp_localize_script(
 	'flosc-admin',
-	flosc_capture_output(
-		static function () use ( $flosc_categories, $flosc_tags, $flosc_saved_levels, $flosc_vgm_tiers, $flosc_vgm_depths ) {
-			?>
-jQuery(document).ready(function($) {
-
-	// ─── Level repeater ─────────────────────────────────────────────
-
-	$('#flosc-add-level').on('click', function() {
-		var row = '<tr class="flosc-level-row">'
-			+ '<td><input type="text" name="level_slug[]" class="regular-text flosc-level-slug" placeholder="full_access" pattern="[a-z0-9_]+" title="Lowercase letters, numbers, underscores only"></td>'
-			+ '<td><input type="text" name="level_name[]" class="regular-text" placeholder="Full Access"></td>'
-			+ '<td><input type="text" name="level_description[]" class="regular-text" placeholder="Complete access to all course content"></td>'
-			+ '<td class="flosc-text-center"><button type="button" class="button flosc-remove-level" title="Remove this level">&times;</button></td>'
-			+ '</tr>';
-		$('#flosc-levels-body').append(row);
-	});
-
-	$(document).on('click', '.flosc-remove-level', function() {
-		if ($('.flosc-level-row').length > 1) {
-			$(this).closest('tr').remove();
-		} else {
-			// Clear the fields instead of removing last row
-			var $row = $(this).closest('tr');
-			$row.find('input').val('');
-		}
-	});
-
-	// Auto-generate slug from display name
-	$(document).on('input', '.flosc-level-row input[name="level_name[]"]', function() {
-		var $row = $(this).closest('tr');
-		var $flosc_slug = $row.find('.flosc-level-slug');
-		// Only auto-fill if slug is currently empty
-		if ($flosc_slug.val() === '') {
-			var slug = $(this).val().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-			$flosc_slug.val(slug);
-		}
-	});
-
-	// Enforce slug format on blur
-	$(document).on('blur', '.flosc-level-slug', function() {
-		var v = $(this).val().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_|_$/g, '');
-		$(this).val(v);
-	});
-
-	// ─── Content Protection repeater ────────────────────────────────
-
-	// Build option strings for JS-generated rows
-	var categoryOptions = 
-			<?php
-			$flosc_opts = '<option value="">— Select —</option>';
-			foreach ( $flosc_categories as $flosc_cat ) {
-				$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
-			}
-			echo wp_json_encode( $flosc_opts );
-			?>
-	;
-
-	var tagOptions = 
-			<?php
-			$flosc_opts = '<option value="">— Select —</option>';
-			foreach ( $flosc_tags as $flosc_tag ) {
-				$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
-			}
-			echo wp_json_encode( $flosc_opts );
-			?>
-	;
-
-	var levelOptions = 
-			<?php
-			$flosc_opts = '<option value="">— Any Member —</option>';
-			foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
-				$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
-				if ( empty( $flosc_slug ) ) {
-					continue;
-				}
-				$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
-				$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
-			}
-			echo wp_json_encode( $flosc_opts );
-			?>
-	;
-
-	function buildContentField(type) {
-		if (type === 'post' || type === 'page') {
-			return '<input type="text" name="protection_value[]" class="regular-text flosc-protection-value" placeholder="Post/Page ID">';
-		} else if (type === 'tag') {
-			return '<select name="protection_value[]" class="flosc-protection-value flosc-width-full">' + tagOptions + '</select>';
-		}
-		// Default: category
-		return '<select name="protection_value[]" class="flosc-protection-value flosc-width-full">' + categoryOptions + '</select>';
-	}
-
-	var vgmOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_tiers, 'member' ) ); ?>;
-	var depthOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_depths, 'full' ) ); ?>;
-
-	$('#flosc-add-protection').on('click', function() {
-		var row = '<tr class="flosc-protection-row">'
-			+ '<td><select name="protection_type[]" class="flosc-protection-type flosc-width-full"><option value="category">Category</option><option value="tag">Tag</option><option value="post">Post (ID)</option><option value="page">Page (ID)</option></select></td>'
-			+ '<td>' + buildContentField('category') + '</td>'
-			+ '<td><select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">' + vgmOptions + '</select></td>'
-			+ '<td><select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">' + depthOptions + '</select></td>'
-			+ '<td><select name="protection_level[]" class="flosc-protection-level-select flosc-width-full">' + levelOptions + '</select></td>'
-			+ '<td class="flosc-text-center"><button type="button" class="button flosc-remove-protection-row" title="Remove">&times;</button></td>'
-			+ '</tr>';
-		$('#flosc-protection-body').append(row);
-	});
-
-	// When type changes, swap the content field
-	$(document).on('change', '.flosc-protection-type', function() {
-		var type = $(this).val();
-		var $td = $(this).closest('tr').find('td:eq(1)');
-		$td.html(buildContentField(type));
-	});
-
-	$(document).on('click', '.flosc-remove-protection-row', function() {
-		$(this).closest('tr').remove();
-	});
-
-	// ─── Free lesson mode toggle ────────────────────────────────────
-
-	function toggleFreeLessonFields() {
-		var mode = $('#flow_free_content_item_mode').val();
-		if (mode === 'fixed') {
-			$('#flow_free_content_item_count_row').show();
-			$('#flow_free_content_item_proportion_row').hide();
-		} else {
-			$('#flow_free_content_item_count_row').hide();
-			$('#flow_free_content_item_proportion_row').show();
-		}
-	}
-	toggleFreeLessonFields();
-	$('#flow_free_content_item_mode').on('change', toggleFreeLessonFields);
-});
-	<?php }
+	'floscMemberLevelsConfig',
+	array(
+		'categoryOptions' => $flosc_category_options,
+		'tagOptions'      => $flosc_tag_options,
+		'levelOptions'    => $flosc_level_options,
+		'vgmOptions'      => flosc_vgm_options_markup( $flosc_vgm_tiers, 'member' ),
+		'depthOptions'    => flosc_vgm_options_markup( $flosc_vgm_depths, 'full' ),
 	)
 ); ?>

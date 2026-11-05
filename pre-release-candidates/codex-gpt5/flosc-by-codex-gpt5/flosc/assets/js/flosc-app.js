@@ -1,3 +1,9 @@
+window.marked = window.marked || {
+	parse: function (text) {
+		return String(text || '');
+	}
+};
+
 /**
  * FLOSC App JavaScript
  * Main application controller

@@ -757,7 +757,7 @@ class FLOSC_Concierge {
 			'params'             => 'flosc_cncrg_parameters',
 			'instruct'           => 'flosc_cncrg_instruction_template',
 		);
-		$posted     = wp_unslash( $_POST );
+		$posted     = map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' );
 		$shape_keys = array_merge( array( 'flosc_concierge_nonce' ), array_values( $map ) );
 		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text( $posted, $shape_keys ) ) {
 			return;

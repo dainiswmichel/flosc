@@ -261,7 +261,7 @@ class FLOSC_Companion_Widget {
 	// ──────────────────────────────────────────────────────────────
 
 	/**
-	 * Conditionally render the widget HTML + inline config
+	 * Conditionally render the widget HTML and localize its config.
 	 *
 	 * Hooked to wp_footer. Injects:
 	 * 1. FLOSC_COMPANION JS object (REST URL, nonce, user data, page context)
@@ -278,8 +278,8 @@ class FLOSC_Companion_Widget {
 		$page_context = $this->detect_page_context();
 		$user_data    = $this->get_companion_user_data();
 
-		// §12: Attach the accent override and config to the enqueued flosc-companion handles
-		// through wp_add_inline_style and wp_add_inline_script. This runs
+		// Attach the accent override and config to the enqueued companion handles.
+		// This runs
 		// on wp_footer before wp_print_footer_scripts, so the data prints with, and just before,
 		// flosc-companion.js. WordPress prints the late inline style via print_late_styles().
 		if ( ! empty( $settings['accent_color'] ) ) {
@@ -296,22 +296,20 @@ class FLOSC_Companion_Widget {
 			}
 		}
 
-		wp_add_inline_script(
+		wp_localize_script(
 			'flosc-companion',
-			'window.FLOSC_COMPANION = ' . wp_json_encode(
-				array(
-					'restUrl'  => rest_url( 'flosc/v1/' ),
-					'nonce'    => wp_create_nonce( 'wp_rest' ),
-					'user'     => $user_data,
-					'page'     => $page_context,
-					'settings' => array(
-						'position' => $settings['position'],
-						'greeting' => $settings['greeting'],
-						'mode'     => $settings['content_display_mode'],
-					),
-				)
-			) . ';',
-			'before'
+			'FLOSC_COMPANION',
+			array(
+				'restUrl'  => rest_url( 'flosc/v1/' ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'user'     => $user_data,
+				'page'     => $page_context,
+				'settings' => array(
+					'position' => $settings['position'],
+					'greeting' => $settings['greeting'],
+					'mode'     => $settings['content_display_mode'],
+				),
+			)
 		);
 
 		?>

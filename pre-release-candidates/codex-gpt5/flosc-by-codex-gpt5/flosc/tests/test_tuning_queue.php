@@ -3,7 +3,7 @@
  * Step 2b saves are serialized: nothing typed is ever dropped.
  *
  * The failure this stops is an ordering one, so reading the code cannot settle
- * it. floscQueueTuningSave is cut out of admin/ai-configuration.php by brace
+ * it. floscQueueTuningSave is cut out of assets/js/flosc-admin.js by brace
  * counting and driven in node through the sequences that used to lose work:
  * a press arriving while an autosave runs, an edit made mid-request, and two
  * unattended saves racing each other.
@@ -14,7 +14,7 @@ if ( PHP_SAPI !== 'cli' ) {
 }
 
 $root   = dirname( __DIR__ );
-$source = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$source = (string) file_get_contents( $root . '/assets/js/flosc-admin.js' );
 
 function flosc_cut_js( $source, $signature ) {
 	$start = strpos( $source, $signature );

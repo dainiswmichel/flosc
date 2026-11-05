@@ -214,7 +214,7 @@ class FLOSC_Trajectory {
 			'off_ramp_phrases'   => 'flosc_trj_off_ramp_phrases',
 			'off_ramp_exactness' => 'flosc_trj_off_ramp_exactness',
 		);
-		$posted     = wp_unslash( $_POST );
+		$posted     = map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' );
 		$shape_keys = array_merge( array( 'flosc_trajectory_nonce' ), array_values( $map ) );
 		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text( $posted, $shape_keys ) ) {
 			return;

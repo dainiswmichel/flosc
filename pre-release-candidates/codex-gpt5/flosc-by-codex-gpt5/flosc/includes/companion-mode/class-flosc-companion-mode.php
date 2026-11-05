@@ -424,24 +424,15 @@ class FLOSC_Companion_Mode {
 
 		$queried_post_id = (int) get_queried_object_id();
 		if ( $queried_post_id > 0 ) {
-			wp_add_inline_script(
-				'flosc-companion',
-				sprintf(
-					'(function(){var id=%1$d;if(id>0&&document.body){document.body.setAttribute("data-flosc-post-id",String(id));}})();',
-					$queried_post_id
-				),
-				'before'
-			);
+			$companion_config['postId'] = $queried_post_id;
 		}
 
 		$companion_config = array_merge( $companion_config, $this->get_host_auth_config( $flow_id ) );
 
-		wp_add_inline_script(
+		wp_localize_script(
 			'flosc-companion',
-			sprintf(
-				'FloscCompanion.init(%s);',
-				wp_json_encode( $companion_config )
-			)
+			'floscCompanionInitConfig',
+			$companion_config
 		);
 	}
 

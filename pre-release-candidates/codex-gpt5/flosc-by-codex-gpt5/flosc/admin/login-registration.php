@@ -669,61 +669,13 @@ $flosc_package_magic_on        = ( defined( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS' ) 
 <p id="flosc-send-guest-link-result" class="flosc-login-send-result"></p>
 
 <?php
-wp_add_inline_script(
+wp_localize_script(
 	'flosc-admin',
-	flosc_capture_output(
-		static function () use ( $flosc_guest_link_name ) {
-			?>
-(function() {
-	document.getElementById('flosc-send-guest-link-btn')?.addEventListener('click', function() {
-		const emailEl  = document.getElementById('flosc-send-guest-link-email');
-		const forceEl  = document.getElementById('flosc-send-guest-link-force');
-		const resultEl = document.getElementById('flosc-send-guest-link-result');
-		const btn      = this;
-		const email    = emailEl.value.trim();
-		const sendLabel = <?php echo wp_json_encode( 'Send ' . $flosc_guest_link_name ); ?>;
-
-		if (!email) { emailEl.focus(); return; }
-
-		btn.disabled    = true;
-		btn.textContent = 'Sending...';
-		resultEl.style.display = 'none';
-
-		const data = new FormData();
-		data.append('action', 'flosc_send_guest_link');
-		data.append('nonce',  '<?php echo esc_js( wp_create_nonce( 'flosc_send_guest_link' ) ); ?>');
-		data.append('email',  email);
-		data.append('ivr',    '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>');
-		if (forceEl && forceEl.checked) {
-			data.append('force', '1');
-		}
-
-		fetch(ajaxurl, { method: 'POST', body: data })
-			.then(r => r.json())
-			.then(res => {
-				resultEl.style.display = 'block';
-				if (res.success) {
-					resultEl.style.color = '#1a7f37';
-					resultEl.textContent = '✓ ' + res.data.message;
-					emailEl.value = '';
-				} else {
-					resultEl.style.color = '#d63638';
-					resultEl.textContent = '✗ ' + (res.data?.message || 'Send failed.');
-				}
-			})
-			.catch(() => {
-				resultEl.style.display  = 'block';
-				resultEl.style.color    = '#d63638';
-				resultEl.textContent    = '✗ Request failed — check your connection.';
-			})
-			.finally(() => {
-				btn.disabled    = false;
-				btn.textContent = sendLabel;
-			});
-	});
-})();
-			<?php
-		}
+	'floscLoginRegistrationConfig',
+	array(
+		'sendLabel' => 'Send ' . $flosc_guest_link_name,
+		'nonce'     => wp_create_nonce( 'flosc_send_guest_link' ),
+		'ivr'       => (string) ( $GLOBALS['flosc_current_ivr'] ?? '' ),
 	)
 );
 ?>

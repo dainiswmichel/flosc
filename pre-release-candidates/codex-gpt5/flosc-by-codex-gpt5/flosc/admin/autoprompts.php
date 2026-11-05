@@ -96,7 +96,7 @@ function flosc_handle_autoprompts_save() {
 		return;
 	}
 
-	$flosc_post = map_deep( wp_unslash( $_POST ), 'sanitize_text_field' );
+	$flosc_post = map_deep( map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ), 'sanitize_text_field' );
 
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.
@@ -915,10 +915,10 @@ $flosc_autoprompts_admin_config = array(
 );
 
 if ( wp_script_is( 'flosc-autoprompts-admin', 'enqueued' ) ) {
-	wp_add_inline_script(
+	wp_localize_script(
 		'flosc-autoprompts-admin',
-		'window.floscAutopromptsAdminConfig = ' . wp_json_encode( $flosc_autoprompts_admin_config ) . ';',
-		'before'
+		'floscAutopromptsAdminConfig',
+		$flosc_autoprompts_admin_config
 	);
 }
 ?>

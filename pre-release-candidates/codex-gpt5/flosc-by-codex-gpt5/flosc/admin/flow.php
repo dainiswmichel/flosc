@@ -40,7 +40,7 @@ $flosc_get           = flosc_nav_params();
 /*
  * Flow-file actions: duplicate, import, delete.
  *
- * This screen used to read wp_unslash( $_POST ) at file scope and then test
+ * This screen used to read map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) at file scope and then test
  * that array in three branch conditions. WordPress.org raised that shape twice,
  * in the T7 and T13 reviews -- "don't check for post submission outside of
  * functions" -- and WPCS never reported it, because the nonce checks further

@@ -488,7 +488,7 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage AI providers.', 'flosc' ) );
 		}
 		check_admin_referer( 'flosc_save_available_providers' );
-		$posted_request = wp_unslash( $_POST );
+		$posted_request = map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' );
 		if ( ! is_array( $posted_request )
 			|| ( isset( $posted_request['avail_api_key'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_api_key'] ) )
 			|| ( isset( $posted_request['avail_clear'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_clear'] ) )

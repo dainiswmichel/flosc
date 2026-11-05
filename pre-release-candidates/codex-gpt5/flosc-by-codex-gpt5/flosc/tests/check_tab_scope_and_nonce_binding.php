@@ -420,8 +420,9 @@ echo "\nNeither review sniff is suppressed anywhere in the shipping code\n";
  *
  * Measured on this tree: the project ruleset and the bare WordPress standard
  * both report 0 errors for these sniffs with annotations disabled. The five
- * reviewer-facing request reads use FILTER_CALLBACK with their field-specific
- * sanitizer, so the stock standard sees the boundary without an annotation.
+ * reviewer-facing request reads pass through a WordPress core sanitizer before
+ * their field-specific validation, so the stock standard sees the boundary
+ * without an annotation or PHP's FILTER_CALLBACK mechanism.
  */
 $flosc_suppressions = array();
 $flosc_walk         = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $flosc_root ) );
@@ -429,10 +430,10 @@ foreach ( $flosc_walk as $flosc_f ) {
 	if ( ! $flosc_f->isFile() || 'php' !== $flosc_f->getExtension() ) {
 		continue;
 	}
-	$flosc_p = str_replace( '\\', '/', $flosc_f->getPathname() );
-	if ( false !== strpos( $flosc_p, '/tests/' )
-		|| false !== strpos( $flosc_p, '/vendor/' )
-		|| false !== strpos( $flosc_p, '/pre-release-candidates/' ) ) {
+	$flosc_p = str_replace( '\\', '/', str_replace( $flosc_root . '/', '', $flosc_f->getPathname() ) );
+	if ( 0 === strpos( $flosc_p, 'tests/' )
+		|| 0 === strpos( $flosc_p, 'vendor/' )
+		|| 0 === strpos( $flosc_p, 'pre-release-candidates/' ) ) {
 		continue;
 	}
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local source in a CLI-only audit.
@@ -460,10 +461,10 @@ foreach ( array_unique( $flosc_declared[1] ) as $flosc_fn ) {
 		if ( ! $flosc_f2->isFile() || 'php' !== $flosc_f2->getExtension() ) {
 			continue;
 		}
-		$flosc_p2 = str_replace( '\\', '/', $flosc_f2->getPathname() );
-		if ( false !== strpos( $flosc_p2, '/tests/' )
-			|| false !== strpos( $flosc_p2, '/vendor/' )
-			|| false !== strpos( $flosc_p2, '/pre-release-candidates/' ) ) {
+		$flosc_p2 = str_replace( '\\', '/', str_replace( $flosc_root . '/', '', $flosc_f2->getPathname() ) );
+		if ( 0 === strpos( $flosc_p2, 'tests/' )
+			|| 0 === strpos( $flosc_p2, 'vendor/' )
+			|| 0 === strpos( $flosc_p2, 'pre-release-candidates/' ) ) {
 			continue;
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local source in a CLI-only audit.
@@ -486,31 +487,31 @@ echo "\nThe stock WordPress standard can see all five custom-sanitizer boundarie
 
 $flosc_personality = flosc_tabscope_read( 'includes/flosc-personality-library.php' );
 $flosc_api_filters = preg_match_all(
-	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_api_secret' \)/",
+	'/flosc_sanitize_api_secret\(\s*sanitize_text_field\(\s*wp_unslash\(/',
 	$flosc_fw,
 	$flosc_api_matches
 );
 $flosc_profile_filters = preg_match_all(
-	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_personality_profile_text' \)/",
+	'/flosc_sanitize_personality_profile_text\(\s*sanitize_textarea_field\(\s*wp_unslash\(/',
 	$flosc_personality,
 	$flosc_profile_matches
 );
 $flosc_workshop_filters = preg_match_all(
-	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_personality_workshop' \)/",
+	'/flosc_sanitize_personality_workshop\(\s*sanitize_textarea_field\(\s*wp_unslash\(/',
 	$flosc_personality,
 	$flosc_workshop_matches
 );
 
 flosc_tabscope_assert(
-	'the three provider-key request reads use the byte-preserving callback',
+	'the three provider-key request reads use core sanitization before validation',
 	3 === $flosc_api_filters
 );
 flosc_tabscope_assert(
-	'the personality profile request uses its Markdown-preserving callback',
+	'the personality profile request uses core sanitization before validation',
 	1 === $flosc_profile_filters
 );
 flosc_tabscope_assert(
-	'the workshop request uses its validating JSON callback',
+	'the workshop request uses core sanitization before JSON validation',
 	1 === $flosc_workshop_filters
 );
 

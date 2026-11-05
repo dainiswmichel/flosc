@@ -270,7 +270,6 @@ $flosc_visible_products = array_values(
 <div class="flosc-settings-docs-row">
 	<a href="<?php echo esc_url( $flosc_token_docs_url ); ?>" class="flosc-settings-docs-link">Docs</a>
 </div>
-
 <div class="flosc-token-mgmt">
 	<p class="flosc-token-mgmt__lead">
 		<strong>Home</strong> for floscToken settings on this flow: wallets, billing conversion, and product grants.
@@ -609,43 +608,3 @@ $flosc_visible_products = array_values(
 		</div>
 	</details>
 </div>
-
-<?php
-wp_add_inline_script(
-	'flosc-admin',
-	flosc_capture_output(
-		static function () {
-			?>
-(function () {
-	function setDisabled(el, off) {
-		if (!el) return;
-		el.classList.toggle('flosc-is-disabled', !!off);
-		el.querySelectorAll('input, select, textarea').forEach(function (field) {
-			// Keep fields enabled for POST; only dim UI. Cap input still posts when custom.
-			field.disabled = false;
-		});
-	}
-
-	document.querySelectorAll('[data-flosc-token-source]').forEach(function (sel) {
-		var pid = sel.getAttribute('data-flosc-product');
-		var custom = document.querySelector('[data-flosc-token-custom="' + pid + '"]');
-		function sync() {
-			setDisabled(custom, sel.value !== 'custom');
-		}
-		sel.addEventListener('change', sync);
-		sync();
-	});
-
-	document.querySelectorAll('[data-flosc-token-cap-mode]').forEach(function (sel) {
-		var pid = sel.getAttribute('data-flosc-product');
-		var wrap = document.querySelector('[data-flosc-token-cap-input="' + pid + '"]');
-		function sync() {
-			setDisabled(wrap, sel.value !== 'custom');
-		}
-		sel.addEventListener('change', sync);
-		sync();
-	});
-})();
-	<?php }
-	)
-); ?>

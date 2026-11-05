@@ -413,7 +413,7 @@ $flosc_get = flosc_nav_params();
  * render of every tab -- the old line unslashed the whole superglobal to
  * produce an empty array.
  *
- * On a GET, $_POST is empty, so wp_unslash( $_POST ) and array() are the same
+ * On a GET, $_POST is empty, so map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) and array() are the same
  * value. This changes when the read happens, not what any caller receives.
  * It deliberately stays at file scope: the six nonce checks below satisfy
  * WPCS for this scope, and moving the read into a function would take it out
@@ -427,7 +427,7 @@ $flosc_get = flosc_nav_params();
 $flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
 	? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
 	: '';
-$flosc_post   = ( 'POST' === $flosc_method ) ? wp_unslash( $_POST ) : array();
+$flosc_post   = ( 'POST' === $flosc_method ) ? map_deep( wp_unslash( $_POST ), 'sanitize_textarea_field' ) : array();
 // redirect_to_settings_tab() sets flosc_forced_tab when headers are already
 // sent and it cannot redirect. It takes precedence over the URL because it is
 // the tab the admin actually asked for.
@@ -2586,35 +2586,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		<?php
 		// One notice only (bottom duplicate removed). After PRG reload, bring it into view
 		// and drop ?saved=1 so refresh does not re-flash the banner.
-		wp_add_inline_script(
-			'flosc-admin',
-			flosc_capture_output(
-				static function () {
-					?>
-		(function () {
-			var notice = document.getElementById('flosc-save-feedback');
-			if (notice) {
-				try {
-					notice.focus({ preventScroll: true });
-				} catch (e) {
-					try { notice.focus(); } catch (e2) { /* ignore */ }
-				}
-				if (typeof notice.scrollIntoView === 'function') {
-					notice.scrollIntoView({ behavior: 'smooth', block: 'start' });
-				}
-			}
-			try {
-				var url = new URL(window.location.href);
-				if (url.searchParams.has('saved')) {
-					url.searchParams.delete('saved');
-					window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
-				}
-			} catch (e3) { /* ignore */ }
-		})();
-					<?php
-				}
-			)
-		);
+
 		?>
 	<?php endif; ?>
 
@@ -2703,81 +2675,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	</div>
 	
 	<?php
-	wp_add_inline_script(
+	wp_localize_script(
 		'flosc-admin',
-		flosc_capture_output(
-			static function () use ( $flosc_active_tab, $flosc_identity_view ) {
-				?>
-	function switchIVR(ivr) {
-		const form = document.getElementById('flosc-working-flow-form');
-		const field = document.getElementById('flosc-working-flow-ivr');
-		if (!form || !field) {
-			return;
-		}
-		field.value = ivr;
-		form.submit();
-	}
-
-	(function () {
-		const ivrSelect = document.getElementById('ivr-select');
-		if (ivrSelect) {
-			ivrSelect.addEventListener('change', function () {
-				switchIVR(this.value);
-			});
-		}
-
-		const detailsToggle = document.getElementById('flosc-flow-selector-details-toggle');
-		const detailsPanel = document.getElementById('flosc-flow-selector-details-panel');
-		if (detailsToggle && detailsPanel) {
-			detailsToggle.addEventListener('click', function () {
-				const isOpen = detailsToggle.getAttribute('aria-expanded') === 'true';
-				const nextOpen = !isOpen;
-				detailsToggle.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
-				detailsToggle.classList.toggle('is-open', nextOpen);
-				if (nextOpen) {
-					detailsPanel.removeAttribute('hidden');
-				} else {
-					detailsPanel.setAttribute('hidden', '');
-				}
-			});
-		}
-
-		const tab = '<?php echo esc_js( $flosc_active_tab ); ?>';
-		const tabTitles = {
-			'flow': 'Flow',
-			'identity': 'Identity',
-			'ivr-messages': 'IVR Management',
-			'autoprompts': 'AutoPrompt Panel',
-			'content': 'Content',
-			'member-levels': 'Content',
-			'lessons': 'Content',
-			'knowledge-base': 'Knowledge Base',
-			'trajectories': 'Trajectories',
-			'offers': 'Offers',
-			'login': 'Register and Login',
-			'style': 'Style and Nav',
-			'ui': 'Profile Bar',
-			'ai': 'AI',
-			'token-management': 'Token Management',
-			'concierge': 'Concierge',
-			'quiz': 'Quiz',
-			'email': 'Email',
-			'contact-form': 'Contact Form',
-			'payments': 'Payments',
-			
-			'sso': 'SSO',
-			'engagement': 'Engagement',
-			'chat-logs': 'Chat Logs',
-			'administration': 'Administration',
-			'documentation': 'Docs',
-			'da1': 'DA1'
-		};
-
-		const section = tabTitles[tab] || 'Settings';
-		document.title = section + ' < Settings < FLOSC';
-	})();
-				<?php
-			}
+		'floscSettingsConfig',
+		array(
+			'activeTab' => $flosc_active_tab,
 		)
 	);
 	?>
@@ -3469,30 +3371,6 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 								Preview
 							</span>
 							<p class="description">Lesson highlights, form buttons, focus rings, carousel controls. Sets <code>--flosc-primary</code>.</p>
-							<?php
-							wp_add_inline_script(
-								'flosc-admin',
-								flosc_capture_output(
-									static function () {
-										?>
-							(function () {
-								var input = document.getElementById('flow_primary_color');
-								var preview = document.getElementById('color-preview');
-								if (!input || !preview) return;
-								function syncPreview(hex) {
-									preview.setAttribute('data-color', hex);
-									preview.style.setProperty('--flosc-preview-bg', hex);
-								}
-								syncPreview(preview.getAttribute('data-color') || input.value || '#4f46e5');
-								input.addEventListener('input', function (e) {
-									syncPreview(e.target.value);
-								});
-							})();
-										<?php
-									}
-								)
-							);
-				?>
 						</td>
 					</tr>
 					<tr>
@@ -3697,38 +3575,6 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					</tr>
 				</table>
 				
-				<?php
-				wp_add_inline_script(
-					'flosc-admin',
-					flosc_capture_output(
-						static function () {
-							?>
-				(function() {
-					function setupMediaButton(buttonId, inputId, previewId) {
-						var btn = document.getElementById(buttonId);
-						if (!btn) return;
-						btn.addEventListener('click', function(e) {
-							e.preventDefault();
-							var frame = wp.media({ title: 'Choose Image', multiple: false, library: { type: 'image' } });
-							frame.on('select', function() {
-								var url = frame.state().get('selection').first().toJSON().url;
-								document.getElementById(inputId).value = url;
-								var preview = document.getElementById(previewId);
-								preview.src = url;
-								preview.style.display = '';
-							});
-							frame.open();
-						});
-					}
-					setupMediaButton('flosc_upload_chatlogo', 'flow_chatlogo_url', 'flosc_chatlogo_preview');
-					setupMediaButton('flosc_upload_favicon', 'flow_favicon_url', 'flosc_favicon_preview');
-					setupMediaButton('flosc_upload_badge', 'flow_badgeUrl', 'flosc_badge_preview');
-				})();
-							<?php
-						}
-					)
-				);
-				?>
 				
 				<!-- DNS Setup Info (if custom domain set) -->
 				<?php if ( ! empty( $flosc_flow_settings['domain'] ) ) : ?>
@@ -3759,15 +3605,15 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			<?php include FLOSC_PLUGIN_DIR . 'admin/token-management.php'; ?>
 		<?php elseif ( 'ai-knowledge' === $flosc_active_tab ) : ?>
 			<?php $flosc_redirect_url = admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=knowledge-base&view=single' ); ?>
-			<?php wp_add_inline_script( 'flosc-admin', 'window.location.replace(' . wp_json_encode( $flosc_redirect_url ) . ');' ); ?>
+			<?php wp_localize_script( 'flosc-admin', 'floscSettingsRedirectConfig', array( 'url' => $flosc_redirect_url ) ); ?>
 			<p>Redirecting to <a href="<?php echo esc_url( $flosc_redirect_url ); ?>">Knowledge Base</a>&hellip;</p>
 		<?php elseif ( 'ai-guide' === $flosc_active_tab ) : ?>
 			<?php $flosc_redirect_url = admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=documentation&doc=ref-ai-config' ); ?>
-			<?php wp_add_inline_script( 'flosc-admin', 'window.location.replace(' . wp_json_encode( $flosc_redirect_url ) . ');' ); ?>
+			<?php wp_localize_script( 'flosc-admin', 'floscSettingsRedirectConfig', array( 'url' => $flosc_redirect_url ) ); ?>
 			<p>Redirecting to <a href="<?php echo esc_url( $flosc_redirect_url ); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
 		<?php elseif ( 'knowledge' === $flosc_active_tab ) : ?>
 			<?php $flosc_redirect_url = admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=knowledge-base&view=single' ); ?>
-			<?php wp_add_inline_script( 'flosc-admin', 'window.location.replace(' . wp_json_encode( $flosc_redirect_url ) . ');' ); ?>
+			<?php wp_localize_script( 'flosc-admin', 'floscSettingsRedirectConfig', array( 'url' => $flosc_redirect_url ) ); ?>
 			<p>Redirecting to <a href="<?php echo esc_url( $flosc_redirect_url ); ?>">Knowledge Base</a>&hellip;</p>
 			
 		<?php elseif ( 'quiz' === $flosc_active_tab ) : ?>
@@ -3845,23 +3691,6 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			* submit would have sent. flosc_save rides along as a hidden field
 			* because form.submit() does not carry the pressed button's own name.
 			 */
-			wp_add_inline_script(
-				'flosc-admin',
-				"document.addEventListener('click', function (e) {\n"
-				. "    var t = e.target;\n"
-				. "    var btn = (t && t.closest) ? t.closest('button[name=\"flosc_save\"]') : null;\n"
-				. "    if (!btn || btn.disabled) { return; }\n"
-				. "    var form = document.getElementById('flosc-settings-form');\n"
-				. "    if (!form) { return; }\n"
-				. "    e.preventDefault();\n"
-				. "    if (!form.querySelector('input[name=\"flosc_save\"]')) {\n"
-				. "        var f = document.createElement('input');\n"
-				. "        f.type = 'hidden'; f.name = 'flosc_save'; f.value = '1';\n"
-				. "        form.appendChild(f);\n"
-				. "    }\n"
-				. "    form.submit();\n"
-				. '});'
-			);
 			?>
 		<p class="submit flosc-settings-submit-row">
 			<?php // form= keeps submit bound if AI tab closed #flosc-settings-form early (no nested forms). ?>

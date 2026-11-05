@@ -229,58 +229,11 @@ $flosc_member_levels_chat_url  = add_query_arg(
 </div>
 
 <?php
-wp_add_inline_script(
+wp_localize_script(
 	'flosc-admin',
-	flosc_capture_output(
-		static function () use ( $flosc_available_actions ) {
-			?>
-(function() {
-	const tbody = document.getElementById('flosc-menu-items-body');
-	const addBtn = document.getElementById('flosc-add-menu-item');
-	const actions = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
-
-	if (!tbody || !addBtn) {
-		return;
-	}
-
-	function buildActionOptions(selected) {
-		let html = '';
-		for (const [val, desc] of Object.entries(actions)) {
-			const sel = val === selected ? ' selected' : '';
-			html += `<option value="${val}"${sel}>${desc}</option>`;
-		}
-		return html;
-	}
-
-	function renumber() {
-		tbody.querySelectorAll('.flosc-menu-row').forEach((row, i) => {
-			row.querySelector('.flosc-menu-row-number').textContent = i + 1;
-		});
-	}
-
-	addBtn.addEventListener('click', function() {
-		const tr = document.createElement('tr');
-		tr.className = 'flosc-menu-row';
-		tr.innerHTML = `
-			<td class="flosc-menu-row-number"></td>
-			<td><input type="text" name="visitor_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-			<td><select name="visitor_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
-			<td><button type="button" class="button flosc-remove-menu-item" title="Remove item">&times;</button></td>
-		`;
-		tbody.appendChild(tr);
-		renumber();
-		tr.querySelector('input').focus();
-	});
-
-	tbody.addEventListener('click', function(e) {
-		if (e.target.classList.contains('flosc-remove-menu-item')) {
-			e.target.closest('.flosc-menu-row').remove();
-			renumber();
-		}
-	});
-})();
-			<?php
-		}
+	'floscChatNavigationConfig',
+	array(
+		'actions' => $flosc_available_actions,
 	)
 );
 ?>
@@ -329,62 +282,6 @@ wp_add_inline_script(
 	</p>
 </div>
 
-<?php
-wp_add_inline_script(
-	'flosc-admin',
-	flosc_capture_output(
-		static function () use ( $flosc_available_actions ) {
-			?>
-(function() {
-	const tbody = document.getElementById('flosc-guest-menu-items-body');
-	const addBtn = document.getElementById('flosc-guest-add-menu-item');
-	const actions = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
-
-	if (!tbody || !addBtn) {
-		return;
-	}
-
-	function buildActionOptions(selected) {
-		let html = '';
-		for (const [val, desc] of Object.entries(actions)) {
-			const sel = val === selected ? ' selected' : '';
-			html += `<option value="${val}"${sel}>${desc}</option>`;
-		}
-		return html;
-	}
-
-	function renumber() {
-		tbody.querySelectorAll('.flosc-guest-menu-row').forEach((row, i) => {
-			row.querySelector('.flosc-guest-menu-row-number').textContent = i + 1;
-		});
-	}
-
-	addBtn.addEventListener('click', function() {
-		const tr = document.createElement('tr');
-		tr.className = 'flosc-guest-menu-row';
-		tr.innerHTML = `
-			<td class="flosc-guest-menu-row-number"></td>
-			<td><input type="text" name="guest_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-			<td><select name="guest_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
-			<td><button type="button" class="button flosc-guest-remove-menu-item" title="Remove item">&times;</button></td>
-		`;
-		tbody.appendChild(tr);
-		renumber();
-		tr.querySelector('input').focus();
-	});
-
-	tbody.addEventListener('click', function(e) {
-		if (e.target.classList.contains('flosc-guest-remove-menu-item')) {
-			e.target.closest('.flosc-guest-menu-row').remove();
-			renumber();
-		}
-	});
-})();
-			<?php
-		}
-	)
-);
-?>
 
 <h3 class="flosc-ui-section-title">Member Dropdown Menu</h3>
 <p class="description">Menu items for logged-in users who have purchased.</p>
@@ -430,62 +327,6 @@ wp_add_inline_script(
 	</p>
 </div>
 
-<?php
-wp_add_inline_script(
-	'flosc-admin',
-	flosc_capture_output(
-		static function () use ( $flosc_available_actions ) {
-			?>
-(function() {
-	const tbody = document.getElementById('flosc-member-menu-items-body');
-	const addBtn = document.getElementById('flosc-member-add-menu-item');
-	const actions = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
-
-	if (!tbody || !addBtn) {
-		return;
-	}
-
-	function buildActionOptions(selected) {
-		let html = '';
-		for (const [val, desc] of Object.entries(actions)) {
-			const sel = val === selected ? ' selected' : '';
-			html += `<option value="${val}"${sel}>${desc}</option>`;
-		}
-		return html;
-	}
-
-	function renumber() {
-		tbody.querySelectorAll('.flosc-member-menu-row').forEach((row, i) => {
-			row.querySelector('.flosc-member-menu-row-number').textContent = i + 1;
-		});
-	}
-
-	addBtn.addEventListener('click', function() {
-		const tr = document.createElement('tr');
-		tr.className = 'flosc-member-menu-row';
-		tr.innerHTML = `
-			<td class="flosc-member-menu-row-number"></td>
-			<td><input type="text" name="member_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-			<td><select name="member_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_lesson_library')}</select></td>
-			<td><button type="button" class="button flosc-member-remove-menu-item" title="Remove item">&times;</button></td>
-		`;
-		tbody.appendChild(tr);
-		renumber();
-		tr.querySelector('input').focus();
-	});
-
-	tbody.addEventListener('click', function(e) {
-		if (e.target.classList.contains('flosc-member-remove-menu-item')) {
-			e.target.closest('.flosc-member-menu-row').remove();
-			renumber();
-		}
-	});
-})();
-			<?php
-		}
-	)
-);
-?>
 
 <h2 class="title">Login Destination</h2>
 <p class="description">Where should users land after logging in from the FLOSC chat?</p>

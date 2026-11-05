@@ -3,7 +3,7 @@
  * The field and the request line are one value in two places.
  *
  * This runs the shipped browser code, not a copy of it: the two functions are
- * cut out of admin/ai-configuration.php by brace counting and executed in node
+ * cut out of assets/js/flosc-admin.js by brace counting and executed in node
  * against a stub of the two jQuery calls they make. A rewrite of that file that
  * quietly breaks the rule — change Max Tokens, rewrite that parameter only,
  * leave every other line exactly as the operator wrote it — fails here.
@@ -14,7 +14,7 @@ if ( PHP_SAPI !== 'cli' ) {
 }
 
 $root   = dirname( __DIR__ );
-$source = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$source = (string) file_get_contents( $root . '/assets/js/flosc-admin.js' );
 
 /**
  * Cut one JavaScript function out of the file, braces balanced.

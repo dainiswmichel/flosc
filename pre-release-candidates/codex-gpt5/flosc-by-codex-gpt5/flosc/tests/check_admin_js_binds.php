@@ -39,23 +39,16 @@ $required = array(
 	'#flow_ai_provider'      => 'the provider picker',
 );
 
-$src = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$src          = (string) file_get_contents( $root . '/assets/js/flosc-admin.js' );
+$module_start = strpos( $src, '/* ai-configuration */' );
+$module_end   = strpos( $src, '/* ai-configuration accuracy */' );
 
-if ( ! preg_match( '/jQuery\(document\)\.ready\(function\s*\(\$\)\s*\{/', $src, $m, PREG_OFFSET_CAPTURE ) ) {
-	echo "FAIL no inline jQuery ready block found\n";
+if ( false === $module_start || false === $module_end || $module_end <= $module_start ) {
+	echo "FAIL no AI configuration asset module found\n";
 	exit( 1 );
 }
 
-$start = (int) $m[0][1];
-$end   = strpos( $src, 'wp_add_inline_script', $start );
-$end   = ( false === $end ) ? strlen( $src ) : $end;
-$block = substr( $src, $start, $end - $start );
-$close = strrpos( $block, '});' );
-$block = ( false === $close ) ? $block : substr( $block, 0, $close + 3 );
-
-// PHP islands stand in as an empty object: valid as a value, valid inside a
-// string literal, and safe to index into.
-$block = preg_replace( '/<\?php.*?\?>/s', '{}', $block );
+$block = substr( $src, $module_start, $module_end - $module_start );
 
 $dir = sys_get_temp_dir() . '/flosc-bindcheck-' . getmypid();
 @mkdir( $dir );
@@ -99,7 +92,12 @@ global.jQuery = jQuery;
 global.$ = $;
 global.ajaxurl = '/wp-admin/admin-ajax.php';
 global.window = { setTimeout: setTimeout, clearTimeout: clearTimeout, location: { href: '' }, open: function () {} };
-global.document = { activeElement: null, createTextNode: function (t) { return { t: t }; }, getElementById: function () { return null; } };
+global.document = {
+    activeElement: null,
+    createTextNode: function (t) { return { t: t }; },
+    getElementById: function () { return null; },
+    querySelector: function (selector) { return selector === '#flow_ai_provider' ? {} : null; }
+};
 global.alert = function () {};
 global.confirm = function () { return true; };
 

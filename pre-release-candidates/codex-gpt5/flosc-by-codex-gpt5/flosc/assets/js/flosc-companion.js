@@ -4,16 +4,8 @@
  * Floating chat widget for non-app WordPress pages.
  * Loads the FLOSC chat interface in an iframe.
  *
- * Usage (PHP enqueues this on non-app pages when companion mode is enabled):
- *   <script>
- *     FloscCompanion.init({
- *       appUrl: 'https://example.com/your-flow-slug/',
- *       title: 'Product Companion',
- *       subtitle: 'We reply instantly',
- *       headerIconUrl: 'https://example.com/logo.png',
- *       accentColor: '#2563eb'
- *     });
- *   </script>
+ * PHP supplies floscCompanionInitConfig through wp_localize_script() on
+ * non-app pages when companion mode is enabled.
  *
  * Reference: mesolitica/nous-chat-widget
  */
@@ -2202,4 +2194,13 @@
     };
 
     window.FloscCompanion = FloscCompanion;
+
+    var initConfig = window.floscCompanionInitConfig || null;
+    if (initConfig && typeof initConfig === 'object') {
+        var postId = parseInt(initConfig.postId || 0, 10);
+        if (postId > 0 && document.body) {
+            document.body.setAttribute('data-flosc-post-id', String(postId));
+        }
+        FloscCompanion.init(initConfig);
+    }
 })(window, document);

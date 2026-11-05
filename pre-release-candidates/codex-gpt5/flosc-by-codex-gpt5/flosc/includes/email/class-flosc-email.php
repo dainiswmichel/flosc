@@ -629,23 +629,11 @@ class FLOSC_Email {
 		check_admin_referer( 'update-user_' . $user_id );
 
 		$flosc_optin = null;
-		if ( filter_has_var( INPUT_POST, 'flosc_newsletter_optin' ) ) {
-			$flosc_optin = filter_input(
-				INPUT_POST,
-				'flosc_newsletter_optin',
-				FILTER_CALLBACK,
-				array(
-					'options' => static function ( $flosc_value ) {
-						if ( ! is_string( $flosc_value ) ) {
-							return '';
-						}
-						return sanitize_text_field( $flosc_value );
-					},
-				)
-			);
-			if ( ! is_string( $flosc_optin ) ) {
+		if ( isset( $_POST['flosc_newsletter_optin'] ) ) {
+			if ( ! is_string( $_POST['flosc_newsletter_optin'] ) ) {
 				return;
 			}
+			$flosc_optin = sanitize_key( wp_unslash( $_POST['flosc_newsletter_optin'] ) );
 		}
 
 		$flosc_decision = self::newsletter_optin_decision( $flosc_optin );

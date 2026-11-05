@@ -27,26 +27,22 @@ function ok( $label, $actual, $expected ) {
 	);
 }
 
-foreach ( array( 'admin/payments.php', 'admin/ivr-messages.php' ) as $relative ) {
-	$source = (string) file_get_contents( $root . '/' . $relative );
-	echo $relative . "\n";
+$asset = (string) file_get_contents( $root . '/assets/js/flosc-admin.js' );
+$modules = array(
+	'payments'     => array( '/* payments */', '/* da1 */' ),
+	'ivr-messages' => array( '/* ivr-messages API test */', '/* ivr-messages upload */' ),
+);
+
+foreach ( $modules as $name => $markers ) {
+	$start  = strpos( $asset, $markers[0] );
+	$end    = strpos( $asset, $markers[1] );
+	$source = ( false === $start || false === $end || $end <= $start ) ? '' : substr( $asset, $start, $end - $start );
+	echo $name . "\n";
+	ok( 'the enqueued JavaScript module was found', '' !== $source, true );
 	ok( 'remote data is never assigned to innerHTML', strpos( $source, '.innerHTML' ) !== false, false );
 	ok( 'the display uses textContent', strpos( $source, '.textContent' ) !== false, true );
-
-	$matched = preg_match(
-		'/flosc_capture_output\(\s*static function \(\) \{\s*\?>(.*?)<\?php\s*\}\s*\)\s*\)/s',
-		$source,
-		$matches
-	);
-	if ( 1 !== $matched ) {
-		ok( 'the edited inline JavaScript block was found', false, true );
-		continue;
-	}
-
-	$script = $matches[1];
-	$script = preg_replace( '/<\?php.*?\?>/s', 'PHPVALUE', $script );
 	$tmp    = tempnam( sys_get_temp_dir(), 'flosc_admin_response_' ) . '.js';
-	file_put_contents( $tmp, $script );
+	file_put_contents( $tmp, $source );
 	$output = array();
 	$code   = 0;
 	exec( 'node --check ' . escapeshellarg( $tmp ) . ' 2>&1', $output, $code );
@@ -54,7 +50,7 @@ foreach ( array( 'admin/payments.php', 'admin/ivr-messages.php' ) as $relative )
 	ok( 'the edited inline JavaScript parses', $code, 0 );
 }
 
-$ivr = (string) file_get_contents( $root . '/admin/ivr-messages.php' );
+$ivr = $asset;
 ok( 'structured IVR output creates text nodes', strpos( $ivr, 'document.createTextNode' ) !== false, true );
 ok( 'full JSON remains readable in a pre element', strpos( $ivr, "'pre', JSON.stringify(data, null, 2)" ) !== false, true );
 
