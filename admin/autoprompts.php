@@ -96,7 +96,23 @@ function flosc_handle_autoprompts_save() {
 		return;
 	}
 
-	$flosc_post = map_deep( wp_unslash( $_POST ), 'sanitize_text_field' );
+	// Copy only the fields this handler reads. Each one is unslashed and run
+	// through sanitize_text_field() at the read (map_deep() keeps the shape, so
+	// the list-versus-text checks below still see a posted list as a list).
+	$flosc_post_fields = array( 'flosc_flow_key', 'flosc_ivr', 'panel_enabled_companion' );
+	foreach ( array( 'visitor', 'guest', 'member' ) as $flosc_post_state ) {
+		$flosc_post_fields[] = 'panel_header_' . $flosc_post_state;
+		$flosc_post_fields[] = 'panel_enabled_' . $flosc_post_state;
+		foreach ( array( '_pill_icon', '_pill_label', '_pill_user_input', '_pill_trigger_type', '_pill_trigger_value', '_pill_conditions', '_pill_style' ) as $flosc_post_pill_field ) {
+			$flosc_post_fields[] = $flosc_post_state . $flosc_post_pill_field;
+		}
+	}
+	$flosc_post = array();
+	foreach ( $flosc_post_fields as $flosc_post_field ) {
+		if ( isset( $_POST[ $flosc_post_field ] ) ) {
+			$flosc_post[ $flosc_post_field ] = map_deep( wp_unslash( $_POST[ $flosc_post_field ] ), 'sanitize_text_field' );
+		}
+	}
 
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.
@@ -915,10 +931,6 @@ $flosc_autoprompts_admin_config = array(
 );
 
 if ( wp_script_is( 'flosc-autoprompts-admin', 'enqueued' ) ) {
-	wp_add_inline_script(
-		'flosc-autoprompts-admin',
-		'window.floscAutopromptsAdminConfig = ' . wp_json_encode( $flosc_autoprompts_admin_config ) . ';',
-		'before'
-	);
+	wp_localize_script( 'flosc-autoprompts-admin', 'floscAutopromptsAdminConfig', $flosc_autoprompts_admin_config );
 }
 ?>

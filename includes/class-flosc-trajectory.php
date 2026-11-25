@@ -206,7 +206,7 @@ class FLOSC_Trajectory {
 			return;
 		}
 
-		$map        = array(
+		$map = array(
 			'flow'               => 'flosc_trj_flow',
 			'keywords'           => 'flosc_trj_keywords',
 			'instructions'       => 'flosc_trj_instructions',
@@ -214,30 +214,32 @@ class FLOSC_Trajectory {
 			'off_ramp_phrases'   => 'flosc_trj_off_ramp_phrases',
 			'off_ramp_exactness' => 'flosc_trj_off_ramp_exactness',
 		);
-		$posted     = wp_unslash( $_POST );
+		// A field sent as a list is refused; nothing is saved.
 		$shape_keys = array_merge( array( 'flosc_trajectory_nonce' ), array_values( $map ) );
-		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text( $posted, $shape_keys ) ) {
-			return;
+		foreach ( $shape_keys as $shape_key ) {
+			if ( isset( $_POST[ $shape_key ] ) && ! is_string( $_POST[ $shape_key ] ) ) {
+				return;
+			}
 		}
-		$nonce = isset( $posted['flosc_trajectory_nonce'] ) ? sanitize_text_field( $posted['flosc_trajectory_nonce'] ) : '';
+		$nonce = isset( $_POST['flosc_trajectory_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ) : '';
 		if ( ! wp_verify_nonce( $nonce, 'flosc_trajectory_meta' ) ) {
 			return;
 		}
 
+		// Each field is read on its own, after the nonce, and sanitized at the
+		// read with the core function for what it holds.
 		foreach ( $map as $key => $field ) {
-			if ( ! isset( $posted[ $field ] ) ) {
+			if ( ! isset( $_POST[ $field ] ) ) {
 				continue;
 			}
-			if ( 'instructions' === $key ) {
-				$value = sanitize_textarea_field( $posted[ $field ] );
-			} elseif ( 'off_ramp_phrases' === $key ) {
-				$value = sanitize_textarea_field( $posted[ $field ] );
+			if ( 'instructions' === $key || 'off_ramp_phrases' === $key ) {
+				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
 			} elseif ( 'off_ramp_exactness' === $key ) {
-				$value = self::off_ramp_exactness( sanitize_key( $posted[ $field ] ) );
+				$value = self::off_ramp_exactness( sanitize_key( wp_unslash( $_POST[ $field ] ) ) );
 			} elseif ( 'priority' === $key ) {
-				$value = (string) max( 0, min( 100, absint( $posted[ $field ] ) ) );
+				$value = (string) max( 0, min( 100, absint( wp_unslash( $_POST[ $field ] ) ) ) );
 			} else {
-				$value = sanitize_text_field( $posted[ $field ] );
+				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
 			}
 			update_post_meta( $post_id, self::META[ $key ], $value );
 		}

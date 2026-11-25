@@ -278,8 +278,11 @@ trait FLOSC_Magic_Link_Trait {
 			}
 			// Consume token only after successful activation.
 			delete_transient( $transient_key );
-			wp_set_current_user( $user_id );
-			wp_set_auth_cookie( $user_id, true );
+			if ( ! flosc_start_user_session( $user_id, 'email_verification' ) ) {
+				// The account is active; a privileged account signs in at wp-login.php.
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
 			if ( method_exists( $this, 'generate_flosc_auth_token' ) && method_exists( $this, 'set_flosc_auth_cookie' ) ) {
 				$this->set_flosc_auth_cookie( $this->generate_flosc_auth_token( $user_id ) );
 			}
@@ -322,14 +325,31 @@ trait FLOSC_Magic_Link_Trait {
 				$this->flosc_magic_unrecognized();
 			}
 
-			$email          = sanitize_email( $payload['email'] );
+			$email          = sanitize_email( $payload['email'] ?? '' );
+			$payload_uid    = absint( $payload['user_id'] ?? 0 );
+			$existing_user  = $payload_uid ? get_userdata( $payload_uid ) : get_user_by( 'email', $email );
 			$is_first_click = ( 'pending' === $payload['status'] );
 
+			// A link bound to a user ID must not move to a replacement account.
+			// Only older links without an ID are resolved by email.
+			if ( ! $existing_user || '' === $email || 0 !== strcasecmp( $existing_user->user_email, $email ) ) {
+				$this->flosc_magic_delete_token_store( $token );
+				$this->flosc_magic_unrecognized();
+			}
+			$user_id = (int) $existing_user->ID;
+			if ( flosc_user_requires_core_login( $existing_user ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
+			if ( $this->flosc_email_account_is_pending( $user_id ) ) {
+				$this->flosc_magic_delete_token_store( $token );
+				wp_safe_redirect( add_query_arg( 'flosc_email_status', 'pending', remove_query_arg( 'flosc_magic' ) ) );
+				exit;
+			}
+
 			// Check membership before applying use-count limits — members of this guest-link flow get unlimited access.
-			$_pre_user      = get_user_by( 'email', $email );
-			$_link_flow     = sanitize_key( (string) ( $payload['flow_id'] ?? get_user_meta( $_pre_user ? $_pre_user->ID : 0, '_flosc_registration_flow', true ) ) );
-			$is_member_user = $_pre_user &&
-				'member' === $this->sale_manager->access()->get_simple_state( $_pre_user->ID, $_link_flow );
+			$_link_flow     = sanitize_key( (string) ( $payload['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
+			$is_member_user = 'member' === $this->sale_manager->access()->get_simple_state( $user_id, $_link_flow );
 
 			if ( $is_first_click ) {
 				// Phase 1 → Phase 2: Activate link on first click.
@@ -365,44 +385,6 @@ trait FLOSC_Magic_Link_Trait {
 			}
 
 			$remaining_after_use = $is_member_user ? null : ( $max_uses - $payload['use_count'] );
-
-			// MagicLink is an access convenience for an EXISTING WP user only.
-			// Never provision accounts from a URL token (dangerous + incorrect product model).
-			$user_id     = 0;
-			$payload_uid = absint( $payload['user_id'] ?? 0 );
-			if ( $payload_uid > 0 ) {
-				$by_id = get_userdata( $payload_uid );
-				if ( $by_id && ( ! $email || 0 === strcasecmp( (string) $by_id->user_email, (string) $email ) ) ) {
-					$user_id = (int) $by_id->ID;
-				}
-			}
-			if ( $user_id <= 0 && $email ) {
-				$existing_user = get_user_by( 'email', $email );
-				if ( $existing_user ) {
-					$user_id = (int) $existing_user->ID;
-				}
-			}
-			if ( $user_id <= 0 ) {
-				// Token without a known account: mint was wrong or data was purged. Fail closed.
-				$this->flosc_magic_delete_token_store( $token );
-				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-					flosc_log( 'FLOSC MagicLink: refuse login — no existing WP user for token email/user_id' );
-				}
-				$this->flosc_magic_unrecognized();
-			}
-
-			$existing_user = get_userdata( $user_id );
-			if ( ! $existing_user ) {
-				$this->flosc_magic_delete_token_store( $token );
-				$this->flosc_magic_unrecognized();
-			}
-
-			// MagicLink only for active accounts (email pending must verify first).
-			if ( $this->flosc_email_account_is_pending( $user_id ) ) {
-				delete_transient( $transient_key );
-				wp_safe_redirect( add_query_arg( 'flosc_email_status', 'pending', remove_query_arg( 'flosc_magic' ) ) );
-				exit;
-			}
 
 			// Optional: promote bare subscriber to THIS flow's configured guest role only.
 			// Never hardcode product roles — set per floscFlow. Never demote privileged users.
@@ -451,9 +433,11 @@ trait FLOSC_Magic_Link_Trait {
 			}
 			set_transient( $transient_key, $payload, $ttl_save );
 
-			// Log in the known user only.
-			wp_set_current_user( $user_id );
-			wp_set_auth_cookie( $user_id, true );
+			// Log in the known user only. A privileged account signs in at wp-login.php.
+			if ( ! flosc_start_user_session( $user_id, 'magic_link' ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
 			$this->process_prelogin_data_for_user( $user_id );
@@ -567,8 +551,10 @@ trait FLOSC_Magic_Link_Trait {
 			if ( '' === $safe_redirect ) {
 				$safe_redirect = $this->get_app_url();
 			}
-			wp_set_current_user( $user_id );
-			wp_set_auth_cookie( $user_id, true );
+			if ( ! flosc_start_user_session( $user_id, 'wp_sync' ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
 			wp_safe_redirect( $safe_redirect );
 			exit;
 		}
@@ -591,15 +577,20 @@ trait FLOSC_Magic_Link_Trait {
 			// One-time use — delete immediately.
 			delete_transient( $transient_key );
 
-			$user_id = absint( is_array( $user_id ) ? ( $user_id['user_id'] ?? $user_id['uid'] ?? 0 ) : $user_id );
-			$user    = $user_id > 0 ? get_userdata( $user_id ) : false;
+			// The SSO callback mints array( 'user_id', 'source' => 'sso' ); the
+			// post-purchase email mints array( 'user_id', 'source' => 'purchase' ).
+			$token_source = ( is_array( $user_id ) && 'sso' === ( $user_id['source'] ?? '' ) ) ? 'sso' : 'login_token';
+			$user_id      = absint( is_array( $user_id ) ? ( $user_id['user_id'] ?? $user_id['uid'] ?? 0 ) : $user_id );
+			$user         = $user_id > 0 ? get_userdata( $user_id ) : false;
 			if ( ! $user ) {
 				return;
 			}
 
 			// Set auth cookie on this flow domain for known user only.
-			wp_set_current_user( $user_id );
-			wp_set_auth_cookie( $user_id, true );
+			if ( ! flosc_start_user_session( $user_id, $token_source ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
 
 			// v3.0.0: Set FLOSC auth token cookie (empty domain = current host)
 			// This works even when COOKIE_DOMAIN doesn't match the custom domain.
@@ -706,13 +697,13 @@ trait FLOSC_Magic_Link_Trait {
 		}
 		// Skip user_register token grants until email activation.
 		$this->flosc_skip_registration_token_grants = true;
-		$user_id                                    = wp_insert_user(
+		$user_id                                    = flosc_insert_customer_account(
 			array(
-				'user_login' => wp_slash( $username ),
+				'user_login' => $username,
 				'user_pass'  => $password,
-				'user_email' => wp_slash( $email ),
-				'role'       => $role,
-			)
+				'user_email' => $email,
+			),
+			$role
 		);
 		$this->flosc_skip_registration_token_grants = false;
 		if ( is_wp_error( $user_id ) ) {
@@ -1332,7 +1323,14 @@ trait FLOSC_Magic_Link_Trait {
 			$transient_key = 'flosc_login_token_' . $token;
 			// Single-use consume in handle_login_token Case 1.
 			// Best-in-class: short TTL (5 min), not day-long reusable windows.
-			set_transient( $transient_key, $user_id, 5 * MINUTE_IN_SECONDS );
+			set_transient(
+				$transient_key,
+				array(
+					'user_id' => $user_id,
+					'source'  => 'purchase',
+				),
+				5 * MINUTE_IN_SECONDS
+			);
 			$login_url    = add_query_arg( 'flosc_login_token', rawurlencode( $token ), $context['chat_url'] );
 			$button_url   = $login_url;
 			$button_label = 'Access Now';
@@ -1875,28 +1873,33 @@ trait FLOSC_Magic_Link_Trait {
 		// refused.
 		check_ajax_referer( 'flosc_send_guest_link', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr', 'force' ) ) ) {
+		// Each field must be one text value; a posted list is refused.
+		$flosc_shape_ok = true;
+		foreach ( array( 'email', 'ivr', 'force' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				$flosc_shape_ok = false;
+			}
+		}
+		if ( ! $flosc_shape_ok ) {
 			wp_send_json_error( array( 'message' => 'Invalid request fields.' ), 400 );
 		}
 
-		$email = sanitize_email( $post['email'] ?? '' );
+		$email = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			wp_send_json_error( array( 'message' => 'Please enter a valid email address.' ) );
 		}
 
 		// Set flow context so flosc_get_setting reads the correct per-flow settings.
-		$ivr = sanitize_file_name( $post['ivr'] ?? '' );
+		$ivr = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		}
 
 		$flow_id = ! empty( $ivr ) ? sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) : '';
-		$force   = ! empty( $post['force'] );
+		$force   = isset( $_POST['force'] ) && rest_sanitize_boolean( sanitize_text_field( wp_unslash( $_POST['force'] ) ) );
 
 		if ( ! $this->flosc_magic_access_links_enabled( $flow_id ) ) {
 			wp_send_json_error( array( 'message' => 'Magic access links are disabled (package and/or this flow).' ) );
@@ -1962,12 +1965,18 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
+		// Each field must be one text value; a posted list is refused.
+		$flosc_shape_ok = true;
+		foreach ( array( 'email', 'ivr' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				$flosc_shape_ok = false;
+			}
+		}
+		if ( ! $flosc_shape_ok ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
-		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
+		$email = ( isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '' );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
@@ -1998,13 +2007,19 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'flow_id' ) ) ) {
+		// Each field must be one text value; a posted list is refused.
+		$flosc_shape_ok = true;
+		foreach ( array( 'email', 'flow_id' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				$flosc_shape_ok = false;
+			}
+		}
+		if ( ! $flosc_shape_ok ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
 			exit;
 		}
-		$email   = sanitize_email( (string) ( $post['email'] ?? '' ) );
-		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$email   = ( isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '' );
+		$flow_id = ( isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '' );
 		$actor   = get_current_user_id();
 
 		if ( ! $this->flosc_magic_access_links_enabled( $flow_id ) ) {
@@ -2070,12 +2085,18 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
+		// Each field must be one text value; a posted list is refused.
+		$flosc_shape_ok = true;
+		foreach ( array( 'email', 'ivr' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				$flosc_shape_ok = false;
+			}
+		}
+		if ( ! $flosc_shape_ok ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
-		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
+		$email = ( isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '' );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
@@ -2105,12 +2126,18 @@ trait FLOSC_Magic_Link_Trait {
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'email', 'ivr' ) ) ) {
+		// Each field must be one text value; a posted list is refused.
+		$flosc_shape_ok = true;
+		foreach ( array( 'email', 'ivr' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				$flosc_shape_ok = false;
+			}
+		}
+		if ( ! $flosc_shape_ok ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
-		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
+		$email = ( isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '' );
 		if ( empty( $email ) || ! is_email( $email ) ) {
 			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;

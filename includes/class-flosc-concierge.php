@@ -741,7 +741,7 @@ class FLOSC_Concierge {
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
-		$map        = array(
+		$map = array(
 			'flow'               => 'flosc_cncrg_flow',
 			'keyword'            => 'flosc_cncrg_keyword',
 			'password'           => 'flosc_cncrg_password',
@@ -757,30 +757,32 @@ class FLOSC_Concierge {
 			'params'             => 'flosc_cncrg_parameters',
 			'instruct'           => 'flosc_cncrg_instruction_template',
 		);
-		$posted     = wp_unslash( $_POST );
+		// A field sent as a list is refused; nothing is saved.
 		$shape_keys = array_merge( array( 'flosc_concierge_nonce' ), array_values( $map ) );
-		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text( $posted, $shape_keys ) ) {
-			return;
+		foreach ( $shape_keys as $shape_key ) {
+			if ( isset( $_POST[ $shape_key ] ) && ! is_string( $_POST[ $shape_key ] ) ) {
+				return;
+			}
 		}
-		$nonce = isset( $posted['flosc_concierge_nonce'] ) ? sanitize_text_field( $posted['flosc_concierge_nonce'] ) : '';
+		$nonce = isset( $_POST['flosc_concierge_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_concierge_nonce'] ) ) : '';
 		if ( ! wp_verify_nonce( $nonce, 'flosc_concierge_meta' ) ) {
 			return;
 		}
 		foreach ( $map as $key => $field ) {
-			if ( ! isset( $posted[ $field ] ) ) {
+			if ( ! isset( $_POST[ $field ] ) ) {
 				continue;
 			}
-			// Sanitize at the point of access, per field type.
+			// Sanitize at the read, per field type, after the nonce.
 			if ( 'retry' === $key || 'delivery' === $key || 'params' === $key || 'instruct' === $key || 'off_ramp_phrases' === $key ) {
-				$value = sanitize_textarea_field( $posted[ $field ] );
+				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
 			} elseif ( 'max_tries' === $key ) {
-				$value = (string) max( 1, absint( $posted[ $field ] ) );
+				$value = (string) max( 1, absint( wp_unslash( $_POST[ $field ] ) ) );
 			} elseif ( 'off_ramp_exactness' === $key ) {
-				$value = self::off_ramp_exactness( sanitize_key( $posted[ $field ] ) );
+				$value = self::off_ramp_exactness( sanitize_key( wp_unslash( $_POST[ $field ] ) ) );
 			} elseif ( 'start' === $key || 'end' === $key || 'expires' === $key ) {
-				$value = self::normalize_utc_mts( sanitize_text_field( $posted[ $field ] ) );
+				$value = self::normalize_utc_mts( sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) );
 			} else {
-				$value = sanitize_text_field( $posted[ $field ] );
+				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
 			}
 			update_post_meta( $post_id, self::META[ $key ], $value );
 		}

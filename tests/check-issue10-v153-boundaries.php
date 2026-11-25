@@ -151,7 +151,7 @@ flosc_issue10_v153_assert(
 );
 flosc_issue10_v153_assert(
 	'all three KB return-IVR values require strings',
-	3 === substr_count( $flosc_framework, "isset( \$post['flosc_return_ivr'] ) && is_string( \$post['flosc_return_ivr'] )" )
+	3 === substr_count( $flosc_framework, "isset( \$_POST['flosc_return_ivr'] ) && is_string( \$_POST['flosc_return_ivr'] )" )
 );
 flosc_issue10_v153_assert(
 	'all five framework IVR request values require strings',

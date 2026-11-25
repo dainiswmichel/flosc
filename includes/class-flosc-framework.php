@@ -3383,16 +3383,20 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flosc_return_ivr', 'kb_id' ) ) ) {
+		// Each field is read on its own and sanitized at the read. A field that
+		// arrives as an array instead of one value refuses the request.
+		if (
+			( isset( $_POST['flosc_return_ivr'] ) && ! is_string( $_POST['flosc_return_ivr'] ) && ! is_numeric( $_POST['flosc_return_ivr'] ) )
+			|| ( isset( $_POST['kb_id'] ) && ! is_string( $_POST['kb_id'] ) && ! is_numeric( $_POST['kb_id'] ) )
+		) {
 			wp_safe_redirect( $this->kb_return_url( '', 'error', 'Invalid request.' ) );
 			exit;
 		}
 
-		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
-			? sanitize_file_name( $post['flosc_return_ivr'] )
+		$ivr   = isset( $_POST['flosc_return_ivr'] ) && is_string( $_POST['flosc_return_ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
 			: '';
-		$kb_id = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
+		$kb_id = $this->kb_request_id( $ivr, isset( $_POST['kb_id'] ) ? sanitize_key( wp_unslash( $_POST['kb_id'] ) ) : '' );
 		if ( '' === $kb_id || ! function_exists( 'flosc_knowledge_base_dir' ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'No knowledge base selected.' ) );
 			exit;
@@ -3451,9 +3455,12 @@ The Team',
 			exit;
 		}
 
-		$access = in_array( $post['file_access_level'] ?? '', array( 'visitor', 'guest', 'member' ), true )
-			? $post['file_access_level']
-			: 'visitor';
+		$access = isset( $_POST['file_access_level'] ) && is_string( $_POST['file_access_level'] )
+			? sanitize_key( wp_unslash( $_POST['file_access_level'] ) )
+			: '';
+		if ( ! in_array( $access, array( 'visitor', 'guest', 'member' ), true ) ) {
+			$access = 'visitor';
+		}
 
 		if ( ! function_exists( 'wp_handle_upload' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -3531,13 +3538,12 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$get = wp_unslash( $_GET );
-		if ( ( isset( $get['return_ivr'] ) && ! is_string( $get['return_ivr'] ) ) || ! isset( $get['kb_file'], $get['kb_id'] ) || ! is_string( $get['kb_file'] ) || ! is_string( $get['kb_id'] ) ) {
+		if ( ( isset( $_GET['return_ivr'] ) && ! is_string( $_GET['return_ivr'] ) ) || ! isset( $_GET['kb_file'], $_GET['kb_id'] ) || ! is_string( $_GET['kb_file'] ) || ! is_string( $_GET['kb_id'] ) ) {
 			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
-		$ivr   = sanitize_file_name( (string) ( $get['return_ivr'] ?? '' ) );
-		$file  = sanitize_file_name( $get['kb_file'] );
-		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] );
+		$ivr   = isset( $_GET['return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_GET['return_ivr'] ) ) : '';
+		$file  = sanitize_file_name( wp_unslash( (string) $_GET['kb_file'] ) );
+		$kb_id = $this->kb_request_id( $ivr, sanitize_key( wp_unslash( $_GET['kb_id'] ) ) );
 		if ( '' === $file || '' === $kb_id ) {
 			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
@@ -3570,13 +3576,12 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$get = wp_unslash( $_GET );
-		if ( ( isset( $get['return_ivr'] ) && ! is_string( $get['return_ivr'] ) ) || ! isset( $get['kb_file'], $get['kb_id'] ) || ! is_string( $get['kb_file'] ) || ! is_string( $get['kb_id'] ) ) {
+		if ( ( isset( $_GET['return_ivr'] ) && ! is_string( $_GET['return_ivr'] ) ) || ! isset( $_GET['kb_file'], $_GET['kb_id'] ) || ! is_string( $_GET['kb_file'] ) || ! is_string( $_GET['kb_id'] ) ) {
 			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
-		$ivr   = sanitize_file_name( (string) ( $get['return_ivr'] ?? '' ) );
-		$file  = sanitize_file_name( $get['kb_file'] );
-		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] );
+		$ivr   = isset( $_GET['return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_GET['return_ivr'] ) ) : '';
+		$file  = sanitize_file_name( wp_unslash( (string) $_GET['kb_file'] ) );
+		$kb_id = $this->kb_request_id( $ivr, sanitize_key( wp_unslash( $_GET['kb_id'] ) ) );
 		if ( '' === $file || '' === $kb_id ) {
 			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
@@ -3610,23 +3615,22 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$post = wp_unslash( $_POST );
-		$ivr  = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
-			? sanitize_file_name( $post['flosc_return_ivr'] )
+		$ivr = isset( $_POST['flosc_return_ivr'] ) && is_string( $_POST['flosc_return_ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
 			: '';
 		if (
-			( isset( $post['flosc_return_ivr'] ) && ! is_string( $post['flosc_return_ivr'] ) )
-			|| ! isset( $post['editing_file'], $post['kb_id'], $post['file_content'] )
-			|| ! is_string( $post['editing_file'] )
-			|| ! is_string( $post['kb_id'] )
-			|| ! is_string( $post['file_content'] )
+			( isset( $_POST['flosc_return_ivr'] ) && ! is_string( $_POST['flosc_return_ivr'] ) )
+			|| ! isset( $_POST['editing_file'], $_POST['kb_id'], $_POST['file_content'] )
+			|| ! is_string( $_POST['editing_file'] )
+			|| ! is_string( $_POST['kb_id'] )
+			|| ! is_string( $_POST['file_content'] )
 		) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Invalid request.' ) );
 			exit;
 		}
 
-		$file   = sanitize_file_name( $post['editing_file'] );
-		$kb_id  = $this->kb_request_id( $ivr, $post['kb_id'] );
+		$file   = sanitize_file_name( wp_unslash( (string) $_POST['editing_file'] ) );
+		$kb_id  = $this->kb_request_id( $ivr, sanitize_key( wp_unslash( $_POST['kb_id'] ) ) );
 		$kb_dir = function_exists( 'flosc_knowledge_base_dir' ) ? flosc_knowledge_base_dir( $kb_id ) : '';
 		$target = $kb_dir . $file;
 
@@ -3635,7 +3639,17 @@ The Team',
 			exit;
 		}
 
-		$content = $post['file_content'];
+		// A knowledge file is plain text the AI reads: sanitize_textarea_field()
+		// keeps line breaks and removes markup. The UTF-8 and control-character
+		// checks below stay as further validation.
+		$content = sanitize_textarea_field( wp_unslash( $_POST['file_content'] ) );
+		// sanitize_textarea_field() returns '' for invalid UTF-8. A non-empty
+		// submission that comes back empty is refused, never written as an
+		// empty file.
+		if ( '' === $content && '' !== $_POST['file_content'] ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file is not valid UTF-8 text.' ) );
+			exit;
+		}
 		if ( wp_check_invalid_utf8( $content ) !== $content ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file is not valid UTF-8 text.' ) );
 			exit;
@@ -3667,16 +3681,14 @@ The Team',
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
-		$post               = wp_unslash( $_POST );
-		$ivr                = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
-			? sanitize_file_name( $post['flosc_return_ivr'] )
+		$ivr = isset( $_POST['flosc_return_ivr'] ) && is_string( $_POST['flosc_return_ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
 			: '';
-		$flosc_kb_label_raw = $post['kb_label'] ?? '';
-		if ( ! flosc_submitted_value_is_text( $flosc_kb_label_raw ) ) {
+		if ( isset( $_POST['kb_label'] ) && ! is_string( $_POST['kb_label'] ) && ! is_numeric( $_POST['kb_label'] ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
 			exit;
 		}
-		$label = sanitize_text_field( (string) $flosc_kb_label_raw );
+		$label = isset( $_POST['kb_label'] ) ? sanitize_text_field( wp_unslash( $_POST['kb_label'] ) ) : '';
 		if ( '' === $label ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
 			exit;
@@ -3716,19 +3728,23 @@ The Team',
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_accuracy_test', 'nonce' );
 
-		$post = wp_unslash( $_POST );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
 		}
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'message', 'message_index', 'ivr', 'history' ) ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+		foreach ( array( 'message', 'message_index', 'ivr', 'history' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+			}
 		}
 
-		$message = sanitize_textarea_field( $post['message'] ?? '' );
-		$msg_idx = (int) ( $post['message_index'] ?? 0 );
-		$ivr     = sanitize_file_name( $post['ivr'] ?? '' );
-		// Pass 8: bound + field-sanitize after json_decode of request history JSON.
-		$history_raw = (string) ( $post['history'] ?? '[]' );
+		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+		$msg_idx = isset( $_POST['message_index'] ) ? intval( wp_unslash( $_POST['message_index'] ) ) : 0;
+		$ivr     = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
+		// The history is JSON of role/content pairs. sanitize_textarea_field()
+		// keeps the JSON intact (it removes only markup and percent-encoded
+		// octets, the same things the per-message sanitizer below removes), then
+		// every decoded field is bounded and sanitized again.
+		$history_raw = isset( $_POST['history'] ) ? sanitize_textarea_field( wp_unslash( $_POST['history'] ) ) : '[]';
 		$history     = array();
 		if ( '' !== $history_raw && strlen( $history_raw ) <= 200000 ) {
 			$decoded_history = json_decode( $history_raw, true, 16 );
@@ -3826,17 +3842,18 @@ The Team',
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_protect_category', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Unauthorized' );
 		}
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'cat_id', 'level' ) ) ) {
+		if (
+			( isset( $_POST['cat_id'] ) && ! is_string( $_POST['cat_id'] ) && ! is_numeric( $_POST['cat_id'] ) )
+			|| ( isset( $_POST['level'] ) && ! is_string( $_POST['level'] ) && ! is_numeric( $_POST['level'] ) )
+		) {
 			wp_send_json_error( 'Invalid category request', 400 );
 		}
 
-		$cat_id = intval( $post['cat_id'] ?? 0 );
-		$level  = sanitize_text_field( $post['level'] ?? '' );
+		$cat_id = isset( $_POST['cat_id'] ) ? intval( wp_unslash( $_POST['cat_id'] ) ) : 0;
+		$level  = isset( $_POST['level'] ) ? sanitize_text_field( wp_unslash( $_POST['level'] ) ) : '';
 
 		if ( ! $cat_id ) {
 			wp_send_json_error( 'Invalid category' );
@@ -3863,16 +3880,14 @@ The Team',
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_unprotect_category', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Unauthorized' );
 		}
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'cat_id' ) ) ) {
+		if ( isset( $_POST['cat_id'] ) && ! is_string( $_POST['cat_id'] ) && ! is_numeric( $_POST['cat_id'] ) ) {
 			wp_send_json_error( 'Invalid category request', 400 );
 		}
 
-		$cat_id = intval( $post['cat_id'] ?? 0 );
+		$cat_id = isset( $_POST['cat_id'] ) ? intval( wp_unslash( $_POST['cat_id'] ) ) : 0;
 
 		if ( ! $cat_id ) {
 			wp_send_json_error( 'Invalid category' );
@@ -3901,20 +3916,18 @@ The Team',
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_test_sso', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Unauthorized' );
 		}
 
-		$provider_id = sanitize_text_field( $post['provider'] ?? '' );
+		$provider_id = isset( $_POST['provider'] ) && is_string( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : '';
 		if ( ! in_array( $provider_id, array( 'google', 'facebook', 'apple', 'microsoft', 'linkedin' ), true ) ) {
 			wp_send_json_error( 'Invalid provider' );
 		}
 
 		// v1.5.0: Read SSO settings from per-flow storage
 		// The flow_id is passed from the admin SSO tab (knows which flow is selected).
-		$flow_id = sanitize_text_field( $post['flow_id'] ?? '' );
+		$flow_id = isset( $_POST['flow_id'] ) && is_string( $_POST['flow_id'] ) ? sanitize_text_field( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( ! empty( $flow_id ) ) {
 			$flow_settings_key = 'flosc_flow_' . sanitize_key( $flow_id );
 			$flow_settings     = get_option( $flow_settings_key, array() );
@@ -4330,16 +4343,14 @@ The Team',
 	 * @param int $post_id The post being saved.
 	 */
 	public function flosc_save_post_visibility_meta( $post_id ) {
-		$request_post = wp_unslash( $_POST );
-		if ( ! is_array( $request_post ) || ! flosc_submitted_fields_are_text(
-			$request_post,
-			array( 'flosc_post_visibility_nonce', 'flosc_protection_mode', 'flosc_vgm', 'flosc_depth' )
-		) ) {
-			return;
+		foreach ( array( 'flosc_post_visibility_nonce', 'flosc_protection_mode', 'flosc_vgm', 'flosc_depth' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				return;
+			}
 		}
 		// Security checks.
-		if ( ! isset( $request_post['flosc_post_visibility_nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( $request_post['flosc_post_visibility_nonce'] ), 'flosc_post_visibility_nonce' ) ) {
+		if ( ! isset( $_POST['flosc_post_visibility_nonce'] ) ||
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_post_visibility_nonce'] ) ), 'flosc_post_visibility_nonce' ) ) {
 			return;
 		}
 
@@ -4353,7 +4364,7 @@ The Team',
 
 		// v1.8.2: Save protection mode (protected, title_excerpt, title_readmore, full).
 		$valid_modes = array( 'protected', 'title_excerpt', 'title_readmore', 'full' );
-		$mode        = isset( $request_post['flosc_protection_mode'] ) ? sanitize_text_field( $request_post['flosc_protection_mode'] ) : 'protected';
+		$mode        = isset( $_POST['flosc_protection_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_protection_mode'] ) ) : 'protected';
 		if ( ! in_array( $mode, $valid_modes, true ) ) {
 			$mode = 'protected';
 		}
@@ -4365,10 +4376,10 @@ The Team',
 			'flosc_vgm'   => array( '_flosc_vgm', array( 'visitor', 'guest', 'member' ) ),
 			'flosc_depth' => array( '_flosc_depth', array( 'title', 'excerpt', 'readmore', 'full' ) ),
 		) as $flosc_field => $flosc_spec ) {
-			if ( ! isset( $request_post[ $flosc_field ] ) ) {
+			if ( ! isset( $_POST[ $flosc_field ] ) ) {
 				continue;
 			}
-			$flosc_val = sanitize_key( $request_post[ $flosc_field ] );
+			$flosc_val = sanitize_key( wp_unslash( $_POST[ $flosc_field ] ) );
 			if ( in_array( $flosc_val, $flosc_spec[1], true ) ) {
 				update_post_meta( $post_id, $flosc_spec[0], $flosc_val );
 			} else {
@@ -8682,28 +8693,35 @@ Example good response:
 		$display_name = sanitize_text_field( $request->get_param( 'display_name' ) ?? '' );
 		$password     = $request->get_param( 'password' );
 
+		// The signed-in user edits their own profile. One core wp_update_user()
+		// call carries the name and, when given, the new password; for the
+		// current user, core re-issues the auth cookie after a password change
+		// and sends its own password-change notice.
+		$profile_update = array( 'ID' => $user_id );
 		if ( ! empty( $display_name ) ) {
-			wp_update_user(
-				array(
-					'ID'           => $user_id,
-					'display_name' => $display_name,
-					'nickname'     => $display_name,
-					'first_name'   => $display_name,   // Fills the WP Admin Name column and the AI context.
-				)
-			);
-			// Set BuddyBoss xprofile Name field if available (field 1 = Name by default).
-			if ( function_exists( 'xprofile_set_field_data' ) ) {
-				xprofile_set_field_data( 1, $user_id, $display_name );
+			$profile_update['display_name'] = $display_name;
+			$profile_update['nickname']     = $display_name;
+			$profile_update['first_name']   = $display_name; // Fills the WP Admin Name column and the AI context.
+		}
+		$password_changed = ( ! empty( $password ) && is_string( $password ) && strlen( $password ) >= 6 );
+		if ( $password_changed ) {
+			$profile_update['user_pass'] = $password;
+		}
+		if ( count( $profile_update ) > 1 ) {
+			$updated = wp_update_user( $profile_update );
+			if ( is_wp_error( $updated ) ) {
+				return $updated;
 			}
+		}
+		if ( ! empty( $display_name ) && function_exists( 'xprofile_set_field_data' ) ) {
+			// Set BuddyBoss xprofile Name field if available (field 1 = Name by default).
+			xprofile_set_field_data( 1, $user_id, $display_name );
 		}
 
 		// Mark credentials as set — clears pendingCredentialSetup flag permanently.
 		update_user_meta( $user_id, '_flosc_magic_link_user_credentials_set', true );
 
-		if ( ! empty( $password ) && is_string( $password ) && strlen( $password ) >= 6 ) {
-			wp_set_password( $password, $user_id );
-			// wp_set_password() clears all sessions — re-issue auth cookies for this user only.
-			wp_set_auth_cookie( $user_id, true );
+		if ( $password_changed ) {
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
 
@@ -9479,13 +9497,17 @@ Example good response:
 				if ( is_wp_error( $role ) ) {
 					return $role;
 				}
-				$created = wp_insert_user(
+				$name_parts = '' !== $subscriber_name ? explode( ' ', $subscriber_name, 2 ) : array();
+				$created    = flosc_insert_customer_account(
 					array(
-						'user_login' => wp_slash( $username ),
-						'user_pass'  => $password,
-						'user_email' => wp_slash( $subscriber_email ),
-						'role'       => $role,
-					)
+						'user_login'   => $username,
+						'user_pass'    => $password,
+						'user_email'   => $subscriber_email,
+						'display_name' => $subscriber_name,
+						'first_name'   => (string) ( $name_parts[0] ?? '' ),
+						'last_name'    => (string) ( $name_parts[1] ?? '' ),
+					),
+					$role
 				);
 				if ( is_wp_error( $created ) ) {
 					return new WP_Error(
@@ -9495,17 +9517,6 @@ Example good response:
 					);
 				}
 				$user_id = (int) $created;
-				if ( '' !== $subscriber_name ) {
-					$name_parts = explode( ' ', $subscriber_name, 2 );
-					wp_update_user(
-						array(
-							'ID'           => $user_id,
-							'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
-							'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
-							'display_name' => sanitize_text_field( $subscriber_name ),
-						)
-					);
-				}
 				update_user_meta( $user_id, '_flosc_registration_method', 'paypal_purchase' );
 				update_user_meta( $user_id, '_flosc_registered_at', current_time( 'mysql' ) );
 				do_action( 'flosc_user_registered', $user_id, 'paypal_purchase', array( 'flow_id' => $flow_id ) );
@@ -9989,29 +10000,22 @@ Example good response:
 				if ( is_wp_error( $role ) ) {
 					return $role;
 				}
-				$created_id = wp_insert_user(
+				$name_parts = '' !== $payer_name ? explode( ' ', $payer_name, 2 ) : array();
+				$created_id = flosc_insert_customer_account(
 					array(
-						'user_login' => wp_slash( $username ),
-						'user_pass'  => $password,
-						'user_email' => wp_slash( $payer_email ),
-						'role'       => $role,
-					)
+						'user_login'   => $username,
+						'user_pass'    => $password,
+						'user_email'   => $payer_email,
+						'display_name' => $payer_name,
+						'first_name'   => (string) ( $name_parts[0] ?? '' ),
+						'last_name'    => (string) ( $name_parts[1] ?? '' ),
+					),
+					$role
 				);
 				if ( is_wp_error( $created_id ) ) {
 					return new WP_Error( 'user_creation_failed', 'Could not create account: ' . $created_id->get_error_message(), array( 'status' => 500 ) );
 				}
 				$user_id = (int) $created_id;
-				if ( '' !== $payer_name ) {
-					$name_parts = explode( ' ', $payer_name, 2 );
-					wp_update_user(
-						array(
-							'ID'           => $user_id,
-							'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
-							'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
-							'display_name' => $payer_name,
-						)
-					);
-				}
 				update_user_meta( $user_id, '_flosc_registration_method', 'paypal_purchase' );
 				update_user_meta( $user_id, '_flosc_registered_at', current_time( 'mysql' ) );
 				do_action( 'flosc_user_registered', $user_id, 'paypal_purchase', array( 'flow_id' => $flow_id ) );
@@ -12194,11 +12198,7 @@ Example good response:
 		// fetch, "no key saved".
 		$typed = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			$typed = filter_var(
-				wp_unslash( (string) $_POST['api_key'] ),
-				FILTER_CALLBACK,
-				array( 'options' => 'flosc_sanitize_api_secret' )
-			);
+			$typed = flosc_sanitize_api_secret( wp_strip_all_tags( wp_unslash( $_POST['api_key'] ) ) );
 		}
 
 		if ( '' !== $typed && ( strlen( $typed ) > 4096 || preg_match( '/[\x00-\x1F\x7F]/', $typed ) ) ) {
@@ -12283,15 +12283,11 @@ Example good response:
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
 		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$api_key  = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			$api_key = filter_var(
-				wp_unslash( (string) $_POST['api_key'] ),
-				FILTER_CALLBACK,
-				array( 'options' => 'flosc_sanitize_api_secret' )
-			);
+			$api_key = flosc_sanitize_api_secret( wp_strip_all_tags( wp_unslash( $_POST['api_key'] ) ) );
 		}
 
 		$stored = flosc_store_provider_api_key( $ivr, $provider, $api_key );
@@ -12360,16 +12356,12 @@ Example good response:
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
 		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
+		$model    = isset( $_POST['model'] ) && is_string( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 		$typed    = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
-			$typed = filter_var(
-				wp_unslash( (string) $_POST['api_key'] ),
-				FILTER_CALLBACK,
-				array( 'options' => 'flosc_sanitize_api_secret' )
-			);
+			$typed = flosc_sanitize_api_secret( wp_strip_all_tags( wp_unslash( $_POST['api_key'] ) ) );
 		}
 
 		if ( '' !== $ivr ) {
@@ -12411,7 +12403,7 @@ Example good response:
 		}
 
 		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-		$param = isset( $_POST['param'] ) ? sanitize_text_field( wp_unslash( $_POST['param'] ) ) : '';
+		$param = isset( $_POST['param'] ) && is_string( $_POST['param'] ) ? sanitize_text_field( wp_unslash( $_POST['param'] ) ) : '';
 
 		// A parameter name, not a prompt. Anything that is not one is refused
 		// rather than passed through to the provider as free text.
@@ -12492,12 +12484,13 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! flosc_submitted_fields_are_text( $post, array( 'ivr', 'provider', 'temperature', 'max_tokens', 'params' ) ) ) {
-			wp_send_json_error( array( 'message' => __( 'Model tuning was not saved. One of its fields arrived as a list, so the stored tuning was left unchanged.', 'flosc' ) ), 400 );
+		foreach ( array( 'ivr', 'provider', 'temperature', 'max_tokens', 'params' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => __( 'Model tuning was not saved. One of its fields arrived as a list, so the stored tuning was left unchanged.', 'flosc' ) ), 400 );
+			}
 		}
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
+		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
 
 		if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Model tuning storage is unavailable on this install.', 'flosc' ) ) );
@@ -12507,10 +12500,17 @@ Example good response:
 		// field this save has no opinion about, and it is left as it stands.
 		$tuning = array();
 
-		foreach ( array( 'temperature', 'max_tokens', 'params' ) as $field ) {
-			if ( isset( $post[ $field ] ) ) {
-				$tuning[ $field ] = (string) $post[ $field ];
-			}
+		// temperature and max_tokens are single values; params is one parameter
+		// per line, so it keeps its newlines. flosc_store_model_tuning() then
+		// validates each as before.
+		if ( isset( $_POST['temperature'] ) ) {
+			$tuning['temperature'] = sanitize_text_field( wp_unslash( $_POST['temperature'] ) );
+		}
+		if ( isset( $_POST['max_tokens'] ) ) {
+			$tuning['max_tokens'] = sanitize_text_field( wp_unslash( $_POST['max_tokens'] ) );
+		}
+		if ( isset( $_POST['params'] ) ) {
+			$tuning['params'] = sanitize_textarea_field( wp_unslash( $_POST['params'] ) );
 		}
 
 		$stored = flosc_store_model_tuning( $ivr, $provider, $tuning );
@@ -12540,7 +12540,6 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post = wp_unslash( $_POST );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
@@ -12548,11 +12547,10 @@ Example good response:
 		// v5.0.2 FIX: Set flow context from posted IVR so flosc_get_setting reads
 		// the correct per-flow ai_provider. Without this, admin-ajax has no URL
 		// context, get_current_flow() returns null, and provider defaults to ''.
-		$flosc_test_ivr = $post['ivr'] ?? '';
-		if ( ! flosc_submitted_value_is_text( $flosc_test_ivr ) ) {
+		if ( isset( $_POST['ivr'] ) && ! is_string( $_POST['ivr'] ) && ! is_numeric( $_POST['ivr'] ) ) {
 			wp_send_json_error( array( 'message' => __( 'The connection test did not run. The flow name arrived as a list.', 'flosc' ) ), 400 );
 		}
-		$ivr = sanitize_file_name( (string) $flosc_test_ivr );
+		$ivr = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		}
@@ -12730,19 +12728,18 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_chat_logs', 'nonce' );
 
-		$post    = wp_unslash( $_POST );
-		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$flow_id = isset( $_POST['flow_id'] ) && is_scalar( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( ! $this->can_manage_flow_chat_logs( $flow_id ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
 		$logger  = FLOSC_Chat_Logger::instance();
 		$filters = array(
-			'since_id' => intval( $post['since_id'] ?? 0 ),
+			'since_id' => isset( $_POST['since_id'] ) && is_scalar( $_POST['since_id'] ) ? intval( wp_unslash( $_POST['since_id'] ) ) : 0,
 			'flow_id'  => $flow_id,
-			'phase'    => sanitize_text_field( $post['phase'] ?? '' ),
-			'user_id'  => intval( $post['user_id'] ?? 0 ),
-			'limit'    => intval( $post['limit'] ?? 50 ),
+			'phase'    => isset( $_POST['phase'] ) && is_scalar( $_POST['phase'] ) ? sanitize_text_field( wp_unslash( $_POST['phase'] ) ) : '',
+			'user_id'  => isset( $_POST['user_id'] ) && is_scalar( $_POST['user_id'] ) ? intval( wp_unslash( $_POST['user_id'] ) ) : 0,
+			'limit'    => isset( $_POST['limit'] ) && is_scalar( $_POST['limit'] ) ? intval( wp_unslash( $_POST['limit'] ) ) : 50,
 		);
 
 		$logs  = $logger->flosc_get_logs( $filters );
@@ -12768,15 +12765,14 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_chat_logs', 'nonce' );
 
-		$post = wp_unslash( $_POST );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'days' ) ) ) {
+		if ( isset( $_POST['days'] ) && ! is_string( $_POST['days'] ) && ! is_numeric( $_POST['days'] ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
 		}
 
-		$days    = intval( $post['days'] ?? 30 );
+		$days    = isset( $_POST['days'] ) ? intval( wp_unslash( $_POST['days'] ) ) : 30;
 		$logger  = FLOSC_Chat_Logger::instance();
 		$deleted = $logger->flosc_clear_old_logs( $days );
 
@@ -12805,14 +12801,15 @@ Example good response:
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'log_id', 'rating', 'note' ) ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+		foreach ( array( 'log_id', 'rating', 'note' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+			}
 		}
 
-		$log_id = intval( $post['log_id'] ?? 0 );
-		$rating = intval( $post['rating'] ?? 0 );
-		$note   = sanitize_textarea_field( $post['note'] ?? '' );
+		$log_id = isset( $_POST['log_id'] ) ? intval( wp_unslash( $_POST['log_id'] ) ) : 0;
+		$rating = isset( $_POST['rating'] ) ? intval( wp_unslash( $_POST['rating'] ) ) : 0;
+		$note   = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : '';
 
 		if ( ! $log_id ) {
 			wp_send_json_error( array( 'message' => 'Missing log_id' ) );
@@ -12846,17 +12843,18 @@ Example good response:
 		// that can exit, so an off-site request was parsed before being refused.
 		check_ajax_referer( 'flosc_chat_logs', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flow_id', 'by', 'value' ) ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+		foreach ( array( 'flow_id', 'by', 'value' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+			}
 		}
-		$flow = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$flow = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( ! $this->can_manage_flow_chat_logs( $flow ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
-		$by    = sanitize_text_field( $post['by'] ?? '' );
-		$value = sanitize_text_field( $post['value'] ?? '' );
+		$by    = isset( $_POST['by'] ) ? sanitize_text_field( wp_unslash( $_POST['by'] ) ) : '';
+		$value = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 
 		if ( '' === $by || '' === $value ) {
 			wp_send_json_error( array( 'message' => 'Missing session identifier' ) );
@@ -12878,22 +12876,25 @@ Example good response:
 		// order, before anything else happens.
 		check_ajax_referer( 'flosc_chat_logs', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flow_id', 'operation', 'sessions' ) ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+		foreach ( array( 'flow_id', 'operation', 'sessions' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+			}
 		}
-		$flow = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$flow = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( ! $this->can_manage_flow_chat_logs( $flow ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
-		$operation = sanitize_key( (string) ( $post['operation'] ?? '' ) );
+		$operation = isset( $_POST['operation'] ) ? sanitize_key( wp_unslash( $_POST['operation'] ) ) : '';
 		if ( ! in_array( $operation, array( 'archive', 'restore', 'delete' ), true ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid operation' ) );
 		}
 
 		// Pass 8: bound + field-sanitize after json_decode of sessions list.
-		$sessions_json = (string) ( $post['sessions'] ?? '[]' );
+		// A JSON list of {by, value} session identifiers. sanitize_text_field()
+		// leaves identifier JSON intact; each decoded field is sanitized again.
+		$sessions_json = isset( $_POST['sessions'] ) ? sanitize_text_field( wp_unslash( $_POST['sessions'] ) ) : '[]';
 		$sessions      = array();
 		if ( '' !== $sessions_json && strlen( $sessions_json ) <= 100000 ) {
 			$decoded_sessions = json_decode( $sessions_json, true, 16 );
@@ -12949,28 +12950,30 @@ Example good response:
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), 403 );
 		}
 
-		$request = wp_unslash( $_REQUEST );
 		check_admin_referer( 'flosc_download_chat_tsv' );
 
-		$flow = sanitize_key( (string) ( $request['flow_id'] ?? '' ) );
+		// The download form may arrive as GET (a single session link) or POST
+		// (the bulk form), so each field is read from $_REQUEST, one at a time.
+		$flow = isset( $_REQUEST['flow_id'] ) && is_string( $_REQUEST['flow_id'] ) ? sanitize_key( wp_unslash( $_REQUEST['flow_id'] ) ) : '';
 		if ( ! $this->can_manage_flow_chat_logs( $flow ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), 403 );
 		}
 
 		$sessions = array();
-		if ( ! empty( $request['sessions'] ) ) {
-			// Pass 8: bound + field-sanitize after json_decode.
-			$sessions_raw = (string) $request['sessions'];
+		if ( ! empty( $_REQUEST['sessions'] ) && is_string( $_REQUEST['sessions'] ) ) {
+			// A JSON list of {by, value} identifiers; each decoded field is
+			// sanitized again below.
+			$sessions_raw = sanitize_text_field( wp_unslash( $_REQUEST['sessions'] ) );
 			if ( '' !== $sessions_raw && strlen( $sessions_raw ) <= 100000 ) {
 				$decoded = json_decode( $sessions_raw, true, 16 );
 				if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
 					$sessions = $decoded;
 				}
 			}
-		} elseif ( ! empty( $request['by'] ) && isset( $request['value'] ) ) {
+		} elseif ( ! empty( $_REQUEST['by'] ) && isset( $_REQUEST['value'] ) && is_string( $_REQUEST['by'] ) && is_scalar( $_REQUEST['value'] ) ) {
 			$sessions[] = array(
-				'by'    => sanitize_key( (string) $request['by'] ),
-				'value' => sanitize_text_field( (string) $request['value'] ),
+				'by'    => sanitize_key( wp_unslash( $_REQUEST['by'] ) ),
+				'value' => sanitize_text_field( wp_unslash( $_REQUEST['value'] ) ),
 			);
 		}
 
@@ -13009,21 +13012,11 @@ Example good response:
 			wp_die( esc_html__( 'No chat rows found for the selected sessions.', 'flosc' ) );
 		}
 
-		$headers     = array_keys( $rows[0] );
+		$headers = array_keys( $rows[0] );
+		// Every cell, headers included, goes through flosc_spreadsheet_text_cell():
+		// visitor text that starts with = + - @ is written as text, not a formula.
 		$to_tsv_line = static function ( array $columns ) {
-			$encoded = array_map(
-				static function ( $value ) {
-					$value = (string) $value;
-					$value = str_replace( array( "\r\n", "\r", "\n" ), "\\n", $value );
-					if ( false !== strpos( $value, "\t" ) || false !== strpos( $value, '"' ) ) {
-						$value = '"' . str_replace( '"', '""', $value ) . '"';
-					}
-					return $value;
-				},
-				$columns
-			);
-
-			return implode( "\t", $encoded ) . "\n";
+			return implode( "\t", array_map( 'flosc_spreadsheet_text_cell', $columns ) ) . "\n";
 		};
 
 		$tsv_body = $to_tsv_line( $headers );
@@ -13063,18 +13056,19 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_chat_logs', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flow_id', 'session_id', 'text', 'as' ) ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+		foreach ( array( 'flow_id', 'session_id', 'text', 'as' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+			}
 		}
-		$flow = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$flow = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( ! $this->can_manage_flow_chat_logs( $flow ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
-		$session_id = intval( $post['session_id'] ?? 0 );
-		$text       = sanitize_textarea_field( $post['text'] ?? '' );
-		$as         = ( 'bot' === sanitize_text_field( $post['as'] ?? 'admin' ) ) ? 'bot' : 'admin';
+		$session_id = isset( $_POST['session_id'] ) ? intval( wp_unslash( $_POST['session_id'] ) ) : 0;
+		$text       = isset( $_POST['text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['text'] ) ) : '';
+		$as         = ( isset( $_POST['as'] ) && 'bot' === sanitize_text_field( wp_unslash( $_POST['as'] ) ) ) ? 'bot' : 'admin';
 		if ( $session_id <= 0 || '' === $text ) {
 			wp_send_json_error( array( 'message' => 'A session and a message are required.' ) );
 		}
@@ -13117,17 +13111,18 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_chat_logs', 'nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flow_id', 'session_id', 'amount' ) ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+		foreach ( array( 'flow_id', 'session_id', 'amount' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) && ! is_numeric( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid request fields' ), 400 );
+			}
 		}
-		$flow = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$flow = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( ! $this->can_manage_flow_chat_logs( $flow ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
 
-		$session_id = intval( $post['session_id'] ?? 0 );
-		$amount     = intval( $post['amount'] ?? 0 );
+		$session_id = isset( $_POST['session_id'] ) ? intval( wp_unslash( $_POST['session_id'] ) ) : 0;
+		$amount     = isset( $_POST['amount'] ) ? intval( wp_unslash( $_POST['amount'] ) ) : 0;
 		if ( $session_id <= 0 || $amount <= 0 ) {
 			wp_send_json_error( array( 'message' => 'Session id and positive token amount are required.' ) );
 		}

@@ -2273,26 +2273,44 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		}
 		check_admin_referer( 'flosc_save_personality_library' );
 
-		$flosc_persona_raw = wp_unslash( $_POST );
-		$flosc_library_ok  = flosc_submitted_fields_are_text( $flosc_persona_raw, array( 'new_persona_id', 'new_persona_label', 'flosc_return_ivr' ) );
-		if ( $flosc_library_ok && isset( $flosc_persona_raw['persona'] ) ) {
-			if ( ! is_array( $flosc_persona_raw['persona'] ) ) {
+		/*
+		 * Each field is read on its own. The persona table and the delete
+		 * checkboxes are lists: map_deep() sanitizes every leaf with
+		 * sanitize_text_field() and keeps the nesting as it arrived, so the
+		 * shape is checked on the sanitized copy. A single-value field sent as a
+		 * list, or a list row that is not the expected shape, refuses the save
+		 * and leaves the stored library unchanged.
+		 */
+		$flosc_library_ok = true;
+		foreach ( array( 'new_persona_id', 'new_persona_label', 'flosc_return_ivr' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$flosc_library_ok = false;
+			}
+		}
+		$flosc_persona_rows = array();
+		if ( $flosc_library_ok && isset( $_POST['persona'] ) ) {
+			if ( ! is_array( $_POST['persona'] ) ) {
 				$flosc_library_ok = false;
 			} else {
-				foreach ( $flosc_persona_raw['persona'] as $flosc_persona_row ) {
-					if ( ! is_array( $flosc_persona_row ) || ! flosc_submitted_fields_are_text( $flosc_persona_row, array( 'id', 'label' ) ) ) {
+				$flosc_persona_rows = map_deep( wp_unslash( $_POST['persona'] ), 'sanitize_text_field' );
+				foreach ( $flosc_persona_rows as $flosc_persona_row ) {
+					if ( ! is_array( $flosc_persona_row )
+						|| ( isset( $flosc_persona_row['id'] ) && ! is_string( $flosc_persona_row['id'] ) )
+						|| ( isset( $flosc_persona_row['label'] ) && ! is_string( $flosc_persona_row['label'] ) ) ) {
 						$flosc_library_ok = false;
 						break;
 					}
 				}
 			}
 		}
-		if ( $flosc_library_ok && isset( $flosc_persona_raw['persona_delete'] ) ) {
-			if ( ! is_array( $flosc_persona_raw['persona_delete'] ) ) {
+		$flosc_persona_delete = array();
+		if ( $flosc_library_ok && isset( $_POST['persona_delete'] ) ) {
+			if ( ! is_array( $_POST['persona_delete'] ) ) {
 				$flosc_library_ok = false;
 			} else {
-				foreach ( $flosc_persona_raw['persona_delete'] as $flosc_persona_delete_on ) {
-					if ( ! flosc_submitted_value_is_text( $flosc_persona_delete_on ) ) {
+				$flosc_persona_delete = map_deep( wp_unslash( $_POST['persona_delete'] ), 'sanitize_text_field' );
+				foreach ( $flosc_persona_delete as $flosc_persona_delete_on ) {
+					if ( ! is_string( $flosc_persona_delete_on ) ) {
 						$flosc_library_ok = false;
 						break;
 					}
@@ -2308,8 +2326,8 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 				),
 				60
 			);
-			$ivr = ( isset( $flosc_persona_raw['flosc_return_ivr'] ) && flosc_submitted_value_is_text( $flosc_persona_raw['flosc_return_ivr'] ) )
-				? sanitize_file_name( (string) $flosc_persona_raw['flosc_return_ivr'] )
+			$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_string( $_POST['flosc_return_ivr'] ) )
+				? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
 				: '';
 			wp_safe_redirect(
 				add_query_arg(
@@ -2327,9 +2345,8 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 
 		$existing = flosc_personality_library_get_all();
 		$posted   = array();
-		if ( isset( $_POST['persona'] ) && is_array( $_POST['persona'] ) ) {
-			$persona_rows = map_deep( wp_unslash( $_POST['persona'] ), 'sanitize_text_field' );
-			foreach ( $persona_rows as $row ) {
+		if ( array() !== $flosc_persona_rows ) {
+			foreach ( $flosc_persona_rows as $row ) {
 				if ( ! is_array( $row ) ) {
 					continue;
 				}
@@ -2345,9 +2362,8 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 			}
 		}
 		$delete = array();
-		if ( isset( $_POST['persona_delete'] ) && is_array( $_POST['persona_delete'] ) ) {
-			$persona_delete = map_deep( wp_unslash( $_POST['persona_delete'] ), 'sanitize_text_field' );
-			foreach ( $persona_delete as $did => $on ) {
+		if ( array() !== $flosc_persona_delete ) {
+			foreach ( $flosc_persona_delete as $did => $on ) {
 				if ( ! flosc_submitted_value_is_text( $on ) ) {
 					continue;
 				}
@@ -3454,39 +3470,40 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		}
 		check_ajax_referer( 'flosc_personality_design', 'nonce' );
 
-		$flosc_design_post = wp_unslash( $_POST );
-		if ( ! flosc_submitted_fields_are_text(
-			$flosc_design_post,
-			array(
-				'persona_id',
-				'label',
-				'ai_personality_name',
-				'ai_personality_role',
-				'ai_personality_traits',
-				'ai_mission',
-				'ai_boundaries',
-				'ai_topic_scope',
-				'ai_base_prompt',
-				'workshop_json',
-			)
-		) ) {
-			wp_send_json_error( array( 'message' => __( 'The personality was not saved. One of its fields arrived as a list, so the stored personality was left unchanged.', 'flosc' ) ), 400 );
+		// Every field is one piece of text. A field sent as a list is refused
+		// before anything is read, and the stored personality is left unchanged.
+		$flosc_design_fields = array(
+			'persona_id',
+			'label',
+			'ai_personality_name',
+			'ai_personality_role',
+			'ai_personality_traits',
+			'ai_mission',
+			'ai_boundaries',
+			'ai_topic_scope',
+			'ai_base_prompt',
+			'workshop_json',
+		);
+		foreach ( $flosc_design_fields as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => __( 'The personality was not saved. One of its fields arrived as a list, so the stored personality was left unchanged.', 'flosc' ) ), 400 );
+			}
 		}
 
-		$id = isset( $_POST['persona_id'] ) ? sanitize_key( wp_unslash( (string) $_POST['persona_id'] ) ) : '';
+		$id = isset( $_POST['persona_id'] ) ? sanitize_key( wp_unslash( $_POST['persona_id'] ) ) : '';
 		if ( '' === $id ) {
 			wp_send_json_error( array( 'message' => __( 'Missing personality id.', 'flosc' ) ), 400 );
 		}
 
 		$fields = array();
 		if ( isset( $_POST['label'] ) ) {
-			$fields['label'] = sanitize_text_field( wp_unslash( (string) $_POST['label'] ) );
+			$fields['label'] = sanitize_text_field( wp_unslash( $_POST['label'] ) );
 		}
 		if ( isset( $_POST['ai_personality_name'] ) ) {
-			$fields['ai_personality_name'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_name'] ) );
+			$fields['ai_personality_name'] = sanitize_text_field( wp_unslash( $_POST['ai_personality_name'] ) );
 		}
 		if ( isset( $_POST['ai_personality_role'] ) ) {
-			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_role'] ) );
+			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( $_POST['ai_personality_role'] ) );
 		}
 
 		/*
@@ -3499,27 +3516,44 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		 */
 		foreach ( array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' ) as $flosc_sidecar ) {
 			if ( isset( $_POST[ $flosc_sidecar ] ) ) {
-				$fields[ $flosc_sidecar ] = sanitize_textarea_field( wp_unslash( (string) $_POST[ $flosc_sidecar ] ) );
+				$fields[ $flosc_sidecar ] = sanitize_textarea_field( wp_unslash( $_POST[ $flosc_sidecar ] ) );
 			}
 		}
-		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
-			$profile_raw = filter_var(
-				wp_unslash( $_POST['ai_base_prompt'] ),
-				FILTER_CALLBACK,
-				array( 'options' => 'flosc_sanitize_personality_profile_text' )
-			);
-			if ( '' === $profile_raw && ! empty( $_POST['ai_base_prompt'] ) ) {
+
+		/*
+		 * The compiled personality profile is multi-line prompt text. It is read
+		 * with sanitize_textarea_field(), the core sanitizer for multi-line
+		 * plain text: it keeps line breaks and Markdown, rejects invalid UTF-8,
+		 * and removes HTML tags and HTML comments. The project check
+		 * flosc_sanitize_personality_profile_text() then runs on the sanitized
+		 * value and removes C0 control characters.
+		 *
+		 * A profile is plain text, so nothing in it may depend on HTML syntax
+		 * surviving the save: an HTML comment written into the profile is
+		 * removed here.
+		 */
+		if ( isset( $_POST['ai_base_prompt'] ) ) {
+			$profile_raw = flosc_sanitize_personality_profile_text( sanitize_textarea_field( wp_unslash( $_POST['ai_base_prompt'] ) ) );
+			if ( '' === $profile_raw && '' !== trim( sanitize_textarea_field( wp_unslash( $_POST['ai_base_prompt'] ) ) ) ) {
 				wp_send_json_error( array( 'message' => __( 'The personality profile is not valid UTF-8 text.', 'flosc' ) ), 400 );
 			}
 			$fields['ai_base_prompt'] = $profile_raw;
 		}
-		if ( isset( $_POST['workshop_json'] ) && is_string( $_POST['workshop_json'] ) ) {
-			$workshop_raw = filter_var(
-				wp_unslash( $_POST['workshop_json'] ),
-				FILTER_CALLBACK,
-				array( 'options' => 'flosc_sanitize_personality_workshop' )
-			);
-			if ( '' === $workshop_raw && ! empty( $_POST['workshop_json'] ) ) {
+
+		/*
+		 * The workshop is the builder's state as one JSON object. It is read
+		 * with sanitize_textarea_field(): JSON.stringify() writes no raw line
+		 * breaks, so the core sanitizer leaves the JSON syntax alone while it
+		 * rejects invalid UTF-8 and removes HTML tags inside the text values.
+		 * flosc_sanitize_personality_workshop() then requires the result to
+		 * decode to a non-empty JSON object and re-encodes it, so what is stored
+		 * is always JSON this plugin built. A workshop that no longer decodes is
+		 * refused with an error rather than stored.
+		 */
+		if ( isset( $_POST['workshop_json'] ) ) {
+			$workshop_posted = sanitize_textarea_field( wp_unslash( $_POST['workshop_json'] ) );
+			$workshop_raw    = flosc_sanitize_personality_workshop( $workshop_posted );
+			if ( '' === $workshop_raw && '' !== trim( $workshop_posted ) ) {
 				wp_send_json_error( array( 'message' => __( 'Workshop file was not valid JSON.', 'flosc' ) ), 400 );
 			}
 			$fields['workshop_json'] = $workshop_raw;
@@ -3585,13 +3619,14 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to change this flow.', 'flosc' ) ), 403 );
 		}
 
-		$flosc_attach_post = wp_unslash( $_POST );
-		if ( ! flosc_submitted_fields_are_text( $flosc_attach_post, array( 'ivr', 'persona' ) ) ) {
-			wp_send_json_error( array( 'message' => __( 'The personality was not attached. One of the fields arrived as a list, so the stored flow was left unchanged.', 'flosc' ) ), 400 );
+		foreach ( array( 'ivr', 'persona' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				wp_send_json_error( array( 'message' => __( 'The personality was not attached. One of the fields arrived as a list, so the stored flow was left unchanged.', 'flosc' ) ), 400 );
+			}
 		}
 
 		$ivr     = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
-		$persona = isset( $_POST['persona'] ) ? sanitize_key( wp_unslash( (string) $_POST['persona'] ) ) : '';
+		$persona = isset( $_POST['persona'] ) ? sanitize_key( wp_unslash( $_POST['persona'] ) ) : '';
 		if ( '' === $ivr ) {
 			wp_send_json_error( array( 'message' => __( 'Missing flow.', 'flosc' ) ), 400 );
 		}

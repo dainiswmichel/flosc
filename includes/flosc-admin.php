@@ -1152,8 +1152,6 @@ trait FLOSC_Admin_Trait {
 		// this passes, so every $_POST read after it is verified input.
 		check_admin_referer( $flosc_routes[ $flosc_route ][0], $flosc_routes[ $flosc_route ][1] );
 
-		$post = isset( $_POST ) && is_array( $_POST ) ? wp_unslash( $_POST ) : array();
-
 		// IVR new-flow upload: must redirect before admin chrome (Set-as-default class of bug).
 		if ( 'flosc_upload_ivr_file' === $flosc_route && ! empty( $_FILES['ivr_file_upload'] ) ) {
 			if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
@@ -1177,7 +1175,10 @@ trait FLOSC_Admin_Trait {
 		 * handler and being named.
 		 */
 		if ( 'flosc_portability_submit' === $flosc_route ) {
-			$kit_action = sanitize_key( (string) $post['flosc_portability_submit'] );
+			$kit_action = '';
+			if ( isset( $_POST['flosc_portability_submit'] ) && is_string( $_POST['flosc_portability_submit'] ) ) {
+				$kit_action = sanitize_key( wp_unslash( $_POST['flosc_portability_submit'] ) );
+			}
 			if ( in_array( $kit_action, array( 'create', 'apply' ), true ) ) {
 				if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 					require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
@@ -1424,13 +1425,16 @@ trait FLOSC_Admin_Trait {
 
 		check_admin_referer( 'flosc_set_default_flow', 'flosc_default_flow_nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'ivr', 'tab', 'view' ) ) ) {
-			wp_die( esc_html__( 'Missing flow file.', 'flosc' ) );
+		// Each field is read on its own and sanitized at the read. A field sent
+		// as an array is refused rather than cast to the word "Array".
+		foreach ( array( 'ivr', 'tab', 'view' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				wp_die( esc_html__( 'Missing flow file.', 'flosc' ) );
+			}
 		}
-		$ivr  = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$tab  = isset( $post['tab'] ) ? sanitize_text_field( (string) $post['tab'] ) : 'identity';
-		$view = isset( $post['view'] ) ? sanitize_text_field( (string) $post['view'] ) : 'single';
+		$ivr  = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
+		$tab  = isset( $_POST['tab'] ) ? sanitize_text_field( wp_unslash( $_POST['tab'] ) ) : 'identity';
+		$view = isset( $_POST['view'] ) ? sanitize_text_field( wp_unslash( $_POST['view'] ) ) : 'single';
 		if ( ! in_array( $view, array( 'single', 'all' ), true ) ) {
 			$view = 'single';
 		}
@@ -1478,14 +1482,17 @@ trait FLOSC_Admin_Trait {
 
 		check_admin_referer( 'flosc_set_working_flow', 'flosc_working_flow_nonce' );
 
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'ivr', 'tab', 'view' ) ) ) {
-			wp_die( esc_html__( 'Missing flow selection.', 'flosc' ) );
+		// Each field is read on its own and sanitized at the read. A field sent
+		// as an array is refused rather than cast to the word "Array".
+		foreach ( array( 'ivr', 'tab', 'view' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				wp_die( esc_html__( 'Missing flow selection.', 'flosc' ) );
+			}
 		}
 
-		$ivr  = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$tab  = isset( $post['tab'] ) ? sanitize_key( (string) $post['tab'] ) : 'identity';
-		$view = isset( $post['view'] ) ? sanitize_key( (string) $post['view'] ) : 'single';
+		$ivr  = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
+		$tab  = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'identity';
+		$view = isset( $_POST['view'] ) ? sanitize_key( wp_unslash( $_POST['view'] ) ) : 'single';
 
 		if ( '' === $ivr ) {
 			wp_die( esc_html__( 'Missing flow selection.', 'flosc' ) );
@@ -1846,13 +1853,22 @@ trait FLOSC_Admin_Trait {
 			filemtime( FLOSC_PLUGIN_DIR . 'assets/css/flosc-contact-form.css' )
 		);
 
+		// Every value placed in this rule is validated for CSS, not HTML: colors
+		// are hex colors (sanitize_contact_color() already enforced that; it is
+		// checked again here because this is the output point), and the font
+		// stack may contain only the characters a CSS font-family list uses, so
+		// no value can close the declaration or the rule.
+		$flosc_font_stack = (string) $settings['message_font_family'];
+		if ( ! preg_match( '/^[A-Za-z0-9 ,\'"_-]{1,200}$/', $flosc_font_stack ) ) {
+			$flosc_font_stack = "'Courier New', Courier, monospace";
+		}
 		$css_vars = sprintf(
 			'.flosc-contact-form-wrap{--flosc-contact-bg:%s;--flosc-contact-accent:%s;--flosc-contact-button-bg:%s;--flosc-contact-button-text:%s;--flosc-contact-msg-font:%s;--flosc-contact-msg-size:%dpx;}',
-			esc_html( $settings['card_background'] ),
-			esc_html( $settings['accent_color'] ),
-			esc_html( $settings['button_bg_color'] ),
-			esc_html( $settings['button_text_color'] ),
-			esc_html( $settings['message_font_family'] ),
+			sanitize_hex_color( $settings['card_background'] ) ? sanitize_hex_color( $settings['card_background'] ) : '#ffffff',
+			sanitize_hex_color( $settings['accent_color'] ) ? sanitize_hex_color( $settings['accent_color'] ) : '#2e8b57',
+			sanitize_hex_color( $settings['button_bg_color'] ) ? sanitize_hex_color( $settings['button_bg_color'] ) : '#1f6feb',
+			sanitize_hex_color( $settings['button_text_color'] ) ? sanitize_hex_color( $settings['button_text_color'] ) : '#ffffff',
+			$flosc_font_stack,
 			max( 14, intval( $settings['message_font_size'] ) )
 		);
 		wp_add_inline_style( 'flosc-contact-form', $css_vars );
@@ -1927,41 +1943,44 @@ trait FLOSC_Admin_Trait {
 	 * Handle contact form submit.
 	 */
 	public function handle_contact_form_submit() {
-		$posted = wp_unslash( $_POST );
-		if ( ! is_array( $posted ) || ! flosc_submitted_fields_are_text(
-			$posted,
-			array(
-				'flosc_contact_return',
-				'flosc_contact_nonce',
-				'flosc_contact_flow',
-				'flosc_contact_first_name',
-				'flosc_contact_last_name',
-				'flosc_contact_email',
-				'flosc_contact_phone',
-				'flosc_contact_message',
-				'flosc_contact_company',
-				'flosc_contact_rendered_at',
-			)
-		) ) {
-			$this->redirect_contact_form_result( home_url( '/' ), 'error' );
+		// A field sent as an array is refused before anything is read.
+		$flosc_fields = array(
+			'flosc_contact_return',
+			'flosc_contact_nonce',
+			'flosc_contact_flow',
+			'flosc_contact_first_name',
+			'flosc_contact_last_name',
+			'flosc_contact_email',
+			'flosc_contact_phone',
+			'flosc_contact_message',
+			'flosc_contact_company',
+			'flosc_contact_rendered_at',
+		);
+		foreach ( $flosc_fields as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$this->redirect_contact_form_result( home_url( '/' ), 'error' );
+			}
 		}
 
-		$return_url = isset( $posted['flosc_contact_return'] ) ? esc_url_raw( $posted['flosc_contact_return'] ) : home_url( '/' );
-		$nonce      = isset( $posted['flosc_contact_nonce'] ) ? sanitize_text_field( $posted['flosc_contact_nonce'] ) : '';
+		// The return address is read first so a refused nonce can still send the
+		// visitor back to the page they came from. The nonce is verified before
+		// any form content is read.
+		$return_url = isset( $_POST['flosc_contact_return'] ) ? esc_url_raw( wp_unslash( $_POST['flosc_contact_return'] ) ) : home_url( '/' );
+		$nonce      = isset( $_POST['flosc_contact_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_contact_nonce'] ) ) : '';
 		if ( ! wp_verify_nonce( $nonce, 'flosc_contact_submit' ) ) {
 			$this->redirect_contact_form_result( $return_url, 'error' );
 		}
 
-		$flow_id = isset( $posted['flosc_contact_flow'] ) ? sanitize_key( $posted['flosc_contact_flow'] ) : '';
+		$flow_id = isset( $_POST['flosc_contact_flow'] ) ? sanitize_key( wp_unslash( $_POST['flosc_contact_flow'] ) ) : '';
 		$result  = $this->process_contact_form_submission(
 			array(
-				'first_name'  => isset( $posted['flosc_contact_first_name'] ) ? sanitize_text_field( $posted['flosc_contact_first_name'] ) : '',
-				'last_name'   => isset( $posted['flosc_contact_last_name'] ) ? sanitize_text_field( $posted['flosc_contact_last_name'] ) : '',
-				'email'       => isset( $posted['flosc_contact_email'] ) ? sanitize_text_field( $posted['flosc_contact_email'] ) : '',
-				'phone'       => isset( $posted['flosc_contact_phone'] ) ? sanitize_text_field( $posted['flosc_contact_phone'] ) : '',
-				'message'     => isset( $posted['flosc_contact_message'] ) ? sanitize_textarea_field( $posted['flosc_contact_message'] ) : '',
-				'honeypot'    => isset( $posted['flosc_contact_company'] ) ? sanitize_text_field( $posted['flosc_contact_company'] ) : '',
-				'rendered_at' => isset( $posted['flosc_contact_rendered_at'] ) ? intval( $posted['flosc_contact_rendered_at'] ) : 0,
+				'first_name'  => isset( $_POST['flosc_contact_first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_contact_first_name'] ) ) : '',
+				'last_name'   => isset( $_POST['flosc_contact_last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_contact_last_name'] ) ) : '',
+				'email'       => isset( $_POST['flosc_contact_email'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_contact_email'] ) ) : '',
+				'phone'       => isset( $_POST['flosc_contact_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_contact_phone'] ) ) : '',
+				'message'     => isset( $_POST['flosc_contact_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['flosc_contact_message'] ) ) : '',
+				'honeypot'    => isset( $_POST['flosc_contact_company'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_contact_company'] ) ) : '',
+				'rendered_at' => isset( $_POST['flosc_contact_rendered_at'] ) ? absint( wp_unslash( $_POST['flosc_contact_rendered_at'] ) ) : 0,
 			),
 			$flow_id,
 			array(
@@ -2219,24 +2238,31 @@ trait FLOSC_Admin_Trait {
 			true
 		);
 
-		wp_add_inline_script(
+		/*
+		 * The widget configuration reaches the browser through
+		 * wp_localize_script(), which JSON-encodes it. It sits one level down,
+		 * under 'config', because wp_localize_script() turns top-level scalars
+		 * into strings; nested values keep their types, so showHeaderTokens is
+		 * still the boolean false. The inline call that starts the widget is a
+		 * fixed string with no PHP value in it.
+		 */
+		wp_localize_script(
 			'flosc-companion',
-			sprintf(
-				'FloscCompanion.init(%s);',
-				wp_json_encode(
-					array(
-						'appUrl'           => $app_url,
-						'title'            => $title,
-						'productName'      => $product_name,
-						'headerIconUrl'    => $header_icon,
-						'assistantTitle'   => $product_name ? $product_name : $title,
-						'showHeaderTokens' => false,
-						'headerTokenText'  => '',
-						'accentColor'      => $accent ? $accent : '#2563eb',
-					)
-				)
+			'floscCompanionBoot',
+			array(
+				'config' => array(
+					'appUrl'           => esc_url_raw( $app_url ),
+					'title'            => sanitize_text_field( (string) $title ),
+					'productName'      => $product_name,
+					'headerIconUrl'    => esc_url_raw( (string) $header_icon ),
+					'assistantTitle'   => $product_name ? $product_name : sanitize_text_field( (string) $title ),
+					'showHeaderTokens' => false,
+					'headerTokenText'  => '',
+					'accentColor'      => sanitize_hex_color( (string) $accent ) ? sanitize_hex_color( (string) $accent ) : '#2563eb',
+				),
 			)
 		);
+		wp_add_inline_script( 'flosc-companion', 'FloscCompanion.init( window.floscCompanionBoot.config );' );
 	}
 
 	/**
@@ -2256,6 +2282,10 @@ trait FLOSC_Admin_Trait {
 		$preset = $fm->get_setting( 'flosc_chat_style_preset', 'style', 'preset', 'light' );
 		$bubble = $fm->get_setting( 'flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch' );
 		$accent = $fm->get_setting( 'flosc_chat_style_accent', 'style', 'accent', '' );
+		// The accent is written into a CSS rule below, so it is checked as a CSS
+		// color at this output point: a hex color, or nothing.
+		$accent = sanitize_hex_color( (string) $accent );
+		$accent = $accent ? $accent : '';
 		$font   = $fm->get_setting( 'flosc_chat_style_font', 'style', 'font', 'system' );
 		$scale  = intval( $fm->get_setting( 'flosc_chat_style_scale', 'style', 'scale', 100 ) );
 
@@ -2533,10 +2563,91 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
+	 * Whether every field in this POST request is one piece of text.
+	 *
+	 * Reads only the field names and the PHP type of each value; no value is
+	 * used. A request carrying an array anywhere is refused by the caller,
+	 * which is what the identity screens always did.
+	 *
+	 * The caller has already checked the capability.
+	 *
+	 * @return bool
+	 */
+	private function flosc_posted_fields_are_all_text() {
+		// Same action the identity form prints. check_admin_referer() is
+		// idempotent: the handler already ran it, and running it here keeps the
+		// nonce check inside the function that reads the request.
+		check_admin_referer( 'flosc_save_settings' );
+		foreach ( array_keys( $_POST ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Read one flow's identity fields from the POST request, sanitized at the read.
+	 *
+	 * The all-flows identity screen names each field '<prefix><setting key>'.
+	 * Every matching field is read on its own and passed through the core
+	 * WordPress sanitizer for what that setting holds:
+	 *
+	 * - policy page bodies are HTML the administrator writes: wp_kses_post();
+	 * - policy slugs: sanitize_title();
+	 * - external policy links: esc_url_raw();
+	 * - on/off switches and the status word: sanitize_key();
+	 * - everything else is one line of text: sanitize_text_field().
+	 *
+	 * flosc_apply_posted_identity_fields() then applies the per-key rules it
+	 * always applied. Those rules are unchanged; they now receive values that
+	 * were already sanitized when they left the request.
+	 *
+	 * The caller has already checked the capability.
+	 *
+	 * @param string $prefix Field prefix, including the trailing underscore.
+	 * @return array Setting-prefixed field name => sanitized value.
+	 */
+	private function flosc_read_posted_identity_fields( $prefix ) {
+		$prefix    = (string) $prefix;
+		$html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+		$slug_keys = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+		$url_keys  = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
+		$key_keys  = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link', 'policy_content_management_status' );
+		$fields    = array();
+
+		check_admin_referer( 'flosc_save_settings' );
+
+		foreach ( array_keys( $_POST ) as $flosc_field ) {
+			$flosc_field = (string) $flosc_field;
+			if ( '' === $prefix || 0 !== strpos( $flosc_field, $prefix ) || ! isset( $_POST[ $flosc_field ] ) || ! is_string( $_POST[ $flosc_field ] ) ) {
+				continue;
+			}
+			$setting_key = substr( $flosc_field, strlen( $prefix ) );
+			if ( in_array( $setting_key, $html_keys, true ) ) {
+				$fields[ $flosc_field ] = wp_kses_post( wp_unslash( $_POST[ $flosc_field ] ) );
+			} elseif ( in_array( $setting_key, $slug_keys, true ) ) {
+				$fields[ $flosc_field ] = sanitize_title( wp_unslash( $_POST[ $flosc_field ] ) );
+			} elseif ( in_array( $setting_key, $url_keys, true ) ) {
+				// esc_url_raw() trims leading space itself and encodes a trailing
+				// space as %20; the trailing encoded spaces are removed so a URL
+				// pasted with a stray space is stored as it always was.
+				$fields[ $flosc_field ] = preg_replace( '/(%20)+$/', '', esc_url_raw( wp_unslash( $_POST[ $flosc_field ] ) ) );
+			} elseif ( in_array( $setting_key, $key_keys, true ) ) {
+				$fields[ $flosc_field ] = sanitize_key( wp_unslash( $_POST[ $flosc_field ] ) );
+			} else {
+				$fields[ $flosc_field ] = sanitize_text_field( wp_unslash( $_POST[ $flosc_field ] ) );
+			}
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * Apply one flow's posted identity fields and nest the identity keys.
 	 *
 	 * @param array  $settings Existing settings.
-	 * @param array  $post     Unslashed POST body.
+	 * @param array  $post     Fields from flosc_read_posted_identity_fields(), already sanitized.
 	 * @param string $prefix   Field prefix, including the trailing underscore.
 	 * @return array
 	 */
@@ -2640,17 +2751,17 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_request_is_text( $post ) ) {
+		if ( ! $this->flosc_posted_fields_are_all_text() ) {
 			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '', 'identity', 'all' ), 'That flow could not be saved.', 'error' );
 		}
-		$save_ivr = sanitize_file_name( (string) ( $post['flosc_save_flow'] ?? '' ) );
+		$save_ivr = isset( $_POST['flosc_save_flow'] ) && is_string( $_POST['flosc_save_flow'] ) ? sanitize_file_name( wp_unslash( $_POST['flosc_save_flow'] ) ) : '';
 		$return   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		$row      = $this->flosc_identity_flow_row( $save_ivr );
 		if ( '' === $save_ivr || ! in_array( $save_ivr, $this->flosc_admin_ivr_filenames(), true ) ) {
 			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'That flow could not be saved.', 'error' );
 		}
-		$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $save_ivr ) . '_' );
+		$prefix   = 'flow_' . md5( $save_ivr ) . '_';
+		$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $this->flosc_read_posted_identity_fields( $prefix ), $prefix );
 		update_option( $row['key'], $settings );
 		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '' !== $return ? $return : $save_ivr, 'identity', 'all' ), 'Saved: ' . $save_ivr );
 	}
@@ -2665,14 +2776,14 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_request_is_text( $post ) ) {
+		if ( ! $this->flosc_posted_fields_are_all_text() ) {
 			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '', 'identity', 'all' ), 'The flow identities could not be saved.', 'error' );
 		}
 		$return = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		foreach ( $this->flosc_admin_ivr_filenames() as $ivr_file ) {
 			$row      = $this->flosc_identity_flow_row( $ivr_file );
-			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $ivr_file ) . '_' );
+			$prefix   = 'flow_' . md5( $ivr_file ) . '_';
+			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $this->flosc_read_posted_identity_fields( $prefix ), $prefix );
 			update_option( $row['key'], $settings );
 		}
 		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'All flows saved!' );
@@ -2713,11 +2824,12 @@ trait FLOSC_Admin_Trait {
 		}
 		$posted_ivr                   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
-		$post                         = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flosc_delete_feedback' ) ) ) {
-			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback was not deleted.', 'error' );
+		foreach ( array( 'flosc_delete_feedback' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback was not deleted.', 'error' );
+			}
 		}
-		$delete_id               = sanitize_text_field( (string) ( $post['flosc_delete_feedback'] ?? '' ) );
+		$delete_id               = isset( $_POST['flosc_delete_feedback'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_delete_feedback'] ) ) : '';
 		$items                   = isset( $settings['ai_feedback'] ) && is_array( $settings['ai_feedback'] ) ? $settings['ai_feedback'] : array();
 		$settings['ai_feedback'] = array_values(
 			array_filter(
@@ -2743,20 +2855,18 @@ trait FLOSC_Admin_Trait {
 		}
 		$posted_ivr                   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
-		$post                         = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text(
-			$post,
-			array( 'feedback_user_message', 'feedback_bad_response', 'feedback_admin_note', 'feedback_preferred_response' )
-		) ) {
-			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback needs a user message and a note.', 'error' );
+		foreach ( array( 'feedback_user_message', 'feedback_bad_response', 'feedback_admin_note', 'feedback_preferred_response' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback needs a user message and a note.', 'error' );
+			}
 		}
 		$item = array(
 			'id'                 => uniqid( 'corr_' ),
 			'timestamp'          => current_time( 'mysql' ),
-			'user_message'       => sanitize_textarea_field( (string) ( $post['feedback_user_message'] ?? '' ) ),
-			'bad_response'       => sanitize_textarea_field( (string) ( $post['feedback_bad_response'] ?? '' ) ),
-			'admin_note'         => sanitize_textarea_field( (string) ( $post['feedback_admin_note'] ?? '' ) ),
-			'preferred_response' => sanitize_textarea_field( (string) ( $post['feedback_preferred_response'] ?? '' ) ),
+			'user_message'       => ( isset( $_POST['feedback_user_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['feedback_user_message'] ) ) : '' ),
+			'bad_response'       => ( isset( $_POST['feedback_bad_response'] ) ? sanitize_textarea_field( wp_unslash( $_POST['feedback_bad_response'] ) ) : '' ),
+			'admin_note'         => ( isset( $_POST['feedback_admin_note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['feedback_admin_note'] ) ) : '' ),
+			'preferred_response' => ( isset( $_POST['feedback_preferred_response'] ) ? sanitize_textarea_field( wp_unslash( $_POST['feedback_preferred_response'] ) ) : '' ),
 			'admin_user_id'      => get_current_user_id(),
 		);
 		if ( '' === $item['user_message'] || '' === $item['admin_note'] ) {
@@ -2781,11 +2891,12 @@ trait FLOSC_Admin_Trait {
 		}
 		$posted_ivr                   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
-		$post                         = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flosc_delete_praise' ) ) ) {
-			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise was not deleted.', 'error' );
+		foreach ( array( 'flosc_delete_praise' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise was not deleted.', 'error' );
+			}
 		}
-		$delete_id              = sanitize_text_field( (string) ( $post['flosc_delete_praise'] ?? '' ) );
+		$delete_id              = isset( $_POST['flosc_delete_praise'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_delete_praise'] ) ) : '';
 		$items                  = isset( $settings['ai_praises'] ) && is_array( $settings['ai_praises'] ) ? $settings['ai_praises'] : array();
 		$settings['ai_praises'] = array_values(
 			array_filter(
@@ -2811,19 +2922,17 @@ trait FLOSC_Admin_Trait {
 		}
 		$posted_ivr                   = ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
-		$post                         = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text(
-			$post,
-			array( 'praise_user_message', 'praise_good_response', 'praise_admin_note' )
-		) ) {
-			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise needs a user message and a note.', 'error' );
+		foreach ( array( 'praise_user_message', 'praise_good_response', 'praise_admin_note' ) as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise needs a user message and a note.', 'error' );
+			}
 		}
 		$item = array(
 			'id'            => uniqid( 'praise_' ),
 			'timestamp'     => current_time( 'mysql' ),
-			'user_message'  => sanitize_textarea_field( (string) ( $post['praise_user_message'] ?? '' ) ),
-			'good_response' => sanitize_textarea_field( (string) ( $post['praise_good_response'] ?? '' ) ),
-			'admin_note'    => sanitize_textarea_field( (string) ( $post['praise_admin_note'] ?? '' ) ),
+			'user_message'  => ( isset( $_POST['praise_user_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['praise_user_message'] ) ) : '' ),
+			'good_response' => ( isset( $_POST['praise_good_response'] ) ? sanitize_textarea_field( wp_unslash( $_POST['praise_good_response'] ) ) : '' ),
+			'admin_note'    => ( isset( $_POST['praise_admin_note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['praise_admin_note'] ) ) : '' ),
 			'admin_user_id' => get_current_user_id(),
 		);
 		if ( '' === $item['user_message'] || '' === $item['admin_note'] ) {
@@ -2859,7 +2968,7 @@ trait FLOSC_Admin_Trait {
 	 * An existing flow receives a key only when this form posted it. A new flow
 	 * receives the complete default structure.
 	 *
-	 * @param array $post   Unslashed request body.
+	 * @param array $post   Editor fields read and sanitized by handle_save_flow_record().
 	 * @param bool  $is_new Whether a new flow is being created.
 	 * @return array Flow fields safe to pass to create_flow() or update_flow().
 	 */
@@ -2915,14 +3024,19 @@ trait FLOSC_Admin_Trait {
 		if ( ! $is_new && ( ! function_exists( 'flosc_flows' ) || ! flosc_flows()->can_access_flow_admin( $flow_id ) ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$post = wp_unslash( $_POST );
-		$tab  = ( isset( $post['flosc_return_tab'] ) && flosc_submitted_value_is_text( $post['flosc_return_tab'] ) )
-			? sanitize_key( (string) $post['flosc_return_tab'] )
+		$tab = ( isset( $_POST['flosc_return_tab'] ) && is_string( $_POST['flosc_return_tab'] ) )
+			? sanitize_key( wp_unslash( $_POST['flosc_return_tab'] ) )
 			: 'identity';
 		if ( '' === $tab ) {
 			$tab = 'identity';
 		}
 
+		/*
+		 * Every editor field is read on its own and sanitized at the read, with
+		 * the same core function flosc_flow_record_data() applies when it builds
+		 * the stored record. A field that arrives as a list is refused below
+		 * and the stored flow is left unchanged.
+		 */
 		$flosc_record_text_keys = array(
 			'flosc_return_tab',
 			'flow_slug',
@@ -2942,16 +3056,66 @@ trait FLOSC_Admin_Trait {
 			'visitor_bar_text',
 			'visitor_bar_icon',
 		);
-		$flosc_record_ok        = flosc_submitted_fields_are_text( $post, $flosc_record_text_keys );
-		if ( $flosc_record_ok && isset( $post['visitor_menu_items'] ) ) {
-			if ( ! is_array( $post['visitor_menu_items'] ) ) {
+		$flosc_record_ok        = true;
+		foreach ( $flosc_record_text_keys as $flosc_field ) {
+			if ( isset( $_POST[ $flosc_field ] ) && ! is_string( $_POST[ $flosc_field ] ) ) {
+				$flosc_record_ok = false;
+			}
+		}
+
+		$post = array();
+		if ( $flosc_record_ok ) {
+			if ( isset( $_POST['flow_slug'] ) ) {
+				$post['flow_slug'] = sanitize_title( wp_unslash( $_POST['flow_slug'] ) );
+			}
+			if ( isset( $_POST['flow_domain'] ) ) {
+				$post['flow_domain'] = sanitize_text_field( wp_unslash( $_POST['flow_domain'] ) );
+			}
+			if ( isset( $_POST['flow_status'] ) ) {
+				$post['flow_status'] = sanitize_key( wp_unslash( $_POST['flow_status'] ) );
+			}
+			foreach ( array( 'floscflow_name', 'floscflow_title', 'floscflow_tagline', 'floscflow_share_text', 'floscflow_color', 'wp_category', 'visitor_bar_text', 'visitor_bar_icon' ) as $flosc_field ) {
+				if ( isset( $_POST[ $flosc_field ] ) ) {
+					$post[ $flosc_field ] = sanitize_text_field( wp_unslash( $_POST[ $flosc_field ] ) );
+				}
+			}
+			foreach ( array( 'floscflow_chatlogo', 'floscflow_favicon', 'floscflow_badge' ) as $flosc_field ) {
+				if ( isset( $_POST[ $flosc_field ] ) ) {
+					$post[ $flosc_field ] = esc_url_raw( wp_unslash( $_POST[ $flosc_field ] ) );
+				}
+			}
+			if ( isset( $_POST['ivr_file'] ) && is_string( $_POST['ivr_file'] ) ) {
+				$post['ivr_file'] = sanitize_file_name( wp_unslash( $_POST['ivr_file'] ) );
+			}
+			if ( isset( $_POST['quiz_type'] ) ) {
+				$post['quiz_type'] = sanitize_key( wp_unslash( $_POST['quiz_type'] ) );
+			}
+		}
+
+		// The visitor menu is a list of rows, each with a label and an on/off
+		// value. A row that is not a list, or a label that is not text, refuses
+		// the save.
+		if ( $flosc_record_ok && isset( $_POST['visitor_menu_items'] ) ) {
+			if ( ! is_array( $_POST['visitor_menu_items'] ) ) {
 				$flosc_record_ok = false;
 			} else {
-				foreach ( $post['visitor_menu_items'] as $flosc_menu_item ) {
-					if ( ! is_array( $flosc_menu_item ) || ! flosc_submitted_fields_are_text( $flosc_menu_item, array( 'label', 'enabled' ) ) ) {
+				// map_deep() sanitizes every leaf and leaves the nesting as it
+				// arrived, so the shape can be checked on the sanitized copy.
+				$flosc_menu_rows = map_deep( wp_unslash( $_POST['visitor_menu_items'] ), 'sanitize_text_field' );
+				foreach ( $flosc_menu_rows as $flosc_menu_item ) {
+					if ( ! is_array( $flosc_menu_item ) ) {
 						$flosc_record_ok = false;
 						break;
 					}
+					foreach ( array( 'label', 'enabled' ) as $flosc_menu_field ) {
+						if ( isset( $flosc_menu_item[ $flosc_menu_field ] ) && ! is_string( $flosc_menu_item[ $flosc_menu_field ] ) ) {
+							$flosc_record_ok = false;
+							break 2;
+						}
+					}
+				}
+				if ( $flosc_record_ok ) {
+					$post['visitor_menu_items'] = $flosc_menu_rows;
 				}
 			}
 		}
@@ -2985,7 +3149,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		if ( current_user_can( 'manage_options' ) && isset( $post['visitor_menu_items'] ) && is_array( $post['visitor_menu_items'] ) ) {
-			$menu_post  = map_deep( $post['visitor_menu_items'], 'sanitize_text_field' );
+			$menu_post  = $post['visitor_menu_items'];
 			$menu_items = array();
 			foreach ( $menu_post as $menu_key => $menu_item ) {
 				$menu_item               = is_array( $menu_item ) ? $menu_item : array();
@@ -3039,18 +3203,28 @@ trait FLOSC_Admin_Trait {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Only administrators can update a flow team.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$post = wp_unslash( $_POST );
-		if ( ! is_array( $post ) || ! flosc_submitted_fields_are_text( $post, array( 'flow_id' ) ) ) {
+		if ( isset( $_POST['flow_id'] ) && ! is_string( $_POST['flow_id'] ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		if ( isset( $post['team_users'] ) && ! flosc_submitted_list_is_text( $post['team_users'] ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		// team_users is a flat list of user ids, never one value and never a
+		// nested list.
+		$selected = array();
+		if ( isset( $_POST['team_users'] ) ) {
+			if ( ! is_array( $_POST['team_users'] ) ) {
+				wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+			}
+			$flosc_team_users = map_deep( wp_unslash( $_POST['team_users'] ), 'absint' );
+			foreach ( $flosc_team_users as $flosc_team_user ) {
+				if ( is_array( $flosc_team_user ) ) {
+					wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+				}
+			}
+			$selected = array_map( 'intval', $flosc_team_users );
 		}
-		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$flow_id = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
 		if ( '' === $flow_id || 'new' === $flow_id || ! function_exists( 'flosc_flows' ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$selected    = isset( $post['team_users'] ) ? array_map( 'intval', (array) $post['team_users'] ) : array();
 		$current     = flosc_flows()->get_flow_users( $flow_id );
 		$current_ids = array();
 		foreach ( $current as $user ) {

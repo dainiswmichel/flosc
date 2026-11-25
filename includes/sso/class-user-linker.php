@@ -192,7 +192,7 @@ class User_Linker {
 			return new \WP_Error( 'flosc_sso_invalid_user_data', 'Invalid SSO user data.' );
 		}
 
-		$user_id = wp_insert_user( $user_data_wp );
+		$user_id = \flosc_insert_customer_account( $user_data_wp, $user_data_wp['role'] );
 
 		if ( is_wp_error( $user_id ) ) {
 			return $user_id;

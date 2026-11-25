@@ -53,7 +53,7 @@ function ok( $label, $actual, $expected ) {
 }
 
 $library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
-$page    = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$page    = (string) file_get_contents( $root . '/admin/ai-configuration.php' ) . (string) file_get_contents( $root . '/assets/js/admin/flosc-admin-ai.js' );
 $css     = (string) file_get_contents( $root . '/assets/css/flosc-admin.css' );
 
 echo "The server confirms from storage, not from the request\n";

@@ -851,12 +851,10 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
 			return false;
 		}
 		$user = get_userdata( $user_id );
-		if ( ! $user ) {
+		if ( ! $user || ! flosc_start_user_session( $user_id, 'post_purchase' ) ) {
 			return false;
 		}
 
-		wp_set_current_user( $user_id );
-		wp_set_auth_cookie( $user_id, true );
 		// Core WP login action (required for session-aware plugins).
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
 		do_action( 'wp_login', $user->user_login, $user );

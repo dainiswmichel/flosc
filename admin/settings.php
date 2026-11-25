@@ -405,29 +405,103 @@ if ( $flosc_flow_seed_needed ) {
 $flosc_get = flosc_nav_params();
 
 /*
- * The posted body, read only when this request actually is a POST.
+ * The posted body, sanitized field by field as it is read.
  *
- * The T13 review's objection to file-scope reads was not only about nonces:
- * "Don't check for post submission outside of functions. Doing so means that
- * the check will run on every single load of the plugin." On a GET -- every
- * render of every tab -- the old line unslashed the whole superglobal to
- * produce an empty array.
+ * The settings form posts about 250 fields, some named at runtime such as
+ * "{state}_pill_icon", and the save branches below and the DA1 tab include
+ * read them from $flosc_post. Every field is therefore read here, once, and
+ * passes through a core WordPress sanitizer on the way in. Nothing in
+ * $flosc_post is an unsanitized copy of the request.
  *
- * On a GET, $_POST is empty, so wp_unslash( $_POST ) and array() are the same
- * value. This changes when the read happens, not what any caller receives.
- * It deliberately stays at file scope: the six nonce checks below satisfy
- * WPCS for this scope, and moving the read into a function would take it out
- * of that scope and report an error where there is no defect.
+ * Which sanitizer a field receives follows what the save code does with it:
  *
- * It is not converted to a declared key list. $flosc_post is read with 251
- * distinct keys here and in seven tab includes, ten of them built at runtime
- * such as $flosc_post[ $state . '_pill_icon' ]. An allowlist would silently
- * drop whichever field nobody declared.
+ * - Policy page bodies and the personality profile are admin-authored HTML
+ *   or Markdown: wp_kses_post(), which keeps newlines, links and allowed
+ *   markup.
+ * - Fields that are only ever stored as URLs: esc_url_raw().
+ * - Every other field: sanitize_textarea_field(). It keeps newlines, so the
+ *   multi-line fields (prompts, email bodies, provider request lines) arrive
+ *   intact; the single-line fields are still passed through
+ *   sanitize_text_field(), sanitize_key(), absint() and the rest in the save
+ *   code, exactly as before.
+ *
+ * Lists keep their shape (map_deep), so the shape checks in the save code
+ * still refuse a list posted into a one-value field. A field whose name is
+ * not a plain identifier is not read. On a GET nothing is read at all.
  */
-$flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
+$flosc_method                 = isset( $_SERVER['REQUEST_METHOD'] )
 	? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
 	: '';
-$flosc_post   = ( 'POST' === $flosc_method ) ? wp_unslash( $_POST ) : array();
+$flosc_post                   = array();
+$flosc_settings_post_verified = false;
+if ( 'POST' === $flosc_method ) {
+	// Only this screen's save branches and the DA1 tab use the shared body.
+	// Other tabs read their own fields after verifying their own form nonce.
+	$flosc_settings_post_routes = array(
+		'flosc_toggle_trajectory_post' => array( 'flosc_toggle_trajectory_post', 'flosc_toggle_trajectory_nonce' ),
+		'flosc_create_concierge_post'  => array( 'flosc_create_concierge_post', 'flosc_concierge_create_nonce' ),
+		'flosc_create_trajectory_post' => array( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' ),
+		'flosc_save'                   => array( 'flosc_save_settings', '_wpnonce' ),
+	);
+	if ( 'da1' === ( $flosc_get['tab'] ?? '' ) && current_user_can( 'manage_options' ) ) {
+		$flosc_settings_post_routes += array(
+			'flosc_da1_create_catalog'  => array( 'flosc_da1_catalog_manage', '_wpnonce' ),
+			'flosc_da1_assign_catalogs' => array( 'flosc_da1_catalog_manage', '_wpnonce' ),
+			'flosc_da1_attach_flows'    => array( 'flosc_da1_catalog_manage', '_wpnonce' ),
+			'flosc_da1_upload_catalog'  => array( 'flosc_da1_catalog_manage', '_wpnonce' ),
+			'da1_save_catalog'          => array( 'da1_catalog_save', '_wpnonce' ),
+		);
+	}
+
+	foreach ( $flosc_settings_post_routes as $flosc_post_marker => $flosc_post_nonce ) {
+		if ( isset( $_POST[ $flosc_post_marker ] ) ) {
+			check_admin_referer( $flosc_post_nonce[0], $flosc_post_nonce[1] );
+			$flosc_settings_post_verified = true;
+			break;
+		}
+	}
+}
+
+if ( $flosc_settings_post_verified ) {
+	$flosc_posted_html_keys = array(
+		'flow_privacy_policy_content',
+		'flow_terms_of_service_content',
+		'flow_data_deletion_content',
+		'flow_platform_compliance_content',
+		'flow_ai_base_prompt',
+	);
+	$flosc_posted_url_keys  = array(
+		'flow_privacy_policy_external_url',
+		'flow_terms_of_service_external_url',
+		'flow_data_deletion_external_url',
+		'flow_platform_compliance_external_url',
+		'flow_companion_header_icon_url',
+		'flow_companion_hub_fullscreen_url',
+		'flow_companion_hub_companion_url',
+		'flow_companion_chat_app_url',
+		'profile_bar_visitor_icon_url',
+		'profile_bar_guest_icon_url',
+		'profile_bar_member_icon_url',
+		'flosc_login_destination',
+	);
+	foreach ( array_keys( $_POST ) as $flosc_posted_key ) {
+		if ( ! is_string( $flosc_posted_key ) || ! preg_match( '/^[A-Za-z0-9_\-]+$/', $flosc_posted_key ) || ! isset( $_POST[ $flosc_posted_key ] ) ) {
+			continue;
+		}
+		if ( 'da1_payload' === $flosc_posted_key ) {
+			// The DA1 handler reads and validates the JSON independently.
+			continue;
+		}
+		if ( in_array( $flosc_posted_key, $flosc_posted_html_keys, true ) ) {
+			$flosc_post[ $flosc_posted_key ] = map_deep( wp_unslash( $_POST[ $flosc_posted_key ] ), 'wp_kses_post' );
+		} elseif ( in_array( $flosc_posted_key, $flosc_posted_url_keys, true ) ) {
+			$flosc_post[ $flosc_posted_key ] = map_deep( wp_unslash( $_POST[ $flosc_posted_key ] ), 'esc_url_raw' );
+		} else {
+			$flosc_post[ $flosc_posted_key ] = map_deep( wp_unslash( $_POST[ $flosc_posted_key ] ), 'sanitize_textarea_field' );
+		}
+	}
+	unset( $flosc_posted_key, $flosc_posted_html_keys, $flosc_posted_url_keys );
+}
 // redirect_to_settings_tab() sets flosc_forced_tab when headers are already
 // sent and it cannot redirect. It takes precedence over the URL because it is
 // the tab the admin actually asked for.
@@ -2586,34 +2660,12 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		<?php
 		// One notice only (bottom duplicate removed). After PRG reload, bring it into view
 		// and drop ?saved=1 so refresh does not re-flash the banner.
-		wp_add_inline_script(
-			'flosc-admin',
-			flosc_capture_output(
-				static function () {
-					?>
-		(function () {
-			var notice = document.getElementById('flosc-save-feedback');
-			if (notice) {
-				try {
-					notice.focus({ preventScroll: true });
-				} catch (e) {
-					try { notice.focus(); } catch (e2) { /* ignore */ }
-				}
-				if (typeof notice.scrollIntoView === 'function') {
-					notice.scrollIntoView({ behavior: 'smooth', block: 'start' });
-				}
-			}
-			try {
-				var url = new URL(window.location.href);
-				if (url.searchParams.has('saved')) {
-					url.searchParams.delete('saved');
-					window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
-				}
-			} catch (e3) { /* ignore */ }
-		})();
-					<?php
-				}
-			)
+		wp_enqueue_script(
+			'flosc-admin-settings-saved',
+			FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-settings-saved.js',
+			array( 'flosc-admin' ),
+			FLOSC_VERSION,
+			true
 		);
 		?>
 	<?php endif; ?>
@@ -2703,81 +2755,18 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	</div>
 	
 	<?php
-	wp_add_inline_script(
-		'flosc-admin',
-		flosc_capture_output(
-			static function () use ( $flosc_active_tab, $flosc_identity_view ) {
-				?>
-	function switchIVR(ivr) {
-		const form = document.getElementById('flosc-working-flow-form');
-		const field = document.getElementById('flosc-working-flow-ivr');
-		if (!form || !field) {
-			return;
-		}
-		field.value = ivr;
-		form.submit();
-	}
-
-	(function () {
-		const ivrSelect = document.getElementById('ivr-select');
-		if (ivrSelect) {
-			ivrSelect.addEventListener('change', function () {
-				switchIVR(this.value);
-			});
-		}
-
-		const detailsToggle = document.getElementById('flosc-flow-selector-details-toggle');
-		const detailsPanel = document.getElementById('flosc-flow-selector-details-panel');
-		if (detailsToggle && detailsPanel) {
-			detailsToggle.addEventListener('click', function () {
-				const isOpen = detailsToggle.getAttribute('aria-expanded') === 'true';
-				const nextOpen = !isOpen;
-				detailsToggle.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
-				detailsToggle.classList.toggle('is-open', nextOpen);
-				if (nextOpen) {
-					detailsPanel.removeAttribute('hidden');
-				} else {
-					detailsPanel.setAttribute('hidden', '');
-				}
-			});
-		}
-
-		const tab = '<?php echo esc_js( $flosc_active_tab ); ?>';
-		const tabTitles = {
-			'flow': 'Flow',
-			'identity': 'Identity',
-			'ivr-messages': 'IVR Management',
-			'autoprompts': 'AutoPrompt Panel',
-			'content': 'Content',
-			'member-levels': 'Content',
-			'lessons': 'Content',
-			'knowledge-base': 'Knowledge Base',
-			'trajectories': 'Trajectories',
-			'offers': 'Offers',
-			'login': 'Register and Login',
-			'style': 'Style and Nav',
-			'ui': 'Profile Bar',
-			'ai': 'AI',
-			'token-management': 'Token Management',
-			'concierge': 'Concierge',
-			'quiz': 'Quiz',
-			'email': 'Email',
-			'contact-form': 'Contact Form',
-			'payments': 'Payments',
-			
-			'sso': 'SSO',
-			'engagement': 'Engagement',
-			'chat-logs': 'Chat Logs',
-			'administration': 'Administration',
-			'documentation': 'Docs',
-			'da1': 'DA1'
-		};
-
-		const section = tabTitles[tab] || 'Settings';
-		document.title = section + ' < Settings < FLOSC';
-	})();
-				<?php
-			}
+	wp_enqueue_script(
+		'flosc-admin-settings',
+		FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-settings.js',
+		array( 'flosc-admin' ),
+		FLOSC_VERSION,
+		true
+	);
+	wp_localize_script(
+		'flosc-admin-settings',
+		'floscAdminSettings',
+		array(
+			'tab' => $flosc_active_tab,
 		)
 	);
 	?>
@@ -3470,29 +3459,14 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 							</span>
 							<p class="description">Lesson highlights, form buttons, focus rings, carousel controls. Sets <code>--flosc-primary</code>.</p>
 							<?php
-							wp_add_inline_script(
-								'flosc-admin',
-								flosc_capture_output(
-									static function () {
-										?>
-							(function () {
-								var input = document.getElementById('flow_primary_color');
-								var preview = document.getElementById('color-preview');
-								if (!input || !preview) return;
-								function syncPreview(hex) {
-									preview.setAttribute('data-color', hex);
-									preview.style.setProperty('--flosc-preview-bg', hex);
-								}
-								syncPreview(preview.getAttribute('data-color') || input.value || '#4f46e5');
-								input.addEventListener('input', function (e) {
-									syncPreview(e.target.value);
-								});
-							})();
-										<?php
-									}
-								)
+							wp_enqueue_script(
+								'flosc-admin-settings-identity',
+								FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-settings-identity.js',
+								array( 'flosc-admin' ),
+								FLOSC_VERSION,
+								true
 							);
-				?>
+							?>
 						</td>
 					</tr>
 					<tr>
@@ -3698,35 +3672,15 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				</table>
 				
 				<?php
-				wp_add_inline_script(
-					'flosc-admin',
-					flosc_capture_output(
-						static function () {
-							?>
-				(function() {
-					function setupMediaButton(buttonId, inputId, previewId) {
-						var btn = document.getElementById(buttonId);
-						if (!btn) return;
-						btn.addEventListener('click', function(e) {
-							e.preventDefault();
-							var frame = wp.media({ title: 'Choose Image', multiple: false, library: { type: 'image' } });
-							frame.on('select', function() {
-								var url = frame.state().get('selection').first().toJSON().url;
-								document.getElementById(inputId).value = url;
-								var preview = document.getElementById(previewId);
-								preview.src = url;
-								preview.style.display = '';
-							});
-							frame.open();
-						});
-					}
-					setupMediaButton('flosc_upload_chatlogo', 'flow_chatlogo_url', 'flosc_chatlogo_preview');
-					setupMediaButton('flosc_upload_favicon', 'flow_favicon_url', 'flosc_favicon_preview');
-					setupMediaButton('flosc_upload_badge', 'flow_badgeUrl', 'flosc_badge_preview');
-				})();
-							<?php
-						}
-					)
+				// Same file as the brand-colour preview above; enqueueing an
+				// already-enqueued handle is a no-op, so the media pickers load
+				// whichever of the two points this render reaches.
+				wp_enqueue_script(
+					'flosc-admin-settings-identity',
+					FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-settings-identity.js',
+					array( 'flosc-admin' ),
+					FLOSC_VERSION,
+					true
 				);
 				?>
 				

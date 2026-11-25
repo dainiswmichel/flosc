@@ -296,22 +296,24 @@ class FLOSC_Companion_Widget {
 			}
 		}
 
-		wp_add_inline_script(
+		// The widget's data reaches the browser as window.FLOSC_COMPANION through
+		// wp_localize_script(), which prints it just before flosc-companion.js.
+		// restUrl and nonce are strings; user, page and settings are nested and
+		// keep their types.
+		wp_localize_script(
 			'flosc-companion',
-			'window.FLOSC_COMPANION = ' . wp_json_encode(
-				array(
-					'restUrl'  => rest_url( 'flosc/v1/' ),
-					'nonce'    => wp_create_nonce( 'wp_rest' ),
-					'user'     => $user_data,
-					'page'     => $page_context,
-					'settings' => array(
-						'position' => $settings['position'],
-						'greeting' => $settings['greeting'],
-						'mode'     => $settings['content_display_mode'],
-					),
-				)
-			) . ';',
-			'before'
+			'FLOSC_COMPANION',
+			array(
+				'restUrl'  => esc_url_raw( rest_url( 'flosc/v1/' ) ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'user'     => $user_data,
+				'page'     => $page_context,
+				'settings' => array(
+					'position' => $settings['position'],
+					'greeting' => $settings['greeting'],
+					'mode'     => $settings['content_display_mode'],
+				),
+			)
 		);
 
 		?>

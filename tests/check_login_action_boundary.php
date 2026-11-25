@@ -78,7 +78,7 @@ flosc_ok(
 );
 
 $guest = flosc_slice( $fw, 'function handle_update_guest_profile', 'function generate_username_from_email' );
-flosc_ok( 'password change does not fire wp_login', false !== strpos( $guest, 'wp_set_password(' ) && false === strpos( $guest, $action ) );
+flosc_ok( 'password change goes through core wp_update_user and does not fire wp_login', false !== strpos( $guest, "'user_pass'" ) && false !== strpos( $guest, 'wp_update_user(' ) && false === strpos( $guest, 'wp_set_password(' ) && false === strpos( $guest, 'wp_set_auth_cookie(' ) && false === strpos( $guest, $action ) );
 
 $purchase = flosc_slice( $paths, 'function flosc_issue_post_purchase_session', 'function flosc_paypal_purchase_intent_get' );
 if ( '' === $purchase ) {
@@ -90,7 +90,23 @@ flosc_ok(
 );
 
 $log_in = flosc_slice( $oauth, 'function log_user_in', 'function generate_login_token' );
-flosc_ok( 'OAuth callback does not fire wp_login', false === strpos( $log_in, $action ) && false !== strpos( $log_in, 'wp_set_auth_cookie(' ) );
+flosc_ok( 'OAuth callback does not fire wp_login', false === strpos( $log_in, $action ) && false !== strpos( $log_in, 'flosc_start_user_session( $user_id, \'sso\' )' ) );
+
+// The one place FLOSC starts a session.
+$accounts = file_get_contents( $flosc_root . '/includes/flosc-accounts.php' );
+$session  = flosc_slice( $accounts, 'function flosc_start_user_session', 'NO_SUCH_MARKER' );
+if ( '' === $session ) {
+	$session = substr( $accounts, (int) strpos( $accounts, 'function flosc_start_user_session' ) );
+}
+flosc_ok( 'session helper holds the only wp_set_auth_cookie in its file', 1 === substr_count( $accounts, 'wp_set_auth_cookie( $user->ID, true );' ) );
+flosc_ok(
+	'session helper refuses privileged accounts outside SSO before setting the cookie',
+	false !== strpos( $session, '\'sso\' !== $context && flosc_user_requires_core_login( $user )' )
+		&& strpos( $session, 'flosc_user_requires_core_login( $user )' ) < strpos( $session, 'wp_set_auth_cookie( $user->ID' )
+);
+foreach ( array( 'trait' => $trait, 'framework' => $fw, 'data paths' => $paths, 'oauth' => $oauth ) as $flosc_name => $flosc_src ) {
+	flosc_ok( $flosc_name . ' sets no auth cookie directly', false === strpos( $flosc_src, 'wp_set_auth_cookie( $' ) );
+}
 
 flosc_ok(
 	'login count increments inside the wp_login handler',

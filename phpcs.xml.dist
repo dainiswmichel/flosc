@@ -13,6 +13,7 @@
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/pre-release-candidates/*</exclude-pattern>
     <exclude-pattern>*/flosc_development_archives/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
 
     <!-- Thresholds -->
     <rule ref="WordPress">

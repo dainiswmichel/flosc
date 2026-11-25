@@ -488,21 +488,44 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage AI providers.', 'flosc' ) );
 		}
 		check_admin_referer( 'flosc_save_available_providers' );
-		$posted_request = wp_unslash( $_POST );
-		if ( ! is_array( $posted_request )
-			|| ( isset( $posted_request['avail_api_key'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_api_key'] ) )
-			|| ( isset( $posted_request['avail_clear'] ) && ! flosc_submitted_list_is_text( $posted_request['avail_clear'] ) )
-			|| ! flosc_submitted_fields_are_text( $posted_request, array( 'flosc_return_ivr' ) ) ) {
-			wp_die( esc_html__( 'Invalid provider settings request.', 'flosc' ), '', array( 'response' => 400 ) );
-		}
 
+		/*
+		 * avail_api_key and avail_clear are flat lists keyed by provider slug.
+		 * Each is read with map_deep( wp_unslash(), 'sanitize_text_field' ),
+		 * which sanitizes every value and keeps any nesting as it arrived, so a
+		 * nested list is detected on the sanitized copy and refused. The same
+		 * function applied to these keys before; provider keys are letters,
+		 * digits, '-', '_' and '.', which sanitize_text_field() leaves alone.
+		 */
+		$flosc_request_ok = true;
+		if ( isset( $_POST['flosc_return_ivr'] ) && ! is_string( $_POST['flosc_return_ivr'] ) ) {
+			$flosc_request_ok = false;
+		}
 		$posted = array();
-		if ( isset( $posted_request['avail_api_key'] ) ) {
-			$posted = array_map( 'sanitize_text_field', $posted_request['avail_api_key'] );
+		if ( isset( $_POST['avail_api_key'] ) ) {
+			if ( ! is_array( $_POST['avail_api_key'] ) ) {
+				$flosc_request_ok = false;
+			} else {
+				$posted = map_deep( wp_unslash( $_POST['avail_api_key'] ), 'sanitize_text_field' );
+			}
 		}
 		$clear = array();
-		if ( isset( $posted_request['avail_clear'] ) ) {
-			$clear = array_map( 'sanitize_text_field', $posted_request['avail_clear'] );
+		if ( isset( $_POST['avail_clear'] ) ) {
+			if ( ! is_array( $_POST['avail_clear'] ) ) {
+				$flosc_request_ok = false;
+			} else {
+				$clear = map_deep( wp_unslash( $_POST['avail_clear'] ), 'sanitize_text_field' );
+			}
+		}
+		foreach ( array( $posted, $clear ) as $flosc_list ) {
+			foreach ( $flosc_list as $flosc_list_value ) {
+				if ( ! is_string( $flosc_list_value ) ) {
+					$flosc_request_ok = false;
+				}
+			}
+		}
+		if ( ! $flosc_request_ok ) {
+			wp_die( esc_html__( 'Invalid provider settings request.', 'flosc' ), '', array( 'response' => 400 ) );
 		}
 
 		$all = flosc_available_providers_get_all();
@@ -532,8 +555,8 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 
 		// Redirect target after the save above, which verified its own nonce and
 		// capability before writing. Only picks a tab on this site's admin.php.
-		$ivr = isset( $posted_request['flosc_return_ivr'] )
-			? sanitize_file_name( $posted_request['flosc_return_ivr'] )
+		$ivr = isset( $_POST['flosc_return_ivr'] ) && is_string( $_POST['flosc_return_ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
 			: '';
 		wp_safe_redirect(
 			add_query_arg(

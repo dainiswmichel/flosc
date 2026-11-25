@@ -81,6 +81,15 @@ foreach ( $flosc_da1_table as $flosc_da1_cells ) {
 		}
 		$flosc_da1_row[ $flosc_da1_column ] = (string) ( $flosc_da1_cells[ $flosc_da1_column_index ] ?? '' );
 	}
+	// This scenario needs three distinct access tiers. The sample pack's
+	// current access defaults are editable, so set the tiers for the test.
+	$flosc_da1_row_key = $flosc_da1_row['Row Key'] ?? '';
+	$flosc_da1_row['VGM'] = 'Member';
+	if ( in_array( $flosc_da1_row_key, array( '1', '11', '21', '35' ), true ) ) {
+		$flosc_da1_row['VGM'] = 'Visitor Guest Member';
+	} elseif ( in_array( $flosc_da1_row_key, array( '2', '12', '22', '36' ), true ) ) {
+		$flosc_da1_row['VGM'] = 'Guest Member';
+	}
 	$flosc_da1_rows[] = $flosc_da1_row;
 }
 

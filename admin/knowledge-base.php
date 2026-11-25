@@ -277,34 +277,4 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 <?php endforeach; ?>
 
 <?php
-wp_add_inline_script(
-	'flosc-admin',
-	flosc_capture_output(
-		static function () {
-			?>
-(function () {
-	document.querySelectorAll('.flosc-kb-dropzone').forEach(function (zone) {
-		var input = zone.querySelector('input[type="file"]');
-		if (!input) return;
-		zone.addEventListener('dragover', function (e) {
-			e.preventDefault();
-			zone.classList.add('is-drag');
-		});
-		zone.addEventListener('dragleave', function () {
-			zone.classList.remove('is-drag');
-		});
-		zone.addEventListener('drop', function (e) {
-			e.preventDefault();
-			zone.classList.remove('is-drag');
-			if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-				input.files = e.dataTransfer.files;
-				var form = zone.closest('form');
-				if (form) form.submit();
-			}
-		});
-	});
-})();
-			<?php
-		}
-	)
-);
+wp_enqueue_script( 'flosc-admin-knowledge-base', FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-knowledge-base.js', array( 'flosc-admin' ), FLOSC_VERSION, true );

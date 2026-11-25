@@ -39,7 +39,7 @@ $required = array(
 	'#flow_ai_provider'      => 'the provider picker',
 );
 
-$src = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$src = (string) file_get_contents( $root . '/assets/js/admin/flosc-admin-ai.js' );
 
 if ( ! preg_match( '/jQuery\(document\)\.ready\(function\s*\(\$\)\s*\{/', $src, $m, PREG_OFFSET_CAPTURE ) ) {
 	echo "FAIL no inline jQuery ready block found\n";
@@ -47,7 +47,7 @@ if ( ! preg_match( '/jQuery\(document\)\.ready\(function\s*\(\$\)\s*\{/', $src, 
 }
 
 $start = (int) $m[0][1];
-$end   = strpos( $src, 'wp_add_inline_script', $start );
+$end   = strlen( $src );
 $end   = ( false === $end ) ? strlen( $src ) : $end;
 $block = substr( $src, $start, $end - $start );
 $close = strrpos( $block, '});' );
@@ -102,6 +102,8 @@ global.window = { setTimeout: setTimeout, clearTimeout: clearTimeout, location: 
 global.document = { activeElement: null, createTextNode: function (t) { return { t: t }; }, getElementById: function () { return null; } };
 global.alert = function () {};
 global.confirm = function () { return true; };
+// v200: on the page, wp_localize_script() defines this before the script runs.
+global.floscAdminAi = { i18n: {}, paramRef: {}, paramsByProvider: {}, providerDocs: {}, providerParamDocs: {}, providerRejects: {}, paramModelNotes: {}, paramRecipes: {}, samplingExclusive: [], attachNonce: '', testAiNonce: '', accuracyNonce: '', ivr: '' };
 
 var required = require('./required.json');
 var fail = 0;

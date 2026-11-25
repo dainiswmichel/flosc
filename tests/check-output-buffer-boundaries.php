@@ -45,8 +45,10 @@ foreach ( $flosc_items as $flosc_item ) {
 }
 
 $flosc_helper = $flosc_php['includes/flosc-output-buffer.php'] ?? '';
-if ( 37 !== $flosc_calls ) {
-	$flosc_failures[] = 'expected the helper definition plus 36 capture calls, found ' . $flosc_calls;
+// v200: inline admin JavaScript moved to enqueued files. Two captures remain:
+// the contact-form shortcode markup and the WordPress Importer's HTML.
+if ( 3 !== $flosc_calls ) {
+	$flosc_failures[] = 'expected the helper definition plus 2 capture calls, found ' . $flosc_calls;
 }
 if ( 1 !== $flosc_opens ) {
 	$flosc_failures[] = 'expected one shipped ob_start() call, found ' . $flosc_opens;
@@ -77,16 +79,7 @@ if ( false !== strpos( $flosc_helper, 'ob_end_flush(' ) ) {
 }
 
 $flosc_required_scope = array(
-	'admin/chat-logs.php'          => array( '$flosc_chat_logs_nonce', '$flosc_session_scope', '$flosc_current_flow_id', '$flosc_recent_logs', '$flosc_selected_user_id' ),
-	'admin/chat-navigation.php'    => array( '$flosc_available_actions' ),
-	'admin/chat-styling.php'       => array( '$flosc_bubble_styles' ),
-	'admin/content.php'            => array( '$flosc_enabled_quizzes', '$flosc_quiz_label_map', '$flosc_categories', '$flosc_tags', '$flosc_saved_levels', '$flosc_vgm_tiers', '$flosc_vgm_depths' ),
-	'admin/da1.php'                => array( '$flosc_da1_columns', '$flosc_da1_ncols', '$flosc_da1_multiline_idx' ),
-	'admin/flosc-app.php'          => array( '$flow_settings', '$user_state', '$user_data', '$flow_id', '$offers', '$admin_test_offers', '$identity', '$flosc_user', '$flosc_login_return_url', '$flosc_is_companion_embed', '$flosc_visitor_name', '$flosc_visitor_role', '$flosc_visitor_wallet_initial', '$flosc_visitor_wallet_initial_display', '$flosc_real_millicents_per_message', '$flosc_visitor_label_base', '&$flosc_ajax_url' ),
-	'admin/login-registration.php' => array( '$flosc_guest_link_name' ),
-	'admin/member-levels.php'      => array( '$flosc_categories', '$flosc_tags', '$flosc_saved_levels', '$flosc_vgm_tiers', '$flosc_vgm_depths' ),
-	'admin/settings.php'           => array( '$flosc_active_tab', '$flosc_identity_view' ),
-	'includes/flosc-admin.php'     => array( '$settings', '$status', '$show_form', '$current_url', '$rendered_at', '$honeypot_name' ),
+	'includes/flosc-admin.php' => array( '$settings', '$status', '$show_form', '$current_url', '$rendered_at', '$honeypot_name' ),
 );
 foreach ( $flosc_required_scope as $flosc_file => $flosc_variables ) {
 	$flosc_use_lists = array();
@@ -200,5 +193,5 @@ if ( ! empty( $flosc_failures ) ) {
 }
 
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writes CLI audit output to standard output.
-fwrite( STDOUT, "output buffer boundary passed: 36 captures, one owner, non-removable stop verified\n" );
+fwrite( STDOUT, "output buffer boundary passed: 2 captures, one owner, non-removable stop verified\n" );
 exit( 0 );

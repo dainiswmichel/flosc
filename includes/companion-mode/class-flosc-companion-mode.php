@@ -423,25 +423,32 @@ class FLOSC_Companion_Mode {
 		}
 
 		$queried_post_id = (int) get_queried_object_id();
-		if ( $queried_post_id > 0 ) {
-			wp_add_inline_script(
-				'flosc-companion',
-				sprintf(
-					'(function(){var id=%1$d;if(id>0&&document.body){document.body.setAttribute("data-flosc-post-id",String(id));}})();',
-					$queried_post_id
-				),
-				'before'
-			);
-		}
 
 		$companion_config = array_merge( $companion_config, $this->get_host_auth_config( $flow_id ) );
 
+		/*
+		 * The configuration reaches the browser through wp_localize_script(),
+		 * which JSON-encodes it. It sits one level down, under 'boot', because
+		 * wp_localize_script() turns top-level scalars into strings; nested
+		 * values keep their types, so booleans and numbers in the config arrive
+		 * as they always did. The inline script that marks the post id on
+		 * <body> and starts the widget is a fixed string with no PHP value in
+		 * it. The object name differs from the [flosc] shortcode's
+		 * floscCompanionBoot, so the two never overwrite each other.
+		 */
+		wp_localize_script(
+			'flosc-companion',
+			'floscCompanionModeBoot',
+			array(
+				'boot' => array(
+					'postId' => max( 0, $queried_post_id ),
+					'config' => $companion_config,
+				),
+			)
+		);
 		wp_add_inline_script(
 			'flosc-companion',
-			sprintf(
-				'FloscCompanion.init(%s);',
-				wp_json_encode( $companion_config )
-			)
+			'(function(){var b=(window.floscCompanionModeBoot||{}).boot||{};var id=parseInt(b.postId,10)||0;if(id>0&&document.body){document.body.setAttribute("data-flosc-post-id",String(id));}FloscCompanion.init(b.config||{});})();'
 		);
 	}
 

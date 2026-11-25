@@ -352,29 +352,22 @@ class SSO_Manager {
         '
 		);
 
-		// Add click handler script
-		// v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
-		// §12: attached via an inline-only script handle.
-		wp_register_script( 'flosc-sso', false, array(), FLOSC_VERSION, true );
-		wp_enqueue_script( 'flosc-sso' );
-		wp_add_inline_script(
+		// Click handler for the SSO buttons. The script is a static file; the
+		// one value it needs, the REST authorize base URL, is passed as data.
+		// rest_url() already accounts for non-pretty permalinks.
+		wp_enqueue_script(
 			'flosc-sso',
-			'
-        document.addEventListener("DOMContentLoaded", function() {
-            document.querySelectorAll(".flosc-sso-button").forEach(function(btn) {
-                btn.addEventListener("click", function() {
-                    var provider = this.dataset.provider;
-                    // v1.5.0: Extract redirect_to from URL params (e.g. wp-login.php?redirect_to=flosc.ai)
-                    // instead of capturing the login page URL itself
-                    var urlParams = new URLSearchParams(window.location.search);
-                    var redirectTo = urlParams.get("redirect_to") || window.location.href;
-                    var baseUrl = ' . wp_json_encode( rest_url( 'flosc/v1/sso/authorize/' ) ) . ' + provider;
-                    var separator = baseUrl.indexOf("?") !== -1 ? "&" : "?";
-                    window.location.href = baseUrl + separator + "redirect_to=" + encodeURIComponent(redirectTo);
-                });
-            });
-        });
-        '
+			FLOSC_PLUGIN_URL . 'assets/js/flosc-sso-buttons.js',
+			array(),
+			(string) filemtime( FLOSC_PLUGIN_DIR . 'assets/js/flosc-sso-buttons.js' ),
+			true
+		);
+		wp_localize_script(
+			'flosc-sso',
+			'floscSsoButtons',
+			array(
+				'authorizeBase' => esc_url_raw( rest_url( 'flosc/v1/sso/authorize/' ) ),
+			)
 		);
 	}
 
@@ -414,10 +407,22 @@ class SSO_Manager {
 			add_action(
 				'wp_footer',
 				function () use ( $error_message ) {
-					// §12: emit via an inline-only script handle.
-					wp_register_script( 'flosc-sso-error', false, array(), FLOSC_VERSION, true );
-					wp_enqueue_script( 'flosc-sso-error' );
-					wp_add_inline_script( 'flosc-sso-error', 'window.flosc_sso_error = ' . wp_json_encode( $error_message ) . ';' );
+					// The message travels as data through wp_localize_script();
+					// flosc-sso-error.js hands it to flosc-app.js.
+					wp_enqueue_script(
+						'flosc-sso-error',
+						FLOSC_PLUGIN_URL . 'assets/js/flosc-sso-error.js',
+						array(),
+						(string) filemtime( FLOSC_PLUGIN_DIR . 'assets/js/flosc-sso-error.js' ),
+						true
+					);
+					wp_localize_script(
+						'flosc-sso-error',
+						'floscSsoErrorData',
+						array(
+							'message' => wp_strip_all_tags( (string) $error_message ),
+						)
+					);
 				}
 			);
 		}

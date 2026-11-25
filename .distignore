@@ -65,6 +65,7 @@ ai_configuration_files/flosc_default_br3nda_emotional_support_ivr.md
 
 # Workspace-only plans and scratch (documentation ships — see flosc_documentation/ + admin/docs/)
 sample-data/
+reference-documentation/
 dev_notes.md
 claude.md
 tech_summary.md

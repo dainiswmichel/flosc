@@ -482,35 +482,35 @@ flosc_tabscope_assert(
 	array() === $flosc_missing
 );
 
-echo "\nThe stock WordPress standard can see all five custom-sanitizer boundaries\n";
+echo "\nReviewer-cited reads retain their field-specific sanitizers\n";
 
 $flosc_personality = flosc_tabscope_read( 'includes/flosc-personality-library.php' );
 $flosc_api_filters = preg_match_all(
-	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_api_secret' \)/",
+	'/flosc_sanitize_api_secret\( wp_strip_all_tags\( wp_unslash\( \$_POST\[\x27api_key\x27\] \) \) \)/',
 	$flosc_fw,
 	$flosc_api_matches
 );
 $flosc_profile_filters = preg_match_all(
-	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_personality_profile_text' \)/",
+	'/flosc_sanitize_personality_profile_text\( sanitize_textarea_field\( wp_unslash\( \$_POST\[\x27ai_base_prompt\x27\] \) \) \)/',
 	$flosc_personality,
 	$flosc_profile_matches
 );
 $flosc_workshop_filters = preg_match_all(
-	"/FILTER_CALLBACK,\s*array\( 'options' => 'flosc_sanitize_personality_workshop' \)/",
+	'/flosc_sanitize_personality_workshop\( \$workshop_posted \)/',
 	$flosc_personality,
 	$flosc_workshop_matches
 );
 
 flosc_tabscope_assert(
-	'the three provider-key request reads use the byte-preserving callback',
+	'the three provider-key request reads preserve token punctuation',
 	3 === $flosc_api_filters
 );
 flosc_tabscope_assert(
-	'the personality profile request uses its Markdown-preserving callback',
+	'the personality profile request retains its multiline sanitizer',
 	1 === $flosc_profile_filters
 );
 flosc_tabscope_assert(
-	'the workshop request uses its validating JSON callback',
+	'the workshop request validates JSON before storage',
 	1 === $flosc_workshop_filters
 );
 

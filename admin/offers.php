@@ -136,8 +136,6 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
  * v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
  */
 function flosc_handle_offer_save() {
-	$flosc_post = wp_unslash( $_POST );
-
 	/*
 	 * Two questions, two statements.
 	 *
@@ -149,13 +147,35 @@ function flosc_handle_offer_save() {
 	 * has posted a wrong answer is a refusal rather than a no-op --
 	 * check_admin_referer() says so instead of returning.
 	 */
-	if ( ! isset( $flosc_post['save_offer'] ) ) {
+	if ( ! isset( $_POST['save_offer'] ) ) {
 		return;
 	}
 
 	check_admin_referer( 'flosc_save_offer', 'flosc_save_offer_nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
+	}
+
+	/*
+	 * The offer editor's fields, each sanitized as it is read.
+	 *
+	 * sanitize_textarea_field() is the read-time sanitizer for every field: it
+	 * keeps the newlines the description, features and access-code list use,
+	 * and every single-line field below still passes through its own
+	 * sanitize_text_field(), sanitize_key(), intval() or floatval() as before.
+	 * The redirect URL is read with esc_url_raw(), the function that stores
+	 * it. Coupon columns keep their list shape for the check that follows.
+	 */
+	$flosc_post = array();
+	foreach ( array_keys( $_POST ) as $flosc_posted_key ) {
+		if ( ! is_string( $flosc_posted_key ) || ! preg_match( '/^[A-Za-z0-9_\-]+$/', $flosc_posted_key ) || ! isset( $_POST[ $flosc_posted_key ] ) ) {
+			continue;
+		}
+		if ( 'offer_redirect_url' === $flosc_posted_key ) {
+			$flosc_post[ $flosc_posted_key ] = map_deep( wp_unslash( $_POST[ $flosc_posted_key ] ), 'esc_url_raw' );
+		} else {
+			$flosc_post[ $flosc_posted_key ] = map_deep( wp_unslash( $_POST[ $flosc_posted_key ] ), 'sanitize_textarea_field' );
+		}
 	}
 
 	// A list posted into a one-value field, or a one-value field posted where a
@@ -810,93 +830,12 @@ $flosc_demo_offers = array(
 </details>
 
 <?php
-wp_add_inline_script(
-	'flosc-admin',
-	flosc_capture_output(
-		static function () {
-			?>
-function floscToggleOffer(id) {
-	const card = document.getElementById('offer-' + id);
-	if (card) card.classList.toggle('is-open');
-}
-function floscToggleFmt(checkbox) {
-	const card = checkbox.closest('.flosc-fmt-card');
-	card.classList.toggle('is-enabled', checkbox.checked);
-}
-function floscToggleProcessorFields(safeId, processor) {
-	const processors = ['paypal', 'stripe', 'redirect'];
-	processors.forEach(function(p) {
-		const el = document.getElementById('proc-' + p + '-' + safeId);
-		if (el) el.style.display = (p === processor) ? 'block' : 'none';
-	});
-}
-// Condition reference: click to copy to clipboard and nearest condition input
-document.addEventListener('click', function(e) {
-	const btn = e.target.closest('.flosc-condition-copy');
-	if (!btn) return;
-	const condition = btn.dataset.condition;
-	if (!condition) return;
-	
-	// Copy to clipboard
-	navigator.clipboard.writeText(condition).then(function() {
-		const original = btn.innerHTML;
-		btn.innerHTML = '<code>✓ Copied!</code>';
-		btn.classList.add('copied');
-		setTimeout(function() {
-			btn.innerHTML = original;
-			btn.classList.remove('copied');
-		}, 1500);
-	});
-	
-	// Also paste into the nearest offer's global condition input
-	const offerCard = btn.closest('.flosc-offer-editor');
-	if (offerCard) {
-		const condInput = offerCard.querySelector('input[name="offer_condition"]');
-		if (condInput) {
-			// Append with && if there's already a value
-			if (condInput.value.trim()) {
-				condInput.value = condInput.value.trim() + ' && ' + condition;
-			} else {
-				condInput.value = condition;
-			}
-			condInput.focus();
-			condInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-		}
-	}
-});
-document.addEventListener('DOMContentLoaded', function() {
-	const open = document.querySelector('.flosc-offer-card.is-open');
-	if (open) open.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-	document.querySelectorAll('form').forEach(function(form) {
-		var src = form.querySelector('[data-flosc-offer-token-source]');
-		if (!src) return;
-
-		var offer = src.getAttribute('data-flosc-offer');
-		var custom = form.querySelector('[data-flosc-offer-token-custom="' + offer + '"]');
-		var capMode = form.querySelector('[data-flosc-offer-token-cap-mode]');
-		var capInput = form.querySelector('[data-flosc-offer-token-cap-input="' + offer + '"]');
-
-		function syncSource() {
-			if (custom) custom.classList.toggle('flosc-is-disabled', src.value !== 'custom');
-		}
-
-		function syncCap() {
-			if (capInput) capInput.classList.toggle('flosc-is-disabled', !capMode || capMode.value !== 'custom');
-		}
-
-		src.addEventListener('change', syncSource);
-		if (capMode) {
-			capMode.addEventListener('change', syncCap);
-		}
-
-		syncSource();
-		syncCap();
-	});
-});
-			<?php
-		}
-	)
+wp_enqueue_script(
+	'flosc-admin-offers',
+	FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-offers.js',
+	array( 'flosc-admin' ),
+	FLOSC_VERSION,
+	true
 );
 ?>
 

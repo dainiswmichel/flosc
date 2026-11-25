@@ -670,32 +670,25 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 			return $role;
 		}
 
-		$user_id = wp_insert_user(
+		$name       = sanitize_text_field( (string) $name );
+		$name_parts = explode( ' ', trim( $name ), 2 );
+
+		// Names go in with the account, so no second write to the user is needed.
+		$user_id = flosc_insert_customer_account(
 			array(
-				'user_login' => wp_slash( $username ),
-				'user_pass'  => $password,
-				'user_email' => wp_slash( $email ),
-				'role'       => $role,
-			)
+				'user_login'   => $username,
+				'user_pass'    => $password,
+				'user_email'   => $email,
+				'display_name' => $name,
+				'first_name'   => (string) ( $name_parts[0] ?? '' ),
+				'last_name'    => (string) ( $name_parts[1] ?? '' ),
+			),
+			$role
 		);
 
 		if ( is_wp_error( $user_id ) ) {
 			return $user_id;
 		}
-
-		$name       = sanitize_text_field( (string) $name );
-		$name_parts = explode( ' ', trim( $name ), 2 );
-		$first_name = sanitize_text_field( (string) ( $name_parts[0] ?? '' ) );
-		$last_name  = sanitize_text_field( (string) ( $name_parts[1] ?? '' ) );
-
-		wp_update_user(
-			array(
-				'ID'           => $user_id,
-				'display_name' => $name,
-				'first_name'   => $first_name,
-				'last_name'    => $last_name,
-			)
-		);
 
 		update_user_meta( $user_id, '_flosc_created_via', 'clickbank' );
 		update_user_meta( $user_id, '_flosc_created_at', current_time( 'mysql' ) );

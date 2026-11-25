@@ -955,8 +955,8 @@ class OAuth2_Handler {
 	 * @param int $user_id User ID.
 	 */
 	private function log_user_in( $user_id ) {
-		wp_set_current_user( $user_id );
-		wp_set_auth_cookie( $user_id, true );
+		// The SSO provider has returned a validated profile for this user.
+		\flosc_start_user_session( $user_id, 'sso' );
 
 		// v1.5.3: Do NOT fire do_action('wp_login') here.
 		// Other plugins (WooCommerce, BuddyBoss) hook wp_login and call
@@ -978,7 +978,14 @@ class OAuth2_Handler {
 	private function generate_login_token( $user_id ) {
 		$token = wp_generate_password( 40, false );
 		// v1.5.3: 60s TTL (was 30s) — allows for slow DNS/CDN on custom domains.
-		set_transient( 'flosc_login_token_' . $token, $user_id, 60 );
+		set_transient(
+			'flosc_login_token_' . $token,
+			array(
+				'user_id' => absint( $user_id ),
+				'source'  => 'sso',
+			),
+			60
+		);
 		return $token;
 	}
 

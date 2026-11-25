@@ -186,11 +186,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</label>
 		<label class="chip">
 			<input type="checkbox" id="includeReferenceUrls">
-			Include reference URLs
+			Include reference titles
 		</label>
 		</div>
 		<p class="figure-readout output-view-note" id="outViewNote"></p>
-		<p class="figure-readout output-note">Influences name the people and works this character draws on. Included, they are part of the personality like anything else here: their descriptive text is sent in the compiled profile to the selected AI provider. Complete reference entries—description and URL—are excluded unless Include reference URLs is also checked. Unchecked influences stay in the builder state and the design copy and are never sent to an AI provider. FLOSC does not fetch or send data to the cited websites.</p>
+		<p class="figure-readout output-note">Influences name the people and works this character draws on. Included, they are part of the personality like anything else here: their descriptive text is sent in the compiled profile to the selected AI provider. Reference titles are excluded unless Include reference titles is also checked. The builder carries no web addresses; they are listed in the FLOSC Personality influence references document. Unchecked influences stay in the builder state and the design copy and are never sent to an AI provider. FLOSC does not fetch or send data to the cited websites.</p>
 		<details class="acc" id="varPanel">
 		<summary class="row-sum"><span class="row-lab">Variables you can type into any card</span></summary>
 		<div id="varMount"></div>

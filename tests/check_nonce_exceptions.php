@@ -238,11 +238,11 @@ $flosc_handle = flosc_nx_range( $flosc_ml_src, 'handle_login_token' );
 flosc_nx_ok( '  handle_login_token() was found', (bool) $flosc_handle, true );
 
 $flosc_cmp  = flosc_nx_first( $flosc_ml_lines, $flosc_handle, '/hash_equals\s*\(/' );
-$flosc_auth = flosc_nx_first( $flosc_ml_lines, $flosc_handle, '/wp_set_auth_cookie\s*\(/' );
+$flosc_auth = flosc_nx_first( $flosc_ml_lines, $flosc_handle, '/flosc_start_user_session\s*\(/' );
 
 flosc_nx_ok( '  it compares the token with hash_equals()', $flosc_cmp > 0, true );
 flosc_nx_ok(
-	sprintf( '  the comparison (%d) precedes wp_set_auth_cookie (%d)', $flosc_cmp, $flosc_auth ),
+	sprintf( '  the comparison (%d) precedes flosc_start_user_session (%d)', $flosc_cmp, $flosc_auth ),
 	( $flosc_cmp > 0 && $flosc_auth > 0 && $flosc_cmp < $flosc_auth ),
 	true
 );

@@ -14,7 +14,7 @@ if ( PHP_SAPI !== 'cli' ) {
 }
 
 $root   = dirname( __DIR__ );
-$source = (string) file_get_contents( $root . '/admin/ai-configuration.php' );
+$source = (string) file_get_contents( $root . '/assets/js/admin/flosc-admin-ai.js' );
 
 function flosc_cut_js( $source, $signature ) {
 	$start = strpos( $source, $signature );

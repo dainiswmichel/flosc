@@ -36,10 +36,7 @@ const fixture = {
   inject: "RUNTIME_INSTRUCTION_SENTINEL",
   character: "INFLUENCE_CHARACTER_SENTINEL",
   works: ["INFLUENCE_WORK_SENTINEL"],
-  links: [{
-    label: "INFLUENCE_LINK_SENTINEL",
-    url: "https://references.invalid/influence-sentinel"
-  }],
+  links: [{ label: "INFLUENCE_LINK_SENTINEL" }],
   repo: null
 };
 const fixtureState = {
@@ -86,22 +83,18 @@ const checked = topicBody(fixture, false);
 check("checked runtime keeps character note", checked.includes(fixture.character));
 check("checked runtime keeps work", checked.includes(fixture.works[0]));
 check("checked runtime excludes citation label by default", !checked.includes(fixture.links[0].label));
-check("checked runtime excludes citation URL by default", !checked.includes(fixture.links[0].url));
 
 state.includeReferenceUrls = true;
 const referencesEnabled = topicBody(fixture, false);
 check("reference opt-in keeps citation label", referencesEnabled.includes(fixture.links[0].label));
-check("reference opt-in keeps citation URL", referencesEnabled.includes(fixture.links[0].url));
 
 state.includeReferenceUrls = false;
 const commentReferencesHidden = cardComment(fixture);
 check("default influence comment excludes citation label", !commentReferencesHidden.includes(fixture.links[0].label));
-check("default influence comment excludes citation URL", !commentReferencesHidden.includes(fixture.links[0].url));
 
 state.includeReferenceUrls = true;
 const commentReferencesEnabled = cardComment(fixture);
 check("reference opt-in adds citation label to influence comment", commentReferencesEnabled.includes(fixture.links[0].label));
-check("reference opt-in adds citation URL to influence comment", commentReferencesEnabled.includes(fixture.links[0].url));
 
 state.includeReferenceUrls = false;
 state.includeComments = false;
@@ -109,14 +102,12 @@ const unchecked = topicBody(fixture, false);
 check("unchecked runtime removes character note", !unchecked.includes(fixture.character));
 check("unchecked runtime removes work", !unchecked.includes(fixture.works[0]));
 check("unchecked runtime removes citation label", !unchecked.includes(fixture.links[0].label));
-check("unchecked runtime removes citation URL", !unchecked.includes(fixture.links[0].url));
 check("unchecked runtime keeps personality instruction", unchecked.includes(fixture.inject));
 
 const designCopy = topicBody(fixture, true);
 check("unchecked design copy keeps character note", designCopy.includes(fixture.character));
 check("unchecked design copy keeps work", designCopy.includes(fixture.works[0]));
 check("unchecked design copy keeps citation label", designCopy.includes(fixture.links[0].label));
-check("unchecked design copy keeps citation URL", designCopy.includes(fixture.links[0].url));
 
 const workshopRow = workshopTributary(fixture);
 check("workshop retains character note", workshopRow.comments.character === fixture.character);
@@ -130,6 +121,18 @@ check("workshop persists reference-entry choice",
   workshopBody.includes("includeReferenceUrls: state.includeReferenceUrls"));
 check("workshop runtime derivative uses compiler",
   workshopBody.includes("const md = compilePrompt();"));
+
+/* Reference addresses live in reference-documentation/, not in the builder.
+   The catalog must carry titles only. */
+const catalogStart = src.indexOf("const CATALOG = [");
+const catalogEnd = src.indexOf("\n  ];", catalogStart);
+const catalogSrc = src.slice(catalogStart, catalogEnd);
+check("catalog found", catalogStart >= 0 && catalogEnd > catalogStart);
+check("catalog carries no web address", !/https?:\/\//.test(catalogSrc));
+check("catalog carries no url field", !/\burl\s*:/.test(catalogSrc));
+["topicBody", "cardComment", "teachHtml"].forEach(function (name) {
+  check(name + " reads no reference url", grab(name).indexOf("l.url") < 0);
+});
 
 [
   "https://archive.org/details/hildegard-of-bingen-scivias",

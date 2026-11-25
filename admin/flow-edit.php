@@ -171,19 +171,14 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 												data-sync-target="floscflow_color">
 							<p class="description">Lesson highlights, form buttons, focus rings. Sets <code>--flosc-primary</code>.</p>
 							<?php
-							wp_add_inline_script(
-								'flosc-admin',
-								flosc_capture_output(
-									static function () {
-										?>
-								document.getElementById('floscflow_color').addEventListener('input', function() {
-									document.getElementById('floscflow_color_hex').value = this.value;
-								});
-										<?php
-									}
-								)
+							wp_enqueue_script(
+								'flosc-admin-flow-edit',
+								FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-flow-edit.js',
+								array( 'flosc-admin' ),
+								FLOSC_VERSION,
+								true
 							);
-			?>
+							?>
 						</td>
 					</tr>
 					
@@ -215,28 +210,15 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 							<p class="description">Browser tab icon. Square PNG recommended (512&times;512+).</p>
 							<?php wp_enqueue_media(); ?>
 							<?php
-							wp_add_inline_script(
-								'flosc-admin',
-								flosc_capture_output(
-									static function () {
-										?>
-							document.getElementById('flosc_upload_app_icon')?.addEventListener('click', function(e) {
-								e.preventDefault();
-								var frame = wp.media({ title: 'Choose App Icon', multiple: false, library: { type: 'image' } });
-								frame.on('select', function() {
-									var url = frame.state().get('selection').first().toJSON().url;
-									document.getElementById('floscflow_favicon').value = url;
-									var preview = document.getElementById('flosc_app_icon_preview');
-									preview.src = url;
-									preview.style.display = '';
-								});
-								frame.open();
-							});
-										<?php
-									}
-								)
+							// Same file as the colour mirror above; a second enqueue is a no-op.
+							wp_enqueue_script(
+								'flosc-admin-flow-edit',
+								FLOSC_PLUGIN_URL . 'assets/js/admin/flosc-admin-flow-edit.js',
+								array( 'flosc-admin' ),
+								FLOSC_VERSION,
+								true
 							);
-			?>
+							?>
 						</td>
 					</tr>
 					

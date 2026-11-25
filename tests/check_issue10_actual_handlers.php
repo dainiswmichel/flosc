@@ -68,6 +68,11 @@ function wp_verify_nonce() {
 	return true;
 }
 
+// v200: the pack handler now checks its nonce before it reads payload fields.
+function check_admin_referer() {
+	return 1;
+}
+
 function sanitize_text_field( $value ) {
 	return is_scalar( $value ) ? trim( (string) $value ) : '';
 }
