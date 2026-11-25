@@ -88,6 +88,127 @@ class FLOSC_Page_Context {
 	}
 
 	/**
+	 * Find a link when the current post or one accessible index entry is named.
+	 *
+	 * @param string $message      Visitor message.
+	 * @param array  $eval_context Chat context.
+	 * @param string $flow_id      Flow stem, for legacy per-flow indexes.
+	 * @return string Page link reply, or an empty string when no clear match exists.
+	 */
+	public function find_named_page_reply( $message, array $eval_context, $flow_id ) {
+		if ( ! $this->is_page_context_handoff_enabled() ) {
+			return '';
+		}
+
+		$query = $this->normalize_page_name( $message );
+		if ( false === strpos( $query, '-' ) ) {
+			return '';
+		}
+
+		$index        = FLOSC_Site_Content_Index::instance();
+		$document     = $index->load( $flow_id );
+		$rows         = $document['posts'];
+		$current_id   = absint( $eval_context['browsing_page_post_id'] ?? 0 );
+		$access_level = (string) ( $eval_context['access_level'] ?? 'visitor' );
+		$current_row  = $rows[ $current_id ] ?? array();
+
+		if ( $current_id && empty( $current_row['excluded'] ) && 'title' !== $index->row_depth( $current_row, $access_level ) ) {
+			$current_reply = $this->get_named_post_link( $current_id, $query );
+			if ( '' !== $current_reply ) {
+				return $current_reply;
+			}
+		}
+
+		$reply = '';
+		foreach ( $rows as $row ) {
+			$post_id = absint( $row['post_id'] ?? 0 );
+			if ( ! $post_id || $current_id === $post_id || ! empty( $row['excluded'] ) || 'title' === $index->row_depth( $row, $access_level ) ) {
+				continue;
+			}
+
+			$path = (string) wp_parse_url( (string) ( $row['url'] ?? '' ), PHP_URL_PATH );
+			if ( ! $this->query_names_page( $query, (string) ( $row['title'] ?? '' ), wp_basename( untrailingslashit( $path ) ) ) ) {
+				continue;
+			}
+
+			$candidate = $this->get_named_post_link( $post_id, $query );
+			if ( '' === $candidate ) {
+				continue;
+			}
+			if ( '' !== $reply ) {
+				return '';
+			}
+			$reply = $candidate;
+		}
+
+		return $reply;
+	}
+
+	/**
+	 * Revalidate an index or browsing match against the live WordPress post.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $query   Normalized message.
+	 * @return string Page link reply or an empty string.
+	 */
+	private function get_named_post_link( $post_id, $query ) {
+		$post = get_post( $post_id );
+		if ( ! $post || 'publish' !== $post->post_status || ! is_post_publicly_viewable( $post ) || '' !== $post->post_password ) {
+			return '';
+		}
+
+		$title = sanitize_text_field( html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) );
+		if ( '' === $title || ! $this->query_names_page( $query, $title, $post->post_name ) ) {
+			return '';
+		}
+
+		if ( ! FLOSC_Content_Protection::instance()->user_can_access( $post_id ) ) {
+			return '';
+		}
+
+		$url = esc_url_raw( (string) get_permalink( $post ), array( 'http', 'https' ) );
+		if ( '' === $url ) {
+			return '';
+		}
+
+		return sprintf(
+			/* translators: 1: WordPress post title, 2: link to the post. */
+			__( "You can find %1\$s here:\n%2\$s", 'flosc' ),
+			$title,
+			$url
+		);
+	}
+
+	/**
+	 * Compare whole titles or slugs instead of partial keyword hits.
+	 *
+	 * @param string $query Normalized message.
+	 * @param string $title WordPress post title.
+	 * @param string $slug  WordPress post slug.
+	 * @return bool
+	 */
+	private function query_names_page( $query, $title, $slug ) {
+		foreach ( array( $title, $slug ) as $name ) {
+			$name = $this->normalize_page_name( $name );
+			if ( false !== strpos( $name, '-' ) && false !== strpos( '-' . $query . '-', '-' . $name . '-' ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Normalize text with the same conventions WordPress uses for slugs.
+	 *
+	 * @param string $text Message, title, or slug.
+	 * @return string
+	 */
+	private function normalize_page_name( $text ) {
+		return sanitize_title( html_entity_decode( $text, ENT_QUOTES, 'UTF-8' ) );
+	}
+
+	/**
 	 * Attach post content to eval_context when the user message warrants it.
 	 *
 	 * @param array  $eval_context By reference.

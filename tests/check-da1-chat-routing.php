@@ -283,12 +283,19 @@ $flosc_da1_turn_source = preg_replace(
 );
 
 flosc_da1_chat_check(
-	false !== strpos( $flosc_da1_turn_source, 'if($response_message&&$ai_available&&!$flosc_da1_catalog_answer)' ),
-	'The public chat route still permits an AI provider to rewrite a DA1 catalog answer.'
+	false !== strpos( $flosc_da1_turn_source, "in_array(\$flosc_response_source,array('da1_catalog','named_page'),true)" )
+	&& false !== strpos( $flosc_da1_turn_source, 'if($response_message&&$ai_available&&!$flosc_direct_answer)' ),
+	'The public chat route permits an AI provider to rewrite a catalog or page link answer.'
 );
 flosc_da1_chat_check(
-	false !== strpos( $flosc_da1_turn_source, '$ai_available&&!$flosc_da1_catalog_answer&&$token_provider' ),
-	'A deterministic DA1 catalog answer can still reserve or charge AI tokens.'
+	false !== strpos( $flosc_da1_turn_source, '$ai_available&&!$flosc_direct_answer&&$token_provider' ),
+	'A catalog or page link answer can reserve or charge AI tokens.'
+);
+flosc_da1_chat_check(
+	$flosc_da1_catalogs->has_explicit_catalog_request( 'show me Item 11 from the List of Works', 'dcsj_ivr', 'dcsj_ivr.md', 'visitor' )
+	&& $flosc_da1_catalogs->has_explicit_catalog_request( 'show me 11 from the List of Works', 'dcsj_ivr', 'dcsj_ivr.md', 'visitor' )
+	&& ! $flosc_da1_catalogs->has_explicit_catalog_request( 'does Dainis have a List of Works available on this website?', 'dcsj_ivr', 'dcsj_ivr.md', 'visitor' ),
+	'A named page must not displace an explicit catalog request, and a named page alone is not an explicit catalog request.'
 );
 
 if ( array() !== $flosc_da1_failures ) {

@@ -206,7 +206,7 @@ class FLOSC_DA1_Catalogs {
 			return true;
 		}
 
-		if ( preg_match( '/\b(catalog|catalogue|item|items|browse|recommend|recommendation|recommendations|suggest|suggestion|suggestions|full list|complete list|show all|how many|count|total)\b/u', $text ) ) {
+		if ( $this->names_catalog_action( $text ) ) {
 			return true;
 		}
 
@@ -236,6 +236,35 @@ class FLOSC_DA1_Catalogs {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether a catalog reply should take precedence over a named page.
+	 *
+	 * @param string $message      Visitor message.
+	 * @param string $flow_id      Flow stem.
+	 * @param string $ivr_file     Flow IVR file.
+	 * @param string $access_level Visitor's access level.
+	 * @return bool
+	 */
+	public function has_explicit_catalog_request( $message, $flow_id, $ivr_file, $access_level ) {
+		if ( $this->names_catalog_action( $this->normalize_search_text( $message ) ) || $this->is_count_request( $message ) || $this->is_full_list_request( $message ) ) {
+			return true;
+		}
+
+		$rows  = $this->load_rows_for_flow( $flow_id, $ivr_file, $access_level );
+		$items = $this->extract_items( $rows );
+		return ! empty( $this->find_explicit_item_references( $message, $items ) );
+	}
+
+	/**
+	 * Check for a named catalog or an explicit catalog action.
+	 *
+	 * @param string $text Normalized visitor message.
+	 * @return bool
+	 */
+	private function names_catalog_action( $text ) {
+		return (bool) preg_match( '/\b(catalog|catalogue|item|items|browse|recommend|recommendation|recommendations|suggest|suggestion|suggestions|full list|complete list|show all|how many|count|total)\b/u', $text );
 	}
 
 	/**
