@@ -281,6 +281,8 @@ class FLOSC_Condition_Evaluator {
 				return is_user_logged_in();
 			case 'purchased':
 				return ! empty( $this->context['purchased'] );
+			case 'content_limited':
+				return ! empty( $this->context['content_limited'] );
 			case 'lesson_viewed':
 				return ! empty( $this->context['lesson_viewed'] );
 			case 'returning_user':

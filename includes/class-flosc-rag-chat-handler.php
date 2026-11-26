@@ -302,7 +302,8 @@ class FLOSC_RAG_Chat_Handler {
 					is_array( $flosc_input ) ? $flosc_input : array()
 				);
 				if ( is_array( $flosc_out ) ) {
-					$flosc_out = $flosc_out['flosc_user_facing_message']
+					$flosc_out = $flosc_out['flosc_model_guidance']
+						?? $flosc_out['flosc_user_facing_message']
 						?? $flosc_out['flosc_reason']
 						?? wp_json_encode( $flosc_out );
 				}

@@ -281,6 +281,7 @@ class FLOSC_RAG_Manager {
 			's'              => $keywords,
 			'posts_per_page' => $limit,
 			'post_status'    => 'publish',
+			'search_columns' => array( 'post_title' ),
 		);
 
 		if ( $category_id > 0 ) {
@@ -305,36 +306,15 @@ class FLOSC_RAG_Manager {
 			return "No posts found for: {$keywords}";
 		}
 
-		$results = '**Found ' . count( $posts ) . " posts:**\n\n";
-
+		$results = array();
 		foreach ( $posts as $post ) {
-
-			$lesson_num      = get_post_meta( $post->ID, '_flosc_lesson_number', true );
-			$required_access = get_post_meta( $post->ID, '_flosc_access_level', true );
-			if ( ! $required_access ) {
-				$required_access = 'member';
+			$entry = $this->format_post_for_ai( $post, $access_level, $stem ?? '' );
+			if ( '' !== $entry ) {
+				$results[] = $entry;
 			}
-
-			$lesson_label = $lesson_num ? "Lesson {$lesson_num}: " : '';
-
-			if ( ! $this->content_filter->has_access( $required_access, $access_level ) ) {
-				$results .= "**{$lesson_label}{$post->post_title}** 🔒\n";
-				$results .= 'Access: ' . ucfirst( $required_access ) . " required\n\n";
-				continue;
-			}
-
-			// Full post body (access-filtered), not excerpt-only.
-			$content = $this->content_filter->filter_post_content( $post->post_content, $access_level );
-			$content = wp_strip_all_tags( (string) $content );
-			$content = preg_replace( '/\s+/u', ' ', $content );
-			$content = is_string( $content ) ? trim( $content ) : '';
-
-			$results .= "**{$lesson_label}{$post->post_title}**\n";
-			$results .= "ID: {$post->ID} | URL: " . get_permalink( $post->ID ) . "\n\n";
-			$results .= $content . "\n\n---\n\n";
 		}
 
-		return $results;
+		return $results ? implode( "\n\n---\n\n", $results ) : "No posts found for: {$keywords}";
 	}
 
 	/**
@@ -368,16 +348,38 @@ class FLOSC_RAG_Manager {
 			return 'Lesson not found.';
 		}
 
-		// Filter content by access level.
-		$content = $this->content_filter->filter_post_content( $post->post_content, $access_level );
+		$result = $this->format_post_for_ai( $post, $access_level );
+		return '' !== $result ? $result : 'Lesson not found.';
+	}
 
-		// Build response.
-		$response  = "**{$post->post_title}**\n\n";
-		$response .= 'URL: ' . get_permalink( $post->ID ) . "\n\n";
-		$response .= "---\n\n";
-		$response .= $content;
+	/**
+	 * Build a lesson or fallback search result using the same rules as Companion.
+	 *
+	 * @param WP_Post $post         WordPress post.
+	 * @param string  $access_level Server-resolved access level.
+	 * @param string  $flow_stem    Active flow, when available.
+	 * @return string
+	 */
+	private function format_post_for_ai( WP_Post $post, $access_level, $flow_stem = '' ) {
+		$document = FLOSC_Site_Content_Index::instance()->load( $flow_stem );
+		if ( ! empty( $document['posts'][ $post->ID ]['excluded'] ) ) {
+			return '';
+		}
+		$page_context = FLOSC_Page_Context::instance();
+		$depth        = $page_context->post_access_depth( $post, $access_level, $flow_stem );
+		if ( '' === $depth ) {
+			return '';
+		}
 
-		return $response;
+		$source    = $page_context->post_source( $post, $depth, $access_level );
+		$content   = $page_context->render_post_text( $post, $source, $depth, $access_level );
+		$response  = '**' . sanitize_text_field( get_the_title( $post ) ) . "**\n";
+		$response .= 'ID: ' . $post->ID . ' | URL: ' . esc_url_raw( (string) get_permalink( $post ) ) . "\n";
+		if ( $page_context->content_is_limited( $post, $depth, $access_level ) ) {
+			$response .= 'Available portion: ' . $depth . ".\n" . FLOSC_Page_Context::access_guidance( $access_level ) . "\n";
+		}
+
+		return $response . "\n" . $content;
 	}
 
 	/**

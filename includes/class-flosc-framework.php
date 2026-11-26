@@ -5494,7 +5494,7 @@ The Team',
 			? (string) ( $eval_context['access_level'] ?? 'visitor' )
 			: 'visitor';
 		$catalog_reply          = '';
-		if ( ! $this->flosc_purchase_intent_has_offer( $user_message, $flow_id ) ) {
+		if ( empty( $eval_context['content_question'] ) && ! $this->flosc_purchase_intent_has_offer( $user_message, $flow_id ) ) {
 			$catalog_reply = $this->flosc_build_da1_catalog_reply(
 				$user_message,
 				$flow_id,
@@ -6840,6 +6840,41 @@ Example good response:
 
 		// v1.9.0: No IVR match — return null so AI fallback path activates in handle_chat()
 		// When ai_provider is 'ivr', handle_chat() will use get_phase_default_response() as last resort.
+		return null;
+	}
+
+	/**
+	 * Select an IVR-authored invitation when the reader reaches a content limit.
+	 *
+	 * @param string $phase      Active FLOSC phase.
+	 * @param array  $context    Server-evaluated chat state.
+	 * @param array  $ivr_config Active IVR.
+	 * @return array|null
+	 */
+	private function find_content_limit_response( $phase, array $context, array $ivr_config ) {
+		if ( empty( $context['content_limited'] ) ) {
+			return null;
+		}
+
+		$evaluator = new FLOSC_Condition_Evaluator( $context );
+		foreach ( (array) ( $ivr_config['phases'][ $phase ] ?? array() ) as $name ) {
+			$message    = $ivr_config['messages'][ $name ] ?? array();
+			$conditions = (string) ( $message['conditions'] ?? '' );
+			if ( 'auto' !== ( $message['type'] ?? '' ) || empty( $message['content'] ) || ! preg_match( '/\bcontent_limited\b/', $conditions ) || ! $evaluator->evaluate( $conditions ) ) {
+				continue;
+			}
+			$content = $this->substitute_ivr_variables( $message['content'], $context );
+			if ( ! empty( $context['browsing_page_content'] ) ) {
+				$content = $context['browsing_page_content'] . "\n\n" . $content;
+			}
+
+			return array(
+				'content'          => $content,
+				'action'           => $message['action'] ?? '',
+				'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $context, $ivr_config ),
+				'phase_change'     => $message['phase_change'] ?? null,
+			);
+		}
 		return null;
 	}
 

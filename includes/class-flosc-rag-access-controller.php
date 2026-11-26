@@ -142,7 +142,7 @@ class FLOSC_RAG_Access_Controller {
 		return array(
 			'flosc_allowed' => false,
 			'flosc_reason'  => 'Take quiz to unlock your free lesson',
-			'flosc_cta'     => 'take_quiz',
+			'flosc_cta'     => 'open_registration',
 		);
 	}
 
@@ -154,17 +154,13 @@ class FLOSC_RAG_Access_Controller {
 	 * @return array Denial payload
 	 */
 	private function flosc_denial_payload( $flosc_reason, $flosc_cta ) {
-		$flosc_messages = array(
-			'take_quiz'          => "I'd love to show you that lesson! First, take our quick 2-minute quiz to get your personalized free lesson. 🎯",
-			'unlock_full_access' => 'That lesson is part of full access. Unlock all lessons now to continue your learning journey. ✨',
-			'login_required'     => 'Please log in to access your personalized content.',
-		);
+		$state = $this->flosc_user_session->flosc_get();
 
 		return array(
-			'flosc_denied'              => true,
-			'flosc_reason'              => $flosc_reason,
-			'flosc_cta'                 => $flosc_cta,
-			'flosc_user_facing_message' => $flosc_messages[ $flosc_cta ] ?? 'This content requires additional access.',
+			'flosc_denied'         => true,
+			'flosc_reason'         => $flosc_reason,
+			'flosc_cta'            => $flosc_cta,
+			'flosc_model_guidance' => FLOSC_Page_Context::access_guidance( $state['flosc_access_level'] ?? 'visitor' ),
 		);
 	}
 

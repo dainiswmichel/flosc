@@ -96,13 +96,39 @@ class FLOSC_Page_Context {
 	 * @return string Page link reply, or an empty string when no clear match exists.
 	 */
 	public function find_named_page_reply( $message, array $eval_context, $flow_id ) {
-		if ( ! $this->is_page_context_handoff_enabled() ) {
+		$post = $this->find_named_page( $message, $eval_context, $flow_id, true );
+		if ( ! $post ) {
 			return '';
+		}
+		$url = esc_url_raw( (string) get_permalink( $post ), array( 'http', 'https' ) );
+		if ( '' === $url ) {
+			return '';
+		}
+		return sprintf(
+			/* translators: 1: WordPress post title, 2: link to the post. */
+			__( "You can find %1\$s here:\n%2\$s", 'flosc' ),
+			$this->post_title( $post ),
+			$url
+		);
+	}
+
+	/**
+	 * Resolve a unique post or prefer the named post the reader is already on.
+	 *
+	 * @param string $message      Reader message.
+	 * @param array  $eval_context Chat context.
+	 * @param string $flow_id      Active flow.
+	 * @param bool   $link_only    Require a directly viewable destination.
+	 * @return WP_Post|null
+	 */
+	private function find_named_page( $message, array $eval_context, $flow_id, $link_only ) {
+		if ( ! $this->is_page_context_handoff_enabled() ) {
+			return null;
 		}
 
 		$query = $this->normalize_page_name( $message );
 		if ( false === strpos( $query, '-' ) ) {
-			return '';
+			return null;
 		}
 
 		$document   = FLOSC_Site_Content_Index::instance()->load( $flow_id );
@@ -112,13 +138,13 @@ class FLOSC_Page_Context {
 		// A title-only index row already exposes its title and URL. WordPress
 		// and FLOSC still decide whether the destination can be linked directly.
 		if ( $current_id && empty( $rows[ $current_id ]['excluded'] ) ) {
-			$current_reply = $this->get_named_post_link( $current_id, $query );
-			if ( '' !== $current_reply ) {
-				return $current_reply;
+			$current = $this->get_named_post( $current_id, $query, $link_only );
+			if ( $current ) {
+				return $current;
 			}
 		}
 
-		$reply = '';
+		$match = null;
 		foreach ( $rows as $row ) {
 			$post_id = absint( $row['post_id'] ?? 0 );
 			if ( ! $post_id || $current_id === $post_id || ! empty( $row['excluded'] ) ) {
@@ -130,52 +156,50 @@ class FLOSC_Page_Context {
 				continue;
 			}
 
-			$candidate = $this->get_named_post_link( $post_id, $query );
-			if ( '' === $candidate ) {
+			$candidate = $this->get_named_post( $post_id, $query, $link_only );
+			if ( ! $candidate ) {
 				continue;
 			}
-			if ( '' !== $reply ) {
-				return '';
+			if ( $match ) {
+				return null;
 			}
-			$reply = $candidate;
+			$match = $candidate;
 		}
 
-		return $reply;
+		return $match;
 	}
 
 	/**
 	 * Revalidate an index or browsing match against the live WordPress post.
 	 *
-	 * @param int    $post_id Post ID.
-	 * @param string $query   Normalized message.
-	 * @return string Page link reply or an empty string.
+	 * @param int    $post_id   Post ID.
+	 * @param string $query     Normalized message.
+	 * @param bool   $link_only Require a directly viewable destination.
+	 * @return WP_Post|null
 	 */
-	private function get_named_post_link( $post_id, $query ) {
+	private function get_named_post( $post_id, $query, $link_only ) {
 		$post = get_post( $post_id );
-		if ( ! $post || 'publish' !== $post->post_status || ! is_post_publicly_viewable( $post ) || '' !== $post->post_password ) {
-			return '';
+		if ( ! $post || 'publish' !== $post->post_status || ! is_post_publicly_viewable( $post ) || FLOSC_Site_Content_Index::is_internal_post( $post_id ) ) {
+			return null;
 		}
-
-		$title = sanitize_text_field( html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) );
+		$title = $this->post_title( $post );
 		if ( '' === $title || ! $this->query_names_page( $query, $title, $post->post_name ) ) {
-			return '';
+			return null;
 		}
-
-		if ( ! FLOSC_Content_Protection::instance()->user_can_access( $post_id ) ) {
-			return '';
+		if ( $link_only && ( '' !== $post->post_password || ! FLOSC_Content_Protection::instance()->user_can_access( $post_id ) ) ) {
+			return null;
 		}
+		return $post;
+	}
 
-		$url = esc_url_raw( (string) get_permalink( $post ), array( 'http', 'https' ) );
-		if ( '' === $url ) {
-			return '';
-		}
-
-		return sprintf(
-			/* translators: 1: WordPress post title, 2: link to the post. */
-			__( "You can find %1\$s here:\n%2\$s", 'flosc' ),
-			$title,
-			$url
-		);
+	/**
+	 * Get the plain title for a named resource.
+	 *
+	 * @param WP_Post $post Published resource.
+	 * @return string
+	 */
+	private function post_title( WP_Post $post ) {
+		return sanitize_text_field( html_entity_decode( get_the_title( $post ), ENT_QUOTES, 'UTF-8' ) );
 	}
 
 	/**
@@ -231,31 +255,52 @@ class FLOSC_Page_Context {
 			return;
 		}
 
-		$post_id = $this->resolve_post_id_for_content_injection( $eval_context, $message, $session_key );
-		if ( $post_id <= 0 ) {
+		$flow_id          = (string) ( $eval_context['flow_id'] ?? '' );
+		$content_question = $this->message_requests_page_content( $message );
+		$post             = $content_question ? $this->find_named_page( $message, $eval_context, $flow_id, false ) : null;
+		if ( ! $post ) {
+			$post_id = $this->resolve_post_id_for_content_injection( $eval_context, $message, $session_key );
+			$post    = $post_id > 0 ? get_post( $post_id ) : null;
+		}
+		if ( ! $post ) {
 			return;
 		}
 
-		$access_level = sanitize_key( (string) ( $eval_context['access_level'] ?? 'visitor' ) );
-		$user_id      = absint( $eval_context['user_id'] ?? 0 );
-		$content      = $this->load_post_content( $post_id, $access_level );
-
-		if ( '' === $content ) {
+		$access_level = (string) ( $eval_context['access_level'] ?? 'visitor' );
+		$index        = FLOSC_Site_Content_Index::instance()->load( $flow_id );
+		if ( ! empty( $index['posts'][ $post->ID ]['excluded'] ) ) {
 			return;
 		}
+		$depth = $this->post_access_depth( $post, $access_level, $flow_id );
+		if ( '' === $depth ) {
+			return;
+		}
+		$source  = $this->post_source( $post, $depth, $access_level );
+		$content = $this->render_post_text( $post, $source, $depth, $access_level );
 
-		$post                                  = get_post( $post_id );
-		$eval_context['browsing_page_post_id'] = $post_id;
-		$eval_context['browsing_page_content'] = $content;
-		$eval_context['page_content_injected'] = true;
-
-		if ( $post && empty( $eval_context['browsing_page_title'] ) ) {
-			$eval_context['browsing_page_title'] = sanitize_text_field( (string) get_the_title( $post ) );
+		$eval_context['content_access_depth'] = $depth;
+		$eval_context['content_limited']      = $this->content_is_limited( $post, $depth, $access_level );
+		$eval_context['content_page_title']   = $this->post_title( $post );
+		$eval_context['content_page_url']     = esc_url_raw( (string) get_permalink( $post ) );
+		$eval_context['content_question']     = $content_question || $eval_context['content_limited'];
+		if ( '' !== $content ) {
+			$eval_context['browsing_page_content'] = $content;
+			$eval_context['page_content_injected'] = true;
 		}
 
-		if ( '' !== $session_key ) {
-			set_transient( $this->session_transient_key( $session_key ), $post_id, self::SESSION_TTL );
+		if ( '' !== $session_key && absint( $eval_context['browsing_page_post_id'] ?? 0 ) === $post->ID ) {
+			set_transient( $this->session_transient_key( $session_key ), $post->ID, self::SESSION_TTL );
 		}
+	}
+
+	/**
+	 * Distinguish a question about the contents from a directory lookup.
+	 *
+	 * @param string $message Reader message.
+	 * @return bool
+	 */
+	private function message_requests_page_content( $message ) {
+		return 1 === preg_match( '/\b(?:summari[sz]e|describe|tell me about|what(?: is| are|\'s)? (?:on|in|listed|shown|displayed)|(?:what|which)\b[^?.!]{1,80}\b(?:listed|shown|displayed|on this page))\b/i', $message );
 	}
 
 	/**
@@ -580,45 +625,160 @@ class FLOSC_Page_Context {
 	}
 
 	/**
-	 * Load post content.
+	 * Resolve the most content this request can retrieve from a live post.
 	 *
-	 * @param mixed $post_id      Post ID.
-	 * @param mixed $access_level Access level.
-	 * @return mixed
+	 * @param WP_Post $post         Published post or page.
+	 * @param string  $access_level Server-resolved access level.
+	 * @param string  $flow_id      Active flow.
+	 * @return string Depth, or an empty string when the post itself is unavailable.
 	 */
-	private function load_post_content( $post_id, $access_level ) {
-		$post = get_post( $post_id );
-		if ( ! $post || 'publish' !== $post->post_status ) {
+	public function post_access_depth( WP_Post $post, $access_level, $flow_id = '' ) {
+		if ( 'publish' !== $post->post_status || ! is_post_publicly_viewable( $post ) || FLOSC_Site_Content_Index::is_internal_post( $post->ID ) ) {
 			return '';
 		}
+		if ( post_password_required( $post ) ) {
+			return 'title';
+		}
 
-		$raw = $post->post_content;
+		$index        = FLOSC_Site_Content_Index::instance();
+		$access_level = FLOSC_Site_Content_Index::tier_token( $access_level );
+		$access_level = '' === $access_level ? 'visitor' : $access_level;
+		$required     = (string) get_post_meta( $post->ID, '_flosc_access_level', true );
+		if ( '' === $required ) {
+			$required = (string) get_post_meta( $post->ID, '_flosc_content_subcategory', true );
+		}
+		if ( ! $index->access_allows( $access_level, $required ) ) {
+			return 'title';
+		}
 
+		$levels     = FLOSC_Site_Content_Index::resolve_vgm( $post->ID, $flow_id );
+		$depth      = $levels[ $access_level ];
 		$protection = FLOSC_Content_Protection::instance();
-		$check      = $protection->check_post_protection( $post_id );
+		if ( 'title' === $depth || $protection->user_can_access( $post->ID ) ) {
+			return $depth;
+		}
 
-		if ( ! empty( $check['protected'] ) ) {
-			if ( ! $protection->user_can_access( $post_id ) ) {
-				$visibility = $protection->get_post_visibility( $post_id );
-				$raw        = $protection->apply_visibility_tier( $raw, $visibility, $post_id );
+		$visibility = $protection->get_post_visibility( $post->ID );
+		$preview    = array(
+			'hidden'  => 'title',
+			'teaser'  => 'excerpt',
+			'preview' => 'readmore',
+		);
+		$cap        = $preview[ $visibility ] ?? 'title';
+		return FLOSC_Site_Content_Index::depth_rank( $cap ) < FLOSC_Site_Content_Index::depth_rank( $depth ) ? $cap : $depth;
+	}
+
+	/**
+	 * Report a restricted body even if a post-level tier permits its public portion.
+	 *
+	 * @param WP_Post $post         WordPress post.
+	 * @param string  $depth        Effective retrieval depth.
+	 * @param string  $access_level Server-resolved access level.
+	 * @return bool
+	 */
+	public function content_is_limited( WP_Post $post, $depth, $access_level ) {
+		return 'full' !== $depth || ( 'member' !== $access_level && false !== strpos( $post->post_content, '<!--flosc_read_more' ) );
+	}
+
+	/**
+	 * Get the permitted source before running block or shortcode callbacks.
+	 *
+	 * @param WP_Post $post         WordPress post.
+	 * @param string  $depth        Effective retrieval depth.
+	 * @param string  $access_level Server-resolved access level.
+	 * @return string
+	 */
+	public function post_source( WP_Post $post, $depth, $access_level ) {
+		if ( ! in_array( $depth, array( 'excerpt', 'readmore', 'full' ), true ) ) {
+			return '';
+		}
+		$filter = FLOSC_Content_Filter::instance();
+		$source = $filter->filter_post_content( $post->post_content, $access_level, false );
+		if ( 'excerpt' === $depth ) {
+			$excerpt = $filter->filter_post_content( $post->post_excerpt, $access_level, false );
+			return '' !== trim( $excerpt ) ? $excerpt : wp_trim_words( wp_strip_all_tags( strip_shortcodes( $source ) ) );
+		}
+		if ( 'readmore' === $depth ) {
+			$parts  = preg_split( '/<!--\s*more\b[^>]*-->/', $source, 2 );
+			$source = $parts[0];
+			if ( 1 === count( $parts ) && 'preview' === FLOSC_Content_Protection::instance()->get_post_visibility( $post->ID ) ) {
+				return wp_trim_words( wp_strip_all_tags( strip_shortcodes( $source ) ) );
 			}
 		}
+		return $source;
+	}
 
-		$filter = FLOSC_Content_Filter::instance();
-		$raw    = $filter->filter_post_content( $raw, $access_level );
-
-		$text = wp_strip_all_tags( $raw );
-		$text = preg_replace( '/\s+/u', ' ', $text );
-		$text = trim( $text );
-
-		if ( '' === $text ) {
+	/**
+	 * Render a permitted source with the request's WordPress user and cookies.
+	 *
+	 * @param WP_Post $post         WordPress post.
+	 * @param string  $source       Permitted source from post_source().
+	 * @param string  $depth        Effective retrieval depth.
+	 * @param string  $access_level Server-resolved access level.
+	 * @return string
+	 */
+	public function render_post_text( WP_Post $post, $source, $depth, $access_level ) {
+		if ( '' === $source ) {
 			return '';
 		}
 
-		if ( strlen( $text ) > self::MAX_CONTENT_CHARS ) {
-			$text = substr( $text, 0, self::MAX_CONTENT_CHARS ) . '...';
+		$block_context = static function ( $context, $block, $parent_block ) use ( $post ) {
+			if ( null === $parent_block ) {
+				$context['postId']   = $post->ID;
+				$context['postType'] = $post->post_type;
+			}
+			return $context;
+		};
+		add_filter( 'render_block_context', $block_context, 10, 3 );
+		try {
+			$html = apply_filters( 'the_content', $source );
+		} finally {
+			remove_filter( 'render_block_context', $block_context );
 		}
+		$html = FLOSC_Content_Filter::instance()->filter_post_content( (string) $html, $access_level, false );
+		$text = $this->rendered_text( $html );
+		/**
+		 * Supply a plain-text description of components in the permitted HTML.
+		 *
+		 * @param string  $description  Component description.
+		 * @param WP_Post $post         The resource being rendered.
+		 * @param string  $html         Permitted rendered HTML.
+		 * @param string  $depth        Effective retrieval depth.
+		 * @param string  $access_level FLOSC access tier for this request.
+		 */
+		$description = apply_filters( 'flosc_rendered_post_description', '', $post, $html, $depth, $access_level );
+		$text        = trim( $text . "\n" . sanitize_textarea_field( (string) $description ) );
+		return wp_html_excerpt( $text, self::MAX_CONTENT_CHARS, strlen( $text ) > self::MAX_CONTENT_CHARS ? '...' : '' );
+	}
 
-		return $text;
+	/**
+	 * Extract text from permitted markup.
+	 *
+	 * @param string $html Permitted HTML.
+	 * @return string
+	 */
+	private function rendered_text( $html ) {
+		$html = preg_replace( '~<(template|noscript)\b[^>]*>.*?</\1\s*>~is', '', $html );
+		$html = preg_replace( '~</(?:p|div|section|li|tr|h[1-6])\s*>|<br\s*/?>~i', ' ', $html );
+		$text = html_entity_decode( wp_strip_all_tags( $html ), ENT_QUOTES, 'UTF-8' );
+		$text = preg_replace( '/\s+/u', ' ', $text );
+		return trim( (string) $text );
+	}
+
+	/**
+	 * Guide the assistant to the next step already configured in the flow.
+	 *
+	 * @param string $access_level Server-resolved access level.
+	 * @return string Instruction for the model.
+	 */
+	public static function access_guidance( $access_level ) {
+		$guidance = 'Acknowledge the person\'s interest and share any available title, link, or preview. Use the active IVR for the invitation and wording. ';
+		if ( 'visitor' === $access_level ) {
+			return $guidance . 'When the IVR offers a profile, warmly invite the person to register as a guest. Describe only what the IVR says becoming a guest opens.';
+		}
+		if ( 'guest' === $access_level ) {
+			return $guidance . 'When the IVR has a matching membership offer, warmly invite the guest to see it. Use only the configured offer and describe only what it includes.';
+		}
+		return $guidance . 'Help the member find what is included in this flow or the relevant help it provides.';
 	}
 }

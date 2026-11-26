@@ -418,6 +418,9 @@ trait FLOSC_Chat_Turn_Trait {
 		// v1.1.0: Start with frontend context, then OVERRIDE with authoritative backend values
 		// This prevents frontend from spoofing logged_in, user_id, etc.
 		$eval_context = $context; // Frontend context first.
+		foreach ( array( 'browsing_page_content', 'page_content_injected', 'content_access_depth', 'content_limited', 'content_page_title', 'content_page_url', 'content_question' ) as $server_field ) {
+			unset( $eval_context[ $server_field ] );
+		}
 
 		// Authoritative backend values (cannot be overridden by frontend).
 		$eval_context['logged_in']     = is_user_logged_in();
@@ -741,15 +744,20 @@ trait FLOSC_Chat_Turn_Trait {
 		if ( '' !== $da1_catalog_reply ) {
 			$page_reply = '';
 			try {
-				$page_reply = FLOSC_Page_Context::instance()->find_named_page_reply( $message, $eval_context, $flow_id );
-				if ( '' !== $page_reply && $this->da1_catalogs->has_explicit_catalog_request( $message, $flow_id, $ivr_file, $catalog_access ) ) {
-					$page_reply = '';
+				$explicit_catalog = $this->da1_catalogs->has_explicit_catalog_request( $message, $flow_id, $ivr_file, $catalog_access );
+				if ( ! $explicit_catalog ) {
+					if ( ! empty( $eval_context['content_question'] ) ) {
+						$da1_catalog_reply = '';
+					} else {
+						$page_reply = FLOSC_Page_Context::instance()->find_named_page_reply( $message, $eval_context, $flow_id );
+					}
 				}
 			} catch ( \Throwable $flosc_page_lookup_error ) {
 				$page_reply = '';
 				flosc_log( '[FLOSC] Named page lookup failed: ' . $flosc_page_lookup_error->getMessage() );
 			}
-
+		}
+		if ( '' !== $da1_catalog_reply ) {
 			$response_message      = array(
 				'content'          => '' !== $page_reply ? $page_reply : $da1_catalog_reply,
 				'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
@@ -897,7 +905,10 @@ trait FLOSC_Chat_Turn_Trait {
 		$frontend_ivr_name     = sanitize_text_field( $request->get_param( 'ivr_message_name' ) ?? '' );
 
 		if ( null === $response_message ) {
-			if ( ! empty( $frontend_ivr_guidance ) ) {
+			$content_invitation = $this->find_content_limit_response( $phase, $eval_context, $ivr_config );
+			if ( $content_invitation ) {
+				$response_message = $content_invitation;
+			} elseif ( ! empty( $frontend_ivr_guidance ) ) {
 				// Frontend matched — use its IVR content as guidance.
 				$response_message = array(
 					'content'          => $frontend_ivr_guidance,
@@ -1129,7 +1140,8 @@ trait FLOSC_Chat_Turn_Trait {
 				} else {
 					// IVR mode or no AI - use phase default + autoprompts.
 					$response_message = array(
-						'content'          => $this->get_phase_default_response( $phase, $eval_context ),
+						'content'          => ! empty( $eval_context['content_question'] ) && ! empty( $eval_context['browsing_page_content'] )
+							? $eval_context['browsing_page_content'] : $this->get_phase_default_response( $phase, $eval_context ),
 						'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
 						'phase_change'     => null,
 					);

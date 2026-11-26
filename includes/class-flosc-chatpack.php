@@ -441,6 +441,8 @@ class FLOSC_Chatpack {
 		$browsing_title   = trim( (string) ( $eval_context['browsing_page_title'] ?? '' ) );
 		$page_content     = trim( (string) ( $eval_context['browsing_page_content'] ?? '' ) );
 		$browsing_post_id = absint( $eval_context['browsing_page_post_id'] ?? 0 );
+		$content_title    = trim( (string) ( $eval_context['content_page_title'] ?? '' ) );
+		$content_url      = esc_url_raw( (string) ( $eval_context['content_page_url'] ?? '' ) );
 
 		$has_page = ( '' !== $browsing_url || '' !== $browsing_title || $browsing_post_id > 0 );
 		// Companion turns always carry the on-site policy, even with no resolved page.
@@ -455,8 +457,11 @@ class FLOSC_Chatpack {
 			$section .= "- The user is asking about a specific page/post. Use ONLY the content below for page-specific facts.\n";
 			$section .= "- Reply in 2-4 short, conversational sentences. Do NOT paste or summarize the whole page.\n";
 			$section .= "- You may quote one short phrase if it helps. Stay human and guided.\n";
-			if ( '' !== $browsing_title ) {
-				$section .= "- Page title: {$browsing_title}\n";
+			if ( '' !== $content_title ) {
+				$section .= "- Content page title: {$content_title}\n";
+			}
+			if ( '' !== $content_url ) {
+				$section .= "- Content page URL: {$content_url}\n";
 			}
 			$section .= "\n--- PAGE BODY (background context, not for display) ---\n";
 			$section .= $page_content . "\n";
@@ -475,6 +480,14 @@ class FLOSC_Chatpack {
 			}
 			$section .= "- For page-specific facts beyond title/URL, rely on PAGE BODY when it appears in this prompt\n";
 			$section .= "- After confirming page awareness, continue with a concrete help question relevant to that page\n";
+		}
+
+		if ( ! empty( $eval_context['content_limited'] ) ) {
+			$depth        = (string) ( $eval_context['content_access_depth'] ?? 'title' );
+			$access_level = (string) ( $eval_context['access_level'] ?? 'visitor' );
+			$section     .= "\n**CONTENT LIMIT:**\n";
+			$section     .= "- Resource: {$content_title}\n- URL: {$content_url}\n- Available depth: {$depth}\n";
+			$section     .= '- ' . FLOSC_Page_Context::access_guidance( $access_level ) . "\n";
 		}
 
 		if ( 'companion' === $surface ) {

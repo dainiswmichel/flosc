@@ -260,11 +260,12 @@ class FLOSC_Content_Filter {
 	 * Handles <!--flosc_read_more--> tag for member-only content
 	 * Uses custom tag to avoid conflicts with WordPress core <!--more-->
 	 *
-	 * @param string $content Post content.
-	 * @param string $access_level Access level.
+	 * @param string $content        Post content.
+	 * @param string $access_level   Access level.
+	 * @param bool   $include_notice Include the frontend guest notice.
 	 * @return string Filtered content
 	 */
-	public function filter_post_content( $content, $access_level ) {
+	public function filter_post_content( $content, $access_level, $include_notice = true ) {
 
 		// Split by <!--flosc_read_more--> tag.
 		$parts = preg_split( '/<!--flosc_read_more(.*?)?-->/', $content, -1 );
@@ -283,6 +284,9 @@ class FLOSC_Content_Filter {
 				return $public_content;
 
 			case 'guest':
+				if ( ! $include_notice ) {
+					return $public_content;
+				}
 				// Public post HTML + FLOSC-built notice (escape what we build).
 				$notice = '<p class="flosc-member-teaser">'
 					. esc_html__( 'Member-only content is available below. Complete the quiz to unlock full access.', 'flosc' )

@@ -1658,52 +1658,43 @@ class FLOSC_Site_Content_Index {
 		$terms = preg_split( '/\s+/', function_exists( 'mb_strtolower' ) ? mb_strtolower( $q ) : strtolower( $q ) );
 		$terms = is_array( $terms ) ? array_filter( $terms ) : array();
 
-		$scored = array();
+		$page_context = FLOSC_Page_Context::instance();
+		$scored       = array();
+		$flow_slugs   = '' !== $flow_stem ? $this->resolve_category_slugs( $flow_stem ) : array();
 		foreach ( $posts as $row ) {
 			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) ) {
 				continue;
 			}
 
-			/*
-			 * A post the visitor may not READ is still a post that EXISTS.
-			 *
-			 * This skipped the whole row, so a member-only post was invisible
-			 * to search entirely — its title, its keywords, all of it. Ask a
-			 * visitor-level chat about a member-only piece and the honest
-			 * answer available to it was "I have no information", which is
-			 * false: the site knows the piece perfectly well.
-			 *
-			 * The row is scored and returned now, with its title, URL and
-			 * keywords and WITHOUT its body, marked locked. The model can say
-			 * the piece exists and point at it; it cannot quote what is behind
-			 * the gate. That is what the comment here always said it wanted:
-			 * "list locked title only".
-			 */
+			$indexed_post = null;
+			if ( 'post' === ( $row['kind'] ?? 'post' ) ) {
+				$indexed_id   = absint( $row['post_id'] ?? 0 );
+				$indexed_post = $indexed_id ? get_post( $indexed_id ) : null;
+				if ( ! $indexed_post ) {
+					continue;
+				}
+				$depth = $page_context->post_access_depth( $indexed_post, $access_level, $flow_stem );
+				if ( '' === $depth ) {
+					continue;
+				}
+				$row['title'] = sanitize_text_field( get_the_title( $indexed_post ) );
+				$row['url']   = esc_url_raw( (string) get_permalink( $indexed_post ) );
+				$slice        = $page_context->post_source( $indexed_post, $depth, $access_level );
+				$limited      = $page_context->content_is_limited( $indexed_post, $depth, $access_level );
+			} else {
+				$depth   = $this->row_depth( $row, $access_level );
+				$slice   = $this->row_body_at( $row, $depth );
+				$limited = 'full' !== $depth;
+			}
 
-			/*
-			 * No sanitize_key() on the way in.
-			 *
-			 * access is a VGM list, and sanitize_key() strips the space:
-			 * "guest member" arrived as "guestmember", vgm_list() found no level
-			 * in it, and access_allows() reads an empty list as nobody having
-			 * gated the row — so a row restricted to guests and members was
-			 * handed to a logged-out visitor, body and all. vgm_list() is the
-			 * sanitizer: it lowercases, trims, splits and whitelists.
-			 */
-			$depth  = $this->row_depth( $row, $access_level );
-			$slice  = $this->row_body_at( $row, $depth );
-			$locked = ( 'title' === $depth );
-
-			/*
-			 * A row is searched at the depth it is returned at, never deeper.
-			 * At title depth the body is not searched and not returned; at
-			 * excerpt or readmore only that slice is. Otherwise a keyword that
-			 * appears solely past the gate would pull up a row the reader then
-			 * cannot see the reason for.
-			 */
-			$hay_src = (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' )
-				. ( '' !== $slice ? ' ' . $slice : '' );
-			$hay     = function_exists( 'mb_strtolower' ) ? mb_strtolower( $hay_src ) : strtolower( $hay_src );
+			$keywords_for_row = '';
+			if ( ! $limited ) {
+				$key              = $indexed_post ? 'keywords_manual' : 'keywords';
+				$keywords_for_row = (string) ( $row[ $key ] ?? '' );
+			}
+			$searchable = $indexed_post ? wp_strip_all_tags( strip_shortcodes( $slice ) ) : $slice;
+			$hay_src    = (string) ( $row['title'] ?? '' ) . ' ' . $keywords_for_row . ' ' . $searchable;
+			$hay        = function_exists( 'mb_strtolower' ) ? mb_strtolower( $hay_src ) : strtolower( $hay_src );
 
 			$score = 0;
 			if ( '' !== $q && '' !== $hay ) {
@@ -1731,28 +1722,18 @@ class FLOSC_Site_Content_Index {
 				}
 			}
 			// Prefer posts in the active flow's content category when one is set (same library, product slice first).
-			if ( $score > 0 && '' !== $flow_stem ) {
-				static $flow_slugs_cache = null;
-				if ( null === $flow_slugs_cache ) {
-					$flow_slugs_cache = $this->resolve_category_slugs( $flow_stem );
-				}
-				if ( ! empty( $flow_slugs_cache ) ) {
-					$rcats = isset( $row['categories'] ) && is_array( $row['categories'] ) ? $row['categories'] : array();
-					foreach ( $flow_slugs_cache as $fs_slug ) {
-						if ( in_array( $fs_slug, $rcats, true ) ) {
-							$score += 15;
-							break;
-						}
-					}
-				}
+			if ( $score > 0 && array_intersect( $flow_slugs, (array) ( $row['categories'] ?? array() ) ) ) {
+				$score += 15;
 			}
 			if ( $score > 0 ) {
 				$scored[] = array(
-					'score'  => $score,
-					'row'    => $row,
-					'locked' => $locked,
-					'depth'  => $depth,
-					'slice'  => $slice,
+					'score'    => $score,
+					'row'      => $row,
+					'post'     => $indexed_post,
+					'limited'  => $limited,
+					'depth'    => $depth,
+					'slice'    => $slice,
+					'keywords' => $keywords_for_row,
 				);
 			}
 		}
@@ -1778,28 +1759,15 @@ class FLOSC_Site_Content_Index {
 				$out .= ' | URL: ' . (string) $row['url'];
 			}
 			$out .= "\n";
-			if ( ! empty( $row['keywords'] ) ) {
-				$out .= 'Keywords: ' . (string) $row['keywords'] . "\n";
+			if ( '' !== $hit['keywords'] ) {
+				$out .= 'Keywords: ' . $hit['keywords'] . "\n";
 			}
-			if ( ! empty( $hit['locked'] ) ) {
-				$out .= "Access: title only. This piece exists and may be named and linked. Its content is not available at this access level, so do not quote or summarise it — say it is there and point to it.\n";
-				$out .= "\n---\n\n";
-				continue;
+			if ( $hit['limited'] ) {
+				$out .= 'Available portion: ' . $hit['depth'] . ".\n" . FLOSC_Page_Context::access_guidance( $access_level ) . "\n";
 			}
 
-			$depth = (string) ( $hit['depth'] ?? 'full' );
-			if ( 'full' !== $depth ) {
-				/*
-				 * Say which slice this is, so the model does not present a
-				 * teaser as the whole piece. It may quote what it was given and
-				 * point at the post for the rest.
-				 */
-				$out .= 'excerpt' === $depth
-					? "Access: excerpt only. Quote this much and point to the post for the rest.\n"
-					: "Access: opening section only, up to the read-more break. Quote this much and point to the post for the rest.\n";
-			}
-
-			$out .= "\n" . (string) ( $hit['slice'] ?? ( $row['content'] ?? '' ) ) . "\n\n---\n\n";
+			$body = $hit['post'] ? $page_context->render_post_text( $hit['post'], $hit['slice'], $hit['depth'], $access_level ) : $hit['slice'];
+			$out .= "\n" . $body . "\n\n---\n\n";
 		}
 		return $out;
 	}
