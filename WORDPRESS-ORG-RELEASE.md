@@ -27,7 +27,9 @@ the **exact built zip** that will be uploaded:
 
 | Finding/file | Why it stays | Reviewed by | Date |
 |---|---|---|---|
-| (add rows only with an explicit reason) | | | |
+| `NonceVerification.Recommended` (12), `includes/class-flosc-framework.php` | The audio endpoint checks the viewer's permission before reading the flagged query parameters and validates a signed, expiring URL for that user, session, and file before serving it. | Codex | 2026-11m-27d |
+| `NonceVerification.Recommended` (7), `includes/flosc-request.php` | These GET readers select what to display. Admin actions that write verify their own action nonce in their handlers. | Codex | 2026-11m-27d |
+| `NonceVerification.Recommended` (3), `includes/magic-link/class-flosc-magic-link-trait.php` | The flagged reads route email and cross-domain callbacks. A verified link token or a valid signed-in session establishes the caller's identity before account or session processing. | Codex | 2026-11m-27d |
 
 Every exception must be re-checked at each submission cycle; none are permanent.
 
