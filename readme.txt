@@ -335,7 +335,7 @@ Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_
 Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Whisper: when OpenAI Whisper is selected as the STT provider, FLOSC transcribes audio at https://api.openai.com/v1/audio/transcriptions (the official OpenAI provider plugin does not implement transcription).
 Data sent: visitor prompt text, conversation context, and model parameters for chat; uploaded audio payloads for Whisper.
-Service terms: https://openai.com/policies/terms-of-use
+Service terms: https://openai.com/policies/services-agreement/
 Privacy policy: https://openai.com/policies/privacy-policy
 
 2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
@@ -343,21 +343,21 @@ When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool decla
 Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key and the anthropic-version header are sent; no visitor or site content is included.
 Model description: when an administrator clicks "Describe this model", FLOSC requests https://api.anthropic.com/v1/models/{model_id} to read that model's context window, maximum reply length and capabilities. Only the API key and the anthropic-version header are sent.
 Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
-Service terms: https://www.anthropic.com/legal/consumer-terms
+Service terms: https://www.anthropic.com/legal/commercial-terms
 Privacy policy: https://www.anthropic.com/legal/privacy
 
 3. xAI (for AI chat responses)
 Endpoints: https://api.x.ai/v1/chat/completions and https://api.x.ai/v1/language-models
 Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned. The language-models endpoint is requested only when an administrator clicks "Fetch models this key can use" or runs the AI connection test, to list the chat models the saved key can use.
 Data sent: visitor prompt text, conversation context, and model parameters for chat; only the API key for the model list.
-Service terms: https://x.ai/legal/terms-of-service
+Service terms: https://x.ai/legal/terms-of-service-enterprise
 Privacy policy: https://x.ai/legal/privacy-policy
 
 4. Google Gemini (via WordPress AI Client + AI Provider for Google)
 When this flow attaches Gemini, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for Google plugin, which communicates with Google. FLOSC does not call Gemini generateContent itself. The compiled personality profile is sent as the system instruction.
 Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://generativelanguage.googleapis.com/v1beta/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Data sent: visitor prompt text, conversation context, and model parameters.
-Service terms: https://developers.google.com/terms
+Service terms: https://developers.google.com/terms and https://ai.google.dev/gemini-api/terms
 Privacy policy: https://policies.google.com/privacy
 
 5. AssemblyAI (for speech-to-text)

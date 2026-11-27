@@ -1,0 +1,152 @@
+<h1 id="security">Part 4: Security</h1>
+<p class="skeleton-marker">~5 pages — Authentication, authorization, data protection. Content pending.</p>
+
+<h2 id="security-model">Security Model Overview</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-philosophy">Philosophy — Defense in Depth</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-threat-model">Threat Model — What We're Protecting Against</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-auth">Authentication</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-nonces">WordPress Nonces — CSRF Protection</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-nonce-rest">Nonce Validation in REST Endpoints</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-nonce-retry">Nonce Retry Logic — The Client-Side Recovery</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-session-auth">Session-Based Authentication</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-signed-cookies">Signed Cookies — HMAC SHA256</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-cookie-generation">Cookie Generation — Data + Signature</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-cookie-verification">Cookie Verification — Re-Computing HMAC</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-rate-limiting">Rate Limiting — Per-IP with CDN Support</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-rate-ip-detection">IP Detection — HTTP_CF_CONNECTING_IP, HTTP_X_FORWARDED_FOR</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-rate-thresholds">Rate Thresholds — Per-Endpoint Limits</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-sso-auth">SSO Authentication — OAuth2 Security</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-state-param">State Parameter — CSRF in OAuth</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-state-expiration">State Expiration — 600 Second Window</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-token-storage">Token Storage — Where Secrets Live</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-token-encryption">Token Encryption — encrypt_tokens() & decrypt_tokens()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-authorization">Authorization — Access Control</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-capability-check">WordPress Capability Checks</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-content-access">Content Access — The Validation Chain</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-access-flow">Request → Validator → Access Manager → Content</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-admin-access">Admin Page Access Control</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-api-keys">API Key Management</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-anthropic-key">Anthropic API Key — Storage & Usage</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-paypal-credentials">PayPal Credentials — Client ID & Secret</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-stripe-keys">Stripe Keys — Test vs Live</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-no-source-credentials">The Rule — No Credentials in Source Code</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-input">Input Validation & Sanitization</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-sanitize-input">User Input Sanitization</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-escape-output">Output Escaping — Preventing XSS</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-sql-injection">SQL Injection Prevention — $wpdb->prepare()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-ai">AI-Specific Security</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-prompt-injection">Prompt Injection — What We Guard Against</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-response-validation">Response Validation — Post-AI Safety Checks</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-tool-use">Tool Use Security — Constraining What AI Can Do</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-condition-whitelisting">Condition Variable Whitelisting — allowedConditionVars</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-whitelist-vars">The ~35 Allowed Variables — Complete List</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-whitelist-why">Why Whitelisting — Preventing Arbitrary Code Execution in Conditions</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-admin-introspection">Admin Introspection — check_admin_introspection()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-introspection-purpose">What It Does — Verifying AI Knows Its Own Domain</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="security-introspection-verification">adminVerification Object — ivrFile, slug, name, tagline, domain</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-data-privacy">Data Privacy</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-chat-data">Chat Data — What's Stored, What's Not</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-guest-data">Guest Data — Minimal Collection</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-gdpr">GDPR Considerations</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="security-logging">Security Logging</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-debug-logging">Debug Logging Gates — No Production console.log</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="security-error-logging">Server Error Logging — What Gets Logged</h3>
+<p class="skeleton-marker">Content pending.</p>
