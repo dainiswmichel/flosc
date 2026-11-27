@@ -1328,7 +1328,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							? flosc_flow_name()
 							: ( is_array( $identity ) ? (string) ( $identity['name'] ?? '' ) : '' ),
 					'siteName'                       => get_bloginfo( 'name' ),
-					'offers'                         => array_values( $offers ),
+					'offers'                         => array_values( array_map( array( FLOSC_Checkout_REST::class, 'public_offer_fields' ), $offers ) ),
 					'appUrl'                         => $flosc_app_url,
 					// Dock/collapse handoff when companion mode is companion|both and enabled.
 					'companionHandoffEnabled'        => ( $flosc_companion_handoff_enabled && $flosc_companion_return_available ),

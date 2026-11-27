@@ -47,7 +47,21 @@ class FLOSC_Checkout_Rest {
 			}
 		}
 		$offers = $this->flosc->sale()->get_available_offers( $user_id, $flow_id ? $flow_id : null );
-		return new WP_REST_Response( array( 'offers' => array_values( $offers ) ) );
+		return new WP_REST_Response( array( 'offers' => array_values( array_map( array( self::class, 'public_offer_fields' ), $offers ) ) ) );
+	}
+
+	/**
+	 * Remove private redemption and discount data before sending an offer to a customer.
+	 *
+	 * @param array $offer Stored offer record.
+	 * @return array Offer fields used by the storefront.
+	 */
+	public static function public_offer_fields( $offer ) {
+		if ( ! is_array( $offer ) ) {
+			return array();
+		}
+		unset( $offer['access_codes'], $offer['coupons'] );
+		return $offer;
 	}
 
 	/**
