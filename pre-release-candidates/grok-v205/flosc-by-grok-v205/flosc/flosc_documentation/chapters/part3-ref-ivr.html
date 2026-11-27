@@ -1,0 +1,164 @@
+<h1 id="ref-ivr">Part 3: Reference — IVR System</h1>
+<p class="skeleton-marker">The message flow engine. Content pending.</p>
+
+<h2 id="ivr-parser">class-ivr-parser.php — The Markdown Parser</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-parser-purpose">What It Does — Markdown to Structured Data</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-parser-format">The IVR Markdown Format Specification</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-message-block">Message Blocks (## headings)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-conditions">Condition Lines (condition: ...)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-autoprompts">Autoprompt Lines (autoprompt: ...)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-offers">Offer Lines (offer: ...)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-templates">Template Variables ({visitor_name}, {score}, etc.)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-parser-methods">Key Methods</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-parse">parse() — Main Entry Point</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-resolve-templates">resolve_template_variables()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-parser-config">Configuration Access Methods</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-get-config">get_flosc_config() — Complete Config Object</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-load-save">flosc_load_config() & flosc_save_config() — File I/O</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-phase-messages">get_flosc_phase_messages() — Messages by Phase</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-messages-by-type">get_flosc_messages_by_type() — Sequential, Pool, Triggered, Prompt Cards</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-styles">get_flosc_styles() & get_flosc_styles_css() — IVR Styling</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-autoprompts-method">get_flosc_user_autoprompts() — User-Facing Prompt Pills</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-auto-messages">get_flosc_auto_messages() — Auto-Triggered Messages</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="ivr-parser-default-config">get_flosc_default_config() — Fallback Configuration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="flow-manager">class-flow-manager.php — Flow Orchestration</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-purpose">What It Does — Managing Multiple IVR Flows</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-default">The Default Flow (flosc_default_ivr)</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-settings">Flow-Level Settings Storage</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-crud">CRUD Operations — create_flow(), update_flow(), delete_flow()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-access">Flow Access Control — can_access_flow_admin(), grant/revoke</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-domain">Domain-Based Resolution — get_flow_by_domain(), get_flow_by_slug()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-resources">Available Resources — get_available_ivr_files(), get_available_quiz_types()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-legacy">Legacy Migration — maybe_migrate_from_legacy()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="flow-manager-settings-method">get_setting() & update_override() — Flow-Aware Settings Access</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="condition-evaluator">class-condition-evaluator.php — The Visibility Engine</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-evaluator-purpose">What It Does — Evaluates Conditions Against Context</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-evaluator-build-context">build_context() — Assembling the Evaluation Context</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-context-keys">All Context Keys and Their Sources</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-evaluator-operators">Supported Operators</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-equals">equals / not_equals</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-comparison">greater_than / less_than</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-contains">contains / not_contains</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-exists">exists / not_exists</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-evaluator-eval">evaluate() — The Core Method</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-evaluator-offer-tracking">Offer State Tracking</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-offer-state">check_offer_state() & mark_offer_state() — Persistent Offer History</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-shown-session">was_shown_this_session() & mark_shown_this_session() — Per-Session Tracking</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="condition-evaluator-ever-shown">was_ever_shown() & mark_shown() — Lifetime Tracking</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="condition-evaluator-applicable">get_applicable_messages() — Which Messages Match Current Context</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="ivr-config-files">IVR Configuration Files</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-default">flosc_default_ivr.md — The Main Flow</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-lesson-files">lesson_01.md through lesson_10.md — Lesson Knowledge</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-lesson-catalog">lesson_catalog.md — The Lesson Directory</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-positive">flosc_positive_default_ivr.md — Warm/Encouraging Tone</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-technical">flosc_technical_default_ivr.md — Professional/Direct Tone</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-lesaep">lesaep_ivr.md — Pronunciation Learning IVR</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-solfeggio">simplified_solfeggio_ivr.md — Music Learning IVR</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-creating-custom">Creating a Custom IVR File — FloscAdmin Guide</h3>
+<p class="skeleton-marker">Content pending.</p>

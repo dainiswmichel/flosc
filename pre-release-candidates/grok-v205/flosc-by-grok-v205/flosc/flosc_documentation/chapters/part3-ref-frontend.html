@@ -1,0 +1,434 @@
+<h1 id="ref-frontend">Part 3: Reference — Frontend (JS & CSS)</h1>
+<p class="skeleton-marker">The client-side application. Content pending.</p>
+
+<h2 id="flosc-app-js">flosc-app.js — The Frontend Application</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-overview">Overview — ~5,500 Lines of Vanilla JavaScript</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-floscapp-class">The FLOSCApp Class</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-constructor">Constructor — Initialization & Config</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-constructor-state">Constructor State Properties — config, user, state, ivr, quiz, offers</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-constructor-whitelist">allowedConditionVars — The ~35 Whitelisted Condition Variables</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-init-sequence">init() — Boot Sequence</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-bind-elements">bindElements() — DOM Reference Setup</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-bind-events">bindEvents() — Event Listener Registration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-setup-ui">setupUI() — Initial UI State</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-init-visitor-bar">initVisitorBar() — Visitor Profile Bar Initialization</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-chat-engine">Chat Engine</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-send-message">sendMessage() — User Input Processing</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-process-response">processResponse() — Rendering AI/IVR Responses</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-message-rendering">Message Rendering — Markdown, HTML, Rich Content</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-format-markdown">formatMarkdown() — Client-Side Markdown Rendering</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-streaming">Streaming vs Non-Streaming — How Responses Appear</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-add-message">addMessage() — DOM Insertion & Scroll</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-typing-indicator">showTyping() & hideTyping() — Typing Animation</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-visitor-messages">saveVisitorMessage() & restoreVisitorMessages() — Persistence</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-ivr-response">IVR Response Matching</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-find-ivr-response">findIVRResponse() — The Client-Side Matcher</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-fuzzy-matching">Fuzzy Matching — The v1.9.6 Enhancement</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-load-ivr">loadIVRMessages() — Fetching IVR Data from Server</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-fallback-messages">getFallbackMessages() — When IVR Load Fails</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-determine-phase">determinePhase() — Client-Side Phase Detection</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-build-ivr-context">buildIVRContext() — Context for Condition Evaluation</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-evaluate-condition">evaluateCondition() & parseCondition() — Client-Side Condition Engine</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-inject-ivr-styles">injectIVRStyles() — Dynamic CSS from IVR Config</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-start-ivr">startIVR() — Triggering the IVR System</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-check-auto-messages">checkAutoMessages() & _checkAutoMessagesNow() — Timed Messages</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-show-ivr-message">showIVRMessage() — Rendering IVR Content in Chat</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-autoprompts">Autoprompt Pill System</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-rendering">Pill Rendering — Data-Driven UI Buttons</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-click">Pill Click Handling</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-scroll">Horizontal Scroll Behavior</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-show">floscShowUserAutoPrompts() — Displaying Pills</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-cleanup">floscCleanupUserAutoPrompts() — Removing Old Pills</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-render">floscRenderUserAutoPrompts() — Data → DOM</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-autoprompt-handle">floscHandleUserAutoPrompt() — Pill Click Processing</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-carousel">initCarouselOverflow() — Scroll Arrow Detection</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-quiz-ui">Quiz UI</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-quiz-rendering">Quiz Rendering Inside Chat</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-quiz-submission">Quiz Submission & Score Display</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-payment-flow">Payment Flow (Client-Side)</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-card">Offer Card Rendering</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-paypal-buttons">PayPal Buttons Integration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-paypal-create-order">createOrder — Client → Server</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-paypal-on-approve">onApprove — Capturing Payment</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-payment-success">Post-Payment — Access Refresh</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-offer-system">Offer Display System</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-show-offer">showOffer() — Main Offer Entry Point</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-data">getOfferData() — Loading Offer Configuration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-card-render">showOfferCard() — Full Card Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-pill-render">showOfferPill() — Compact Pill Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-compact-render">showOfferCompact() — Compact Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-banner-render">showOfferBanner() — Banner Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-featured-render">showOfferFeatured() — Featured Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-text-render">showOfferText() — Text-Only Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-inline-checkout">showInlineCheckout() — In-Chat Payment Form</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-offer-tracking">Offer Tracking</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-track-shown">trackOfferShown() & trackOfferDismissed() — Analytics</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-timer">startOfferTimer() — Timed Offer Triggers</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-offer-states">_loadOfferStates() & _saveOfferStates() — Persistence</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-stripe-integration">Stripe Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-init-stripe">initStripe() — Stripe JS SDK Initialization</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-mount-stripe">mountInlineStripeElement() — Card Element Rendering</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-process-inline">processInlinePayment() — Payment Processing</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-sandbox">Sandbox Payment System</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-sandbox-open">openSandboxPurchase() — Test Payment Mode</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-sandbox-show">showSandboxPayment() — Sandbox UI</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-sandbox-process">processSandboxPayment() — Simulated Transaction</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-lesson-display">Lesson Display</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-lesson-card">Lesson Card Rendering</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-lesson-full">Full Lesson View</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-voice-input">Voice Input</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-microphone">Microphone Integration</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-stt-flow">Speech-to-Text Flow</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-recording-modal">showRecordingModal() & hideRecordingModal()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-toggle-recording">toggleRecording() — Start/Stop Control</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-process-recording">processRecording() — Audio → API → Text</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-sidebar">Sidebar & Conversation History</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-load-sessions">loadSessions() — Fetching Session List</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-render-sessions">renderSessions() — Session List UI</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-load-session">loadSession() — Loading a Previous Conversation</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-new-session">newSession() — Starting Fresh</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-restore-session">restoreLastSession() — Resume on Page Load</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-toggle-sidebar">toggleSidebar() — Mobile Menu Toggle</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-auth">Authentication & Registration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-auth-modal">showAuthModal() & hideAuthModal() — Login/Register UI</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-email-auth">processEmailAuth() — Email Registration Flow</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-initiate-sso">initiateSSO() — Social Login Redirect</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-visitor-menu">handleVisitorMenuAction() — Visitor Dropdown Actions</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-admin-feedback">Admin Feedback System</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-admin-feedback-buttons">addAdminFeedbackButtons() — Correction/Praise UI</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-correction-modal">showCorrectionModal() — Teaching AI What's Wrong</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-praise-modal">showPraiseModal() — Reinforcing Good Responses</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-utilities">Utility Methods</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-replace-variables">replaceVariables() — Template Variable Substitution in JS</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-escape-html">escapeHtml() — XSS Prevention</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-refresh-nonce">refreshNonce() — Nonce Expiration Recovery</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-track-event">trackEvent() — Analytics Event Tracking</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-call-api">callAPI() — Generic REST API Wrapper</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-generate-status">generateUserStatusResponse() — Dynamic Status Text</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-perform-action">performIVRAction() — IVR Action Execution</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-fallback-welcome">_showFallbackWelcome() — When Everything Fails</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="js-ai-welcome">_generateAIWelcome() — AI-Generated Welcome Message</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="js-debug-logging">Debug Logging — this.log()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="css-system">CSS System</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-flosc-layout">flosc-layout.css — Structural Layout</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-layout-grid">Grid Structure — Sidebar + Chat + Input</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-layout-responsive">Responsive Breakpoints</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-layout-sections">35 Major Sections — Reset, Sidebar, Chat, Input, Modals, Quiz, Payment, Lessons</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-layout-modal-system">Modal System — Quiz, Share, Payment, Login Gate</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-layout-user-state">User State Visibility Classes — Visitor/Guest/Member Toggles</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-flosc-theme">flosc-theme.css — Visual Theming</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-theme-variables">CSS Custom Properties — The Variable System</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-theme-colors">Color System</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-theme-sections">27 Theme Sections — Messages, Input, Pills, Buttons, Scrollbar, Quiz, Visitor Bar</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-chat-styles">Chat Style Themes</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-style-chatgpt">chat-style-chatgpt.css</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-style-claude">chat-style-claude.css</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-style-grok">chat-style-grok.css</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-style-light">chat-style-light.css</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-style-dark">chat-style-dark.css</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-flosc-offers">flosc-offers.css — Offer & Payment UI</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-offers-sections">11 Sections — Card, Pill, Compact, Banner, Text, Featured, Panel, Inline Checkout, Quiz</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-companion">flosc-companion.css — Companion Widget</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-admin">flosc-admin.css — Admin Stylesheet</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="css-admin-sections">26 Sections — Cards, Toggles, Tabs, Tables, Metrics, Debug, IVR, Offers, SSO, Logs</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="css-ivr-admin">ivr-admin.css — IVR Admin Page Styles</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="companion-widget-frontend">Companion Widget</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="companion-js">flosc-companion.js</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="companion-php">class-companion-widget.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="companion-should-load">should_load() — When to Show the Widget</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="companion-page-context-detect">detect_page_context() — Knowing Where the User Is</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="companion-lesson-check">post_is_lesson() — Lesson Page Detection</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="ivr-admin-js">ivr-admin.js — IVR Admin Interface</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-admin-class">IVRAdmin Class — jQuery-Based Admin UI</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-admin-messages">addMessage() & removeMessage() — Message CRUD</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-admin-collect">collectConfig() — Assembling Configuration from Form</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-admin-save">saveConfig() — AJAX Save to Server</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-admin-phases">Phase Iteration — freeline, login, offer, sale, content</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="ivr-admin-message-types">Message Types Per Phase — sequential, prompt_cards, pool, triggered</h3>
+<p class="skeleton-marker">Content pending.</p>
