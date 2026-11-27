@@ -1,8 +1,8 @@
 {
   "iteration": "v204",
   "plugin_version": "8.0.0",
-  "canonical_source_commit": "532e787d992a413e5670a808792c0dedce61a0c6",
-  "zip_sha256": "395875db21d7c4d83c2559ccaf4028c4f406f6e9d40a234b40cbc07c6b51d695",
+  "canonical_source_commit": "6772558ac6463a7fe5eed81b1596f83c583ebeb2",
+  "zip_sha256": "842b6ef9c3a8665600b1041a5c2af566499806a8ab89a868513d4c988319a27e",
   "file_count": 271,
   "php_count": 155,
   "files": [
@@ -803,8 +803,8 @@
     },
     {
       "path": "includes/class-flosc-page-context.php",
-      "bytes": 25015,
-      "sha256": "727dff2b78c8b0c09b9e56e2ac0878254832eea782ed4de68aaf4e4240a41bcd"
+      "bytes": 25030,
+      "sha256": "2d0a80718d9ab71ae8d7f33d0c7ae1a62da66eb744c91d883a129b0e7491fee1"
     },
     {
       "path": "includes/class-flosc-pronunciation-analyzer.php",
