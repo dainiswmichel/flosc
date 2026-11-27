@@ -32,7 +32,15 @@ class FLOSC_Filesystem {
 			if ( ! function_exists( 'WP_Filesystem' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/file.php';
 			}
-			WP_Filesystem();
+			// WP_Filesystem() creates the transport and populates the global
+			// BEFORE it calls connect(), and returns false when that connect
+			// fails. An object in the global is therefore not proof of a usable
+			// filesystem: on a fresh activation where connect() fails, callers
+			// got a live-looking object they could not write through. Honour
+			// the return value so write_file_safely() falls to its Direct path.
+			if ( false === WP_Filesystem() ) {
+				return null;
+			}
 		}
 
 		return is_object( $wp_filesystem ) ? $wp_filesystem : null;
@@ -160,6 +168,43 @@ class FLOSC_Filesystem {
 	}
 
 	/**
+	 * The file mode to hand put_contents(), without naming a constant that may
+	 * not exist yet.
+	 *
+	 * WordPress defines FS_CHMOD_FILE inside WP_Filesystem(), and only once
+	 * connect() has returned true. On a fresh activation connect() can fail, so
+	 * the constant can be absent in a request that has already loaded the
+	 * filesystem bootstrap and already has an object in $wp_filesystem. Naming
+	 * the constant at a call site is then a fatal, reported under PHP 8 as
+	 * Undefined constant "FS_CHMOD_FILE".
+	 *
+	 * That is not hypothetical: it is the fresh-install crash found on the
+	 * burner, on the activation path flosc_activate() -> flosc_data_dir() ->
+	 * flosc_protect_uploads_directory(), and again at the flosc_write_data_file()
+	 * seed of flosc_default_technical_ivr.md. Both writes come through
+	 * write_file_safely().
+	 *
+	 * The fallback must be a real integer, not false and not omitted.
+	 * WP_Filesystem_Direct::put_contents() hands the mode to its own chmod(),
+	 * which substitutes FS_CHMOD_FILE for any falsy mode before it looks at the
+	 * file -- so leaving the mode out re-enters the same fatal by a longer road.
+	 *
+	 * 0644 is the floor of WordPress' own formula,
+	 * ( fileperms( ABSPATH . 'index.php' ) & 0777 ) | 0644, so it never grants
+	 * more than core would. This deliberately does NOT define FS_CHMOD_FILE:
+	 * core defines it only when missing, so a plugin-level define would stick
+	 * for the rest of the request and override the host's real permissions.
+	 * It also does not require the bootstrap merely to read a constant --
+	 * WPORG-02 counts a core file as used only when a function from it is
+	 * called nearby, which a constant would not satisfy.
+	 *
+	 * @return int Mode for put_contents().
+	 */
+	private function file_write_mode() {
+		return defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644;
+	}
+
+	/**
 	 * Write file contents through WP_Filesystem when available.
 	 * Writes only under wp-content/uploads.
 	 *
@@ -174,7 +219,7 @@ class FLOSC_Filesystem {
 
 		$filesystem = $this->get_wp_filesystem();
 		if ( $filesystem && method_exists( $filesystem, 'put_contents' ) ) {
-			$ok = $filesystem->put_contents( $path, $content, FS_CHMOD_FILE );
+			$ok = $filesystem->put_contents( $path, $content, $this->file_write_mode() );
 			if ( false !== $ok && null !== $ok ) {
 				return (bool) $ok;
 			}
@@ -190,7 +235,7 @@ class FLOSC_Filesystem {
 		}
 		if ( class_exists( 'WP_Filesystem_Direct' ) ) {
 			$direct = new WP_Filesystem_Direct( null );
-			return (bool) $direct->put_contents( $path, $content, FS_CHMOD_FILE );
+			return (bool) $direct->put_contents( $path, $content, $this->file_write_mode() );
 		}
 
 		return false;
@@ -320,7 +365,7 @@ class FLOSC_Filesystem {
 		$body       = is_string( $body ) ? $body : '';
 		$filesystem = $this->get_wp_filesystem();
 		if ( $filesystem && method_exists( $filesystem, 'put_contents' ) ) {
-			$filesystem->put_contents( 'php://output', $body );
+			$filesystem->put_contents( 'php://output', $body, $this->file_write_mode() );
 			exit;
 		}
 		status_header( 500 );
