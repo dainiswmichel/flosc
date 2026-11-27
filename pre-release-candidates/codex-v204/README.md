@@ -1,19 +1,14 @@
 # Home run candidate v204 coded by Codex
 
-- Baseline v203
 - Public version and stable tag 8.0.0
-- Canonical live source commit `532e787d992a413e5670a808792c0dedce61a0c6`
-- ZIP SHA-256 `395875db21d7c4d83c2559ccaf4028c4f406f6e9d40a234b40cbc07c6b51d695`
+- Canonical source commit `6772558ac6463a7fe5eed81b1596f83c583ebeb2`
+- ZIP SHA-256 `842b6ef9c3a8665600b1041a5c2af566499806a8ab89a868513d4c988319a27e`
 
-The readme links to the API terms for OpenAI, Anthropic, xAI, and Google Gemini. The plugin header identifies v204. These are the only two files that differ from the v203 package, so the v203 content rendering, permissions, registration, and sale journeys carry forward.
-
-The complete packaged source under `flosc-by-codex-v204/flosc/` matches the supplied ZIP file for file.
+This v204 revision carries the approved API terms links for OpenAI, Anthropic, xAI, and Google Gemini. The page-context renderer uses `do_blocks()` followed by `do_shortcode()`, within the existing permission and block context handling. The rendering path now expands blocks and shortcodes directly. Callbacks attached only to `the_content`, including bare URL oEmbed handling, are outside this path.
 
 ## Verification
 
-- ZIP integrity, the 271-file inventory, and the exact two-file diff against v203 were verified.
-- PHP 7.4 compatibility passed on the exact ZIP contents.
-- The deployment verified the installed file hashes and WordPress health on dainis.net and on the existing burner. The burner retained active Plugin Check and WP_DEBUG.
-- The static release gate reported zero security-sniff errors and 22 existing nonce recommendations. The separate project ruleset reported one hook-prefix error for the inherited WordPress `the_content` call. v204 retains this rendering path.
-- The exact-ZIP release gate passed every check. The official Plugin Repo scan on the verified burner reported zero errors and 23 warnings, consisting of the same 22 nonce recommendations and the inherited core-hook prefix warning.
-- A WordPress fixture confirmed that the preserved `the_content` path applies registered content callbacks, whereas separate block and shortcode expansion omits them.
+- The packaged source matches all 271 files in the ZIP. The only file changed since the earlier v204 ZIP is `includes/class-flosc-page-context.php`.
+- The project PHPCS ruleset reported zero errors and 22 existing nonce recommendations. PHP lint and all static release-gate checks passed.
+- A WordPress fixture verified dynamic block rendering with the correct post ID and expansion of registered shortcodes. DA1 chat routing, VGM, and inline JavaScript checks passed.
+- The completed official Plugin Repo report belongs to the earlier v204 ZIP. This revision has not received its own official Plugin Check report.

@@ -731,7 +731,8 @@ class FLOSC_Page_Context {
 		};
 		add_filter( 'render_block_context', $block_context, 10, 3 );
 		try {
-			$html = apply_filters( 'the_content', $source );
+			$html = do_blocks( $source );
+			$html = do_shortcode( $html );
 		} finally {
 			remove_filter( 'render_block_context', $block_context );
 		}
