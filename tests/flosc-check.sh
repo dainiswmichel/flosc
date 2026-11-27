@@ -102,14 +102,15 @@ line; echo "6. Nothing is silenced"
 # whole-tree count was already four digits. Nothing in the plugin regressed to
 # produce it.
 #
-# 91 is measured, not estimated: 68 in shipped code + 23 in tests/. It was 90
-# constant across v201, v202 and v203 (checked commit by commit); the one added
-# here is the NonPrefixedHooknameFound annotation on the core the_content filter
-# in includes/class-flosc-page-context.php, which v203 shipped without and which
-# was the single WPCS error. Raise or lower this only against a fresh
-# measurement, and say in the commit which it was.
+# 90 is measured, not estimated: 67 in shipped code + 23 in tests/, constant
+# across v201, v202, v203 and v207 (checked commit by commit). v204 resolved its
+# single WPCS error by replacing apply_filters( 'the_content', ... ) with
+# do_blocks() + do_shortcode() in includes/class-flosc-page-context.php rather
+# than annotating it, so no suppression was added and the count did not move.
+# Raise or lower this only against a fresh measurement, and say in the commit
+# which it was.
 ok "phpcs suppressions in tree" \
-   "$(grep -rhE '(//|#|/\*) *phpcs:(ignore|disable)' --include='*.php' --exclude-dir=pre-release-candidates . 2>/dev/null | grep -c . | tr -d ' ')" "91"
+   "$(grep -rhE '(//|#|/\*) *phpcs:(ignore|disable)' --include='*.php' --exclude-dir=pre-release-candidates . 2>/dev/null | grep -c . | tr -d ' ')" "90"
 ok "FILTER_UNSAFE_RAW in code" \
    "$(grep -rhE '^[^*]*FILTER_UNSAFE_RAW' --include='*.php' includes admin 2>/dev/null | grep -vc '^\s*\*' | tr -d ' ')" "0"
 ok "error_log() calls" \
