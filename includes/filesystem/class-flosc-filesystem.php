@@ -37,6 +37,11 @@ class FLOSC_Filesystem {
 			}
 		}
 
+		// Core may retain a transport that failed to connect, even with a configured file mode.
+		if ( isset( $wp_filesystem->errors ) && is_wp_error( $wp_filesystem->errors ) && $wp_filesystem->errors->has_errors() ) {
+			return null;
+		}
+
 		return is_object( $wp_filesystem ) ? $wp_filesystem : null;
 	}
 

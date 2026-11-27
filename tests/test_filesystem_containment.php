@@ -67,7 +67,23 @@ class FLOSC_Test_Filesystem_Direct {
 
 class WP_Filesystem_Direct extends FLOSC_Test_Filesystem_Direct {}
 
+class WP_Error {
+	public function has_errors() {
+		return true;
+	}
+}
+
+function is_wp_error( $value ) {
+	return $value instanceof WP_Error;
+}
+
 class FLOSC_Test_Disconnected_Filesystem {
+	public $errors;
+
+	public function __construct() {
+		$this->errors = new WP_Error();
+	}
+
 	public function put_contents( $path, $content, $mode = false ) {
 		throw new RuntimeException( 'The disconnected filesystem must never be used.' );
 	}
@@ -106,6 +122,8 @@ flosc_test_ok( 'a later write skips the disconnected global transport', $filesys
 flosc_test_ok( 'fallback uses conservative file permissions', WP_Filesystem_Direct::$last_mode, 0644 );
 
 define( 'FS_CHMOD_FILE', 0640 );
+flosc_test_ok( 'a configured file mode still skips a failed transport', $filesystem->write_file_safely( $ordinary, 'configured fallback' ), true );
+flosc_test_ok( 'fallback preserves the configured file mode', WP_Filesystem_Direct::$last_mode, 0640 );
 $wp_filesystem = new FLOSC_Test_Filesystem_Direct();
 
 echo "Ordinary uploads writes still work\n";
