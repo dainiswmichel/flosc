@@ -1,0 +1,143 @@
+<h1 id="ref-sso">Part 3: Reference — SSO & OAuth</h1>
+<p class="skeleton-marker">Single sign-on, OAuth2 providers, user linking. Content pending.</p>
+
+<h2 id="sso-manager">class-sso-manager.php — SSO Orchestration</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-purpose">What It Does — Manages Social Login</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-flow">The SSO Flow — Redirect → Callback → User Creation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-providers">Enabled vs Available Providers</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-buttons">get_chat_sso_buttons_html() — In-Chat Login Buttons</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-wp-login">add_sso_buttons_to_login() — WordPress Login Form Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-avatar">filter_avatar_url() — SSO Avatar Override</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-ajax">AJAX Methods — ajax_unlink(), ajax_get_linked_accounts()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-manager-settings-reg">register_settings() — Per-Provider Settings Registration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="oauth2-handler">class-oauth2-handler.php — The OAuth2 Engine</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-purpose">What It Does — Generic OAuth2 Flow</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-authorize">Authorization URL Construction</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-token-exchange">Token Exchange — Code → Access Token</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-user-info">User Info Retrieval</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-state-security">State Parameter Security — generate_state(), verify_state()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="oauth2-state-constants">STATE_PREFIX & STATE_EXPIRATION (600 seconds)</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-process-login">process_sso_login() — Complete Login Pipeline</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-log-user-in">log_user_in() — WordPress Session Creation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-login-token">generate_login_token() — Redirect-Safe Authentication</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-routes">register_routes() — OAuth2 REST Endpoints</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="oauth2-validate-provider">validate_provider() — Provider Existence Check</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="sso-provider-base">class-sso-provider-base.php — Abstract Provider</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-base-contract">The Provider Contract</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-base-config">Configuration Pattern</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-base-abstract-methods">Abstract Methods — get_authorization_url(), exchange_code_for_token(), get_user_info(), normalize_user_data()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-base-callback-url">get_callback_url() — OAuth Redirect URI Construction</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-base-login-button">get_login_button_html() — Provider Button Rendering</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="sso-providers">SSO Provider Implementations</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-google">class-google-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="sso-google-scopes">Required Scopes</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="sso-google-endpoints">API Endpoints</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-facebook">class-facebook-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-apple">class-apple-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="sso-apple-quirks">Apple Sign-In Quirks — Why It's Different</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-microsoft">class-microsoft-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sso-linkedin">class-linkedin-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="user-linker">class-user-linker.php — Account Linking</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-purpose">What It Does — Links Social Accounts to WP Users</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-merge">Account Merge — When a Guest Logs In</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-creation">New User Creation — When No Account Exists</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-meta">META_PREFIX Constant — '_flosc_sso_' User Meta</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-create-user">create_user_from_sso() — WordPress User Registration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-username">generate_unique_username() — Collision-Free Usernames</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-tokens">Token Management — store_tokens(), get_tokens(), update_tokens()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-encryption">Token Encryption — encrypt_tokens() & decrypt_tokens()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-info">get_linked_account_info() — Provider Account Details</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="user-linker-avatar">get_sso_avatar() — Social Profile Picture</h3>
+<p class="skeleton-marker">Content pending.</p>
