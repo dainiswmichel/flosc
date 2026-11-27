@@ -10,7 +10,6 @@ if ( PHP_SAPI !== 'cli' ) {
 }
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'FS_CHMOD_FILE', 0644 );
 
 $flosc_test_root    = sys_get_temp_dir() . '/flosc-filesystem-' . bin2hex( random_bytes( 6 ) );
 $flosc_test_uploads = $flosc_test_root . '/uploads';
@@ -39,7 +38,10 @@ function wp_delete_file( $path ) {
 }
 
 class FLOSC_Test_Filesystem_Direct {
+	public static $last_mode;
+
 	public function put_contents( $path, $content, $mode = false ) {
+		self::$last_mode = $mode;
 		return false !== file_put_contents( $path, $content );
 	}
 
@@ -63,7 +65,19 @@ class FLOSC_Test_Filesystem_Direct {
 	}
 }
 
-$wp_filesystem = new FLOSC_Test_Filesystem_Direct();
+class WP_Filesystem_Direct extends FLOSC_Test_Filesystem_Direct {}
+
+class FLOSC_Test_Disconnected_Filesystem {
+	public function put_contents( $path, $content, $mode = false ) {
+		throw new RuntimeException( 'The disconnected filesystem must never be used.' );
+	}
+}
+
+function WP_Filesystem() {
+	global $wp_filesystem;
+	$wp_filesystem = new FLOSC_Test_Disconnected_Filesystem();
+	return false;
+}
 
 require dirname( __DIR__ ) . '/includes/filesystem/class-flosc-filesystem.php';
 
@@ -86,8 +100,17 @@ function flosc_test_ok( $label, $actual, $expected ) {
 $filesystem = new FLOSC_Filesystem();
 $ordinary   = $flosc_test_uploads . '/data/ordinary.txt';
 
+echo "Fresh loads can write before WordPress sets filesystem permissions\n";
+flosc_test_ok( 'connection failure falls back to a local uploads write', $filesystem->write_file_safely( $ordinary, 'fallback' ), true );
+flosc_test_ok( 'a later write skips the disconnected global transport', $filesystem->write_file_safely( $ordinary, 'second fallback' ), true );
+flosc_test_ok( 'fallback uses conservative file permissions', WP_Filesystem_Direct::$last_mode, 0644 );
+
+define( 'FS_CHMOD_FILE', 0640 );
+$wp_filesystem = new FLOSC_Test_Filesystem_Direct();
+
 echo "Ordinary uploads writes still work\n";
-flosc_test_ok( 'a new uploads file is written', $filesystem->write_file_safely( $ordinary, 'first' ), true );
+flosc_test_ok( 'an uploads file is written via the initialized transport', $filesystem->write_file_safely( $ordinary, 'first' ), true );
+flosc_test_ok( 'the WordPress-configured file mode is preserved', FLOSC_Test_Filesystem_Direct::$last_mode, 0640 );
 flosc_test_ok( 'an existing uploads file is overwritten', $filesystem->write_file_safely( $ordinary, 'second' ), true );
 flosc_test_ok( 'the expected bytes were written', file_get_contents( $ordinary ), 'second' );
 flosc_test_ok( 'a direct outside path is rejected', $filesystem->write_file_safely( $flosc_test_outside . '/direct.txt', 'changed' ), false );

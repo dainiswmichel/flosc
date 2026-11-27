@@ -28,11 +28,13 @@ class FLOSC_Filesystem {
 	public function get_wp_filesystem() {
 		global $wp_filesystem;
 
-		if ( ! is_object( $wp_filesystem ) ) {
+		if ( ! is_object( $wp_filesystem ) || ! defined( 'FS_CHMOD_FILE' ) ) {
 			if ( ! function_exists( 'WP_Filesystem' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/file.php';
 			}
-			WP_Filesystem();
+			if ( ! WP_Filesystem() ) {
+				return null;
+			}
 		}
 
 		return is_object( $wp_filesystem ) ? $wp_filesystem : null;
@@ -173,8 +175,10 @@ class FLOSC_Filesystem {
 		}
 
 		$filesystem = $this->get_wp_filesystem();
+		// Core sets FS_CHMOD_FILE only after a transport connects successfully.
+		$mode = defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644;
 		if ( $filesystem && method_exists( $filesystem, 'put_contents' ) ) {
-			$ok = $filesystem->put_contents( $path, $content, FS_CHMOD_FILE );
+			$ok = $filesystem->put_contents( $path, $content, $mode );
 			if ( false !== $ok && null !== $ok ) {
 				return (bool) $ok;
 			}
@@ -190,7 +194,7 @@ class FLOSC_Filesystem {
 		}
 		if ( class_exists( 'WP_Filesystem_Direct' ) ) {
 			$direct = new WP_Filesystem_Direct( null );
-			return (bool) $direct->put_contents( $path, $content, FS_CHMOD_FILE );
+			return (bool) $direct->put_contents( $path, $content, $mode );
 		}
 
 		return false;
