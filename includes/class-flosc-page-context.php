@@ -731,6 +731,8 @@ class FLOSC_Page_Context {
 		};
 		add_filter( 'render_block_context', $block_context, 10, 3 );
 		try {
+			// WordPress content filters (shortcodes, embeds, blocks, etc.).
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
 			$html = apply_filters( 'the_content', $source );
 		} finally {
 			remove_filter( 'render_block_context', $block_context );

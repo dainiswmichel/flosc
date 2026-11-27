@@ -92,8 +92,24 @@ fi
 
 # ----------------------------------------------------- 6. nothing is silenced
 line; echo "6. Nothing is silenced"
+# Scope matters more than the number. Without --exclude-dir this walked
+# pre-release-candidates/, which holds 13 other agents' whole plugin trees
+# (2223 PHP files beside the plugin's own ~220), so the count measured other
+# candidates' annotations and read 1087. It could never equal any expectation.
+#
+# The 88 was likewise never a measurement of this tree: at v173, where it was
+# written, the non-candidate count was 94 (76 shipped + 18 tests) and the
+# whole-tree count was already four digits. Nothing in the plugin regressed to
+# produce it.
+#
+# 91 is measured, not estimated: 68 in shipped code + 23 in tests/. It was 90
+# constant across v201, v202 and v203 (checked commit by commit); the one added
+# here is the NonPrefixedHooknameFound annotation on the core the_content filter
+# in includes/class-flosc-page-context.php, which v203 shipped without and which
+# was the single WPCS error. Raise or lower this only against a fresh
+# measurement, and say in the commit which it was.
 ok "phpcs suppressions in tree" \
-   "$(grep -rhE '(//|#|/\*) *phpcs:(ignore|disable)' --include='*.php' . 2>/dev/null | grep -c . | tr -d ' ')" "88"
+   "$(grep -rhE '(//|#|/\*) *phpcs:(ignore|disable)' --include='*.php' --exclude-dir=pre-release-candidates . 2>/dev/null | grep -c . | tr -d ' ')" "91"
 ok "FILTER_UNSAFE_RAW in code" \
    "$(grep -rhE '^[^*]*FILTER_UNSAFE_RAW' --include='*.php' includes admin 2>/dev/null | grep -vc '^\s*\*' | tr -d ' ')" "0"
 ok "error_log() calls" \
