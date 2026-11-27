@@ -92,8 +92,8 @@ fi
 
 # ----------------------------------------------------- 6. nothing is silenced
 line; echo "6. Nothing is silenced"
-ok "phpcs suppressions in tree" \
-   "$(grep -rhE '(//|#|/\*) *phpcs:(ignore|disable)' --include='*.php' . 2>/dev/null | grep -c . | tr -d ' ')" "88"
+ok "phpcs suppressions in plugin code" \
+   "$(grep -rhE '(//|#|/\*) *phpcs:(ignore|disable)' --include='*.php' --exclude-dir=tests --exclude-dir=vendor --exclude-dir=pre-release-candidates . 2>/dev/null | grep -c . | tr -d ' ')" "67"
 ok "FILTER_UNSAFE_RAW in code" \
    "$(grep -rhE '^[^*]*FILTER_UNSAFE_RAW' --include='*.php' includes admin 2>/dev/null | grep -vc '^\s*\*' | tr -d ' ')" "0"
 ok "error_log() calls" \
