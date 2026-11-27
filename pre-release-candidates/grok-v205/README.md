@@ -1,6 +1,6 @@
 # Home run candidate v205 coded by Grok
 
-Review copy only. The canonical plugin was not edited. This directory is not committed.
+Review copy only. The canonical plugin was not edited. Committed as `1941f8aa1304d71e21f729d102e3b5f97b8cdd3c`.
 
 - Baseline: `6772558ac6463a7fe5eed81b1596f83c583ebeb2` (Complete the FLOSC v204 renderer correction)
 - Public version and stable tag: 8.0.0
